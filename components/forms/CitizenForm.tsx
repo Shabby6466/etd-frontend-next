@@ -433,7 +433,29 @@ export function CitizenForm() {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       })
-      showNotification.error("Failed to create application")
+      
+      // Show the actual error message from the API response
+      if (error && typeof error === 'object') {
+        // Handle axios error response
+        if ('response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {
+          const responseData = error.response.data
+          if (responseData && typeof responseData === 'object' && 'message' in responseData) {
+            showNotification.error(responseData.message as string)
+          } else {
+            showNotification.error('Failed to create application')
+          }
+        }
+        // Handle direct error object with message
+        else if ('message' in error) {
+          showNotification.error(error.message as string)
+        } else {
+          showNotification.error('Failed to create application')
+        }
+      } else if (error instanceof Error) {
+        showNotification.error(error.message)
+      } else {
+        showNotification.error('Failed to create application')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -491,7 +513,7 @@ export function CitizenForm() {
 
               <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
                 console.error('Form validation errors:', errors)
-                showNotification.error("Please fix the form errors before submitting")
+                showNotification.error("Please fill all the required fields before submitting")
               })} className="space-y-6">
                 {/* Citizen ID Section */}
                 <div className="flex items-center gap-4">
@@ -592,27 +614,27 @@ export function CitizenForm() {
               {/* Personal Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="first_name">First Name</Label>
+                  <Label htmlFor="first_name" className="font-bold">First Name *</Label>
                   <Input id="first_name" {...form.register("first_name")} />
                 </div>
                 <div>
-                  <Label htmlFor="last_name">Last Name</Label>
+                  <Label htmlFor="last_name" className="font-bold">Last Name *</Label>
                   <Input id="last_name" {...form.register("last_name")} />
                 </div>
                 <div>
-                  <Label htmlFor="father_name">Father&apos;s Name</Label>
+                  <Label htmlFor="father_name" className="font-bold">Father&apos;s Name *</Label>
                   <Input id="father_name" {...form.register("father_name")} />
                 </div>
                 <div>
-                  <Label htmlFor="mother_name">Mother&apos;s Name</Label>
+                  <Label htmlFor="mother_name" className="font-bold">Mother&apos;s Name *</Label>
                   <Input id="mother_name" {...form.register("mother_name")} />
                 </div>
                 <div>
-                  <Label htmlFor="gender">Gender</Label>
+                  <Label htmlFor="gender" className="font-bold">Gender *</Label>
                   <Input id="gender" {...form.register("gender")} />
                 </div>
                 <div>
-                  <Label htmlFor="date_of_birth">Date of Birth</Label>
+                  <Label htmlFor="date_of_birth" className="font-bold">Date of Birth *</Label>
                   <Input id="date_of_birth" type="date" {...form.register("date_of_birth")} />
                 </div>
                 {/* <div>
@@ -624,23 +646,23 @@ export function CitizenForm() {
               {/* Address & Birth Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="birth_country">Birth Country</Label>
+                  <Label htmlFor="birth_country" className="font-bold">Birth Country *</Label>
                   <Input id="birth_country" {...form.register("birth_country")} />
                 </div>
                 <div>
-                  <Label htmlFor="birth_city">Birth City</Label>
+                  <Label htmlFor="birth_city" className="font-bold">Birth City *</Label>
                   <Input id="birth_city" {...form.register("birth_city")} />
                 </div>
                 <div>
-                  <Label htmlFor="pakistan_city">City</Label>
+                  <Label htmlFor="pakistan_city" className="font-bold">City *</Label>
                   <Input id="pakistan_city" {...form.register("pakistan_city")} />
                 </div>
                 <div>
-                  <Label htmlFor="profession">Profession</Label>
+                  <Label htmlFor="profession" className="font-bold">Profession *</Label>
                   <Input id="profession" {...form.register("profession")} />
                 </div>
                 <div className="md:col-span-2">
-                  <Label htmlFor="pakistan_address">Address</Label>
+                  <Label htmlFor="pakistan_address" className="font-bold">Address *</Label>
                   <Input id="pakistan_address" {...form.register("pakistan_address")} />
                 </div>
               </div>
@@ -664,7 +686,7 @@ export function CitizenForm() {
               {/* Travel & Request Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="departure_date">Departure Date</Label>
+                  <Label htmlFor="departure_date" className="font-bold">Departure Date *</Label>
                   <Input id="departure_date" type="date" {...form.register("departure_date")} />
                 </div>
                 <div>
@@ -676,7 +698,7 @@ export function CitizenForm() {
                   <Input id="investor" placeholder="Gov of Pakistan" {...form.register("investor")} />
                 </div>
                 <div>
-                  <Label htmlFor="requested_by">Requested By</Label>
+                  <Label htmlFor="requested_by" className="font-bold">Requested By *</Label>
                   <Input id="requested_by" {...form.register("requested_by")} />
                 </div>
                 <div>
@@ -702,32 +724,12 @@ export function CitizenForm() {
 
               </div>
 
-              {/* Sheet Selection - Only show for operators */}
-              {user?.role === "MISSION_OPERATOR" && (
-                <div className="border-t pt-6">
-                  <SheetSelector
-                    onSheetSelect={setSelectedSheet}
-                    selectedSheet={selectedSheet}
-                    disabled={isLoading}
-                  />
-                </div>
-              )}
-
               {/* Submit Button */}
               <div className="flex justify-end gap-4">
                 <Button type="button" variant="outline" onClick={() => router.back()}>
                   Cancel
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    console.log('Current form values:', form.getValues())
-                    console.log('Form errors:', form.formState.errors)
-                  }}
-                >
-                  Debug Form
-                </Button>
+               
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? "Creating..." : "Create Application"}
                 </Button>

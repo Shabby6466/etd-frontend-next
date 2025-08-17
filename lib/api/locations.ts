@@ -82,26 +82,4 @@ export const locationsAPI = {
     return response.data
   },
 
-  // Create new location (Admin only)
-  createLocation: async (data: CreateLocationRequest): Promise<Location> => {
-    const response = await apiClient.post('/locations', data)
-    return response.data
-  },
-
-  // Bulk create locations (Admin only)
-  createLocationsBulk: async (data: CreateLocationRequest[]): Promise<Location[]> => {
-    const response = await apiClient.post('/locations/bulk', data)
-    return response.data
-  },
-
-  // Update location (Admin only)
-  updateLocation: async (id: string, data: UpdateLocationRequest): Promise<Location> => {
-    const response = await apiClient.put(`/locations/${id}`, data)
-    return response.data
-  },
-
-  // Delete location (Admin only)
-  deleteLocation: async (id: string): Promise<void> => {
-    await apiClient.delete(`/locations/${id}`)
-  },
 }

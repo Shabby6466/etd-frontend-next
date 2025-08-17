@@ -4,7 +4,7 @@ export interface User {
   fullName: string
   role: UserRole
   agency?: string
-  region?: string
+  state?: string
   createdAt: string
   updatedAt: string
 }

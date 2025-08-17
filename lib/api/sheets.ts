@@ -2,7 +2,6 @@ import { apiClient } from './client'
 
 export interface SheetAssignmentRequest {
   operator_id: number
-  location_id: number
   sheet_numbers: string[]
 }
 
@@ -31,10 +30,30 @@ export interface SheetStats {
   qc_fail_sheets?: number
 }
 
+export interface SheetStatsFilters {
+  page?: number
+  limit?: number
+  status?: 'EMPTY' | 'QC_PASS' | 'QC_FAIL'
+  operator_id?: number
+  location_id?: number
+}
+
 export interface SheetFilters {
+  page?: number
+  limit?: number
   operator_id?: number
   location_id?: number
   status?: 'EMPTY' | 'QC_PASS' | 'QC_FAIL'
+}
+
+export interface PaginatedSheetsResponse {
+  data: Sheet[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasNext: boolean
+  hasPrev: boolean
 }
 
 export const sheetsAPI = {
@@ -59,9 +78,15 @@ export const sheetsAPI = {
     return response.data
   },
 
-  // Get sheets with filtering
-  getSheets: async (filters?: SheetFilters): Promise<Sheet[]> => {
+  // Get sheets with filtering and pagination
+  getSheets: async (filters?: SheetFilters): Promise<PaginatedSheetsResponse> => {
     const params = new URLSearchParams()
+    
+    // Add pagination parameters
+    if (filters?.page) params.append('page', filters.page.toString())
+    if (filters?.limit) params.append('limit', filters.limit.toString())
+    
+    // Add filter parameters
     if (filters?.operator_id) params.append('operator_id', filters.operator_id.toString())
     if (filters?.location_id) params.append('location_id', filters.location_id.toString())
     if (filters?.status) params.append('status', filters.status)
@@ -77,8 +102,19 @@ export const sheetsAPI = {
   },
 
   // Get sheet statistics
-  getSheetStats: async (): Promise<SheetStats> => {
-    const response = await apiClient.get('/sheets/stats')
+  getSheetStats: async (filters?: SheetStatsFilters): Promise<SheetStats> => {
+    const params = new URLSearchParams()
+    
+    // Add pagination parameters
+    if (filters?.page) params.append('page', filters.page.toString())
+    if (filters?.limit) params.append('limit', filters.limit.toString())
+    
+    // Add filter parameters
+    if (filters?.status) params.append('status', filters.status)
+    if (filters?.operator_id) params.append('operator_id', filters.operator_id.toString())
+    if (filters?.location_id) params.append('location_id', filters.location_id.toString())
+
+    const response = await apiClient.get(`/sheets/stats?${params.toString()}`)
     return response.data
   },
 }

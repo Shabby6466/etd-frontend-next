@@ -8,10 +8,13 @@ import { Trash2, Edit } from "lucide-react"
 import { User } from "@/lib/types"
 import { showNotification } from "@/lib/utils/notifications"
 import { userAPI } from "@/lib/api/users"
+import { EditUserModal } from "./EditUserModal"
 
 export function UserManagementTable() {
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   const fetchUsers = async () => {
     try {
@@ -24,14 +27,34 @@ export function UserManagementTable() {
     }
   }
 
-  const deleteUser = async (userId: string) => {
+  const deleteUser = async (userId: string, userRole: string) => {
+    // Prevent deletion of admin users
+    if (userRole === "ADMIN") {
+      showNotification.error("Admin users cannot be deleted")
+      return
+    }
+
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return
+    }
+
     try {
       await userAPI.delete(userId)
       showNotification.success("User deleted successfully")
       fetchUsers()
-    } catch (error) {
-      showNotification.error("Failed to delete user")
+    } catch (error: any) {
+      console.error('Failed to delete user:', error)
+      showNotification.error(error.response?.data?.message || "Failed to delete user")
     }
+  }
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user)
+    setIsEditModalOpen(true)
+  }
+
+  const handleUserUpdated = () => {
+    fetchUsers()
   }
 
   useEffect(() => {
@@ -69,78 +92,88 @@ export function UserManagementTable() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>All Users ({users.length})</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-4">Name</th>
-                <th className="text-left py-3 px-4">Email</th>
-                <th className="text-left py-3 px-4">Role</th>
-                <th className="text-left py-3 px-4">Region/Agency</th>
-                <th className="text-left py-3 px-4">Created At</th>
-                <th className="text-left py-3 px-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4 font-medium">{user.name}</td>
-                  <td className="py-3 px-4">{user.email}</td>
-                  <td className="py-3 px-4">
-                    <Badge className={getRoleBadgeColor(user.role)}>
-                      {user.role.replace('_', ' ')}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-4">
-                    {user.region || user.agency || '-'}
-                  </td>
-                  <td className="py-3 px-4">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // TODO: Implement edit user
-                          showNotification.info("Edit user functionality coming soon")
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (confirm('Are you sure you want to delete this user?')) {
-                            deleteUser(user.id)
-                          }
-                        }}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>All Users ({users.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4">Name</th>
+                  <th className="text-left py-3 px-4">Email</th>
+                  <th className="text-left py-3 px-4">Role</th>
+                  <th className="text-left py-3 px-4">Region/Agency</th>
+                  <th className="text-left py-3 px-4">Created At</th>
+                  <th className="text-left py-3 px-4">Actions</th>
                 </tr>
-              ))}
-              {users.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-gray-500">
-                    No users found
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id} className="border-b hover:bg-gray-50">
+                    <td className="py-3 px-4 font-medium">{user.fullName}</td>
+                    <td className="py-3 px-4">{user.email}</td>
+                    <td className="py-3 px-4">
+                      <Badge className={getRoleBadgeColor(user.role)}>
+                        {user.role.replace('_', ' ')}
+                      </Badge>
+                    </td>
+                                      <td className="py-3 px-4">
+                    {user.role === "ADMIN" ? "-" : 
+                     user.role === "MISSION_OPERATOR" ? (user.state || "-") :
+                     user.role === "AGENCY" ? (user.state?.replace(/_/g, " ") || "-") :
+                     user.role === "MINISTRY" ? "-" : "-"}
                   </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+                    <td className="py-3 px-4">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                          disabled={user.role === "ADMIN"}
+                          title={user.role === "ADMIN" ? "Admin users cannot be edited" : "Edit user"}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteUser(user.id, user.role)}
+                          disabled={user.role === "ADMIN"}
+                          className="text-red-600 hover:text-red-800"
+                          title={user.role === "ADMIN" ? "Admin users cannot be deleted" : "Delete user"}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {users.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-gray-500">
+                      No users found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit User Modal */}
+      <EditUserModal
+        user={editingUser}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        onUserUpdated={handleUserUpdated}
+      />
+    </>
   )
 }

@@ -156,8 +156,7 @@ export function ApplicationsTable({
                 <th className="text-left p-4 font-medium">Application ID</th>
                 <th className="text-left p-4 font-medium">Applicant</th>
                 <th className="text-left p-4 font-medium">CNIC</th>
-                <th className="text-left p-4 font-medium">Status</th>
-                {/* <th className="text-left p-3 font-medium">Flags</th> */}
+                <th className="text-center p-8 font-medium">Status</th>
                 <th className="text-left p-4 font-medium">Created</th>
                 {userRole === 'AGENCY' && (
                   <th className="text-left p-5 font-medium">Verification Document</th>
@@ -200,12 +199,12 @@ export function ApplicationsTable({
                     </span>
                   </td>
                   <td className="p-3">
-                    <div className="flex flex-col gap-1">
-                      <Badge variant={getStatusVariant(application.status)}>
+                    <div className="flex flex-col gap-1 items-center">
+                      <Badge variant={getStatusVariant(application.status)} className="text-center">
                         {formatStatus(application.status)}
                       </Badge>
                       {application.processing && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs text-center">
                           Processing: {application.processing.sheet_no || 'No Sheet'}
                         </Badge>
                       )}

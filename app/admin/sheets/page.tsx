@@ -28,6 +28,7 @@ export default function SheetManagementPage() {
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   // Assignment form state
   const [selectedOperator, setSelectedOperator] = useState("")
@@ -35,33 +36,142 @@ export default function SheetManagementPage() {
   const [sheetNumbers, setSheetNumbers] = useState("")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
-  // Filters
-  const [filters, setFilters] = useState<SheetFilters>({})
+  // Filters and pagination
+  const [filters, setFilters] = useState<SheetFilters>({
+    page: 1,
+    limit: 10
+  })
+  
+  // Separate filter input states
+  const [filterInputs, setFilterInputs] = useState({
+    operator_id: "all",
+    location_id: "all",
+    status: "all",
+    limit: "10"
+  })
+  
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false
+  })
+
+  // Handle hydration
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     fetchData()
   }, [filters])
 
+  const applyFilters = () => {
+    setFilters(prev => ({
+      ...prev,
+      operator_id: filterInputs.operator_id && filterInputs.operator_id !== 'all' ? parseInt(filterInputs.operator_id) : undefined,
+      location_id: filterInputs.location_id && filterInputs.location_id !== 'all' ? parseInt(filterInputs.location_id) : undefined,
+      status: filterInputs.status && filterInputs.status !== 'all' ? filterInputs.status as 'EMPTY' | 'QC_PASS' | 'QC_FAIL' : undefined,
+      limit: parseInt(filterInputs.limit),
+      page: 1 // Reset to first page when applying filters
+    }))
+  }
+
+  const clearFilters = () => {
+    setFilterInputs({
+      operator_id: "all",
+      location_id: "all", 
+      status: "all",
+      limit: "10"
+    })
+    setFilters(prev => ({
+      ...prev,
+      operator_id: undefined,
+      location_id: undefined,
+      status: undefined,
+      limit: 10,
+      page: 1
+    }))
+  }
+
   const fetchData = async () => {
     try {
       setLoading(true)
+      console.log('Fetching data with filters:', filters)
+      
       const [sheetsData, statsData, usersData] = await Promise.all([
         sheetsAPI.getSheets(filters),
-        sheetsAPI.getSheetStats(),
+        sheetsAPI.getSheetStats(filters),
         userAPI.getAll()
       ])
-      setSheets(sheetsData)
+      
+      console.log('Sheets API response:', sheetsData)
+      console.log('Stats API response:', statsData)
+      console.log('Users API response:', usersData)
+      
+      // Handle both paginated and non-paginated responses
+      let sheetsArray: Sheet[] = []
+      let paginationData = {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false
+      }
+      
+      if (sheetsData && typeof sheetsData === 'object') {
+        if (Array.isArray(sheetsData)) {
+          // API returned a simple array
+          sheetsArray = sheetsData
+          paginationData = {
+            page: 1,
+            limit: sheetsArray.length,
+            total: sheetsArray.length,
+            totalPages: 1,
+            hasNext: false,
+            hasPrev: false
+          }
+        } else if (sheetsData.data && Array.isArray(sheetsData.data)) {
+          // API returned paginated response
+          sheetsArray = sheetsData.data
+          paginationData = {
+            page: sheetsData.page || 1,
+            limit: sheetsData.limit || 10,
+            total: sheetsData.total || 0,
+            totalPages: sheetsData.totalPages || 0,
+            hasNext: sheetsData.hasNext || false,
+            hasPrev: sheetsData.hasPrev || false
+          }
+        }
+      }
+      
+      setSheets(sheetsArray)
+      setPagination(paginationData)
       setStats(statsData)
       setUsers(usersData.filter((user: any) => user.role === 'MISSION_OPERATOR'))
     } catch (error) {
+      console.error('Error fetching data:', error)
       showNotification.error("Failed to fetch data")
+      // Set default values on error
+      setSheets([])
+      setPagination({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false
+      })
     } finally {
       setLoading(false)
     }
   }
 
   const handleAssignSheets = async () => {
-    if (!selectedOperator || !selectedLocation || !sheetNumbers.trim()) {
+    if (!selectedOperator  || !sheetNumbers.trim()) {
       showNotification.error("Please fill in all required fields")
       return
     }
@@ -80,13 +190,11 @@ export default function SheetManagementPage() {
     try {
       await sheetsAPI.assignSheets({
         operator_id: parseInt(selectedOperator),
-        location_id: parseInt(selectedLocation),
         sheet_numbers: sheetNumbersArray
       })
       showNotification.success("Sheets assigned successfully")
       setSheetNumbers("")
       setSelectedOperator("")
-      setSelectedLocation("")
       fetchData()
     } catch (error) {
       showNotification.error("Failed to assign sheets")
@@ -129,7 +237,7 @@ export default function SheetManagementPage() {
     }
   }
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -144,6 +252,18 @@ export default function SheetManagementPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Sheet Management</h1>
+        <Button 
+          onClick={() => {
+            console.log('Current filters:', filters)
+            console.log('Current sheets:', sheets)
+            console.log('Current pagination:', pagination)
+            fetchData()
+          }}
+          variant="outline"
+          size="sm"
+        >
+          Refresh Data
+        </Button>
       </div>
 
              {/* Statistics Cards */}
@@ -213,16 +333,6 @@ export default function SheetManagementPage() {
                    </SelectContent>
                  </Select>
                </div>
-
-               <div className="space-y-2">
-                 <Label htmlFor="location">Location</Label>
-                 <LocationSelector
-                   value={selectedLocation}
-                   onValueChange={setSelectedLocation}
-                   placeholder="Select location"
-                   disabled={assigning}
-                 />
-               </div>
              </div>
 
              <div className="space-y-2">
@@ -254,17 +364,18 @@ export default function SheetManagementPage() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="filterOperator">Operator</Label>
               <Select 
-                value={filters.operator_id?.toString() || ""} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, operator_id: value ? parseInt(value) : undefined }))}
+                value={filterInputs.operator_id} 
+                onValueChange={(value) => setFilterInputs(prev => ({ ...prev, operator_id: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select operator (or leave empty for all)" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">All operators</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName}
@@ -277,34 +388,65 @@ export default function SheetManagementPage() {
             <div className="space-y-2">
               <Label htmlFor="filterLocation">Location</Label>
               <LocationSelector
-                value={filters.location_id?.toString() || ""}
-                onValueChange={(value) => setFilters(prev => ({ 
+                value={filterInputs.location_id}
+                onValueChange={(value) => setFilterInputs(prev => ({ 
                   ...prev, 
-                  location_id: value ? parseInt(value) : undefined 
+                  location_id: value 
                 }))}
                 placeholder="All locations"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="filterStatus">Status</Label>
-              <Select 
-                value={filters.status || ""} 
-                                 onValueChange={(value) => setFilters(prev => ({ 
-                   ...prev, 
-                   status: value as 'EMPTY' | 'QC_PASS' | 'QC_FAIL' | undefined 
-                 }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status (or leave empty for all)" />
-                </SelectTrigger>
+                          <div className="space-y-2">
+                <Label htmlFor="filterStatus">Status</Label>
+                <Select 
+                  value={filterInputs.status} 
+                  onValueChange={(value) => setFilterInputs(prev => ({ 
+                    ...prev, 
+                    status: value 
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status (or leave empty for all)" />
+                  </SelectTrigger>
                                  <SelectContent>
+                   <SelectItem value="all">All statuses</SelectItem>
                    <SelectItem value="EMPTY">Empty</SelectItem>
                    <SelectItem value="QC_PASS">QC Pass</SelectItem>
                    <SelectItem value="QC_FAIL">QC Fail</SelectItem>
                  </SelectContent>
               </Select>
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="pageSize">Page Size</Label>
+              <Select 
+                value={filterInputs.limit} 
+                onValueChange={(value) => setFilterInputs(prev => ({ 
+                  ...prev, 
+                  limit: value
+                }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select page size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 per page</SelectItem>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="20">20 per page</SelectItem>
+                  <SelectItem value="50">50 per page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-4">
+            <Button onClick={clearFilters} variant="outline" size="sm">
+              Clear Filters
+            </Button>
+            <Button onClick={applyFilters} size="sm">
+              Apply Filters
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -328,7 +470,7 @@ export default function SheetManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {sheets.map((sheet) => (
+                {sheets && sheets.length > 0 ? sheets.map((sheet) => (
                   <tr key={sheet.sheet_no} className="hover:bg-gray-50">
                     <td className="border border-gray-300 px-4 py-2 font-mono">
                       {sheet.sheet_no}
@@ -360,15 +502,70 @@ export default function SheetManagementPage() {
                       {sheet.used_by_application || '-'}
                     </td>
                   </tr>
-                ))}
+                )) : null}
               </tbody>
             </table>
-            {sheets.length === 0 && (
+            {(!sheets || sheets.length === 0) && (
               <div className="text-center py-8 text-gray-500">
                 No sheets found matching the current filters
               </div>
             )}
           </div>
+          
+          {/* Pagination Controls */}
+          {sheets && sheets.length > 0 && (
+            <div className="flex items-center justify-between mt-6">
+              <div className="text-sm text-gray-600">
+                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} sheets
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newFilters = { ...filters, page: pagination.page - 1 }
+                    setFilters(newFilters)
+                  }}
+                  disabled={!pagination.hasPrev}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    const pageNum = i + 1
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={pagination.page === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          const newFilters = { ...filters, page: pageNum }
+                          setFilters(newFilters)
+                        }}
+                        className="w-8 h-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    )
+                  })}
+                  {pagination.totalPages > 5 && (
+                    <span className="px-2 text-sm text-gray-500">...</span>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newFilters = { ...filters, page: pagination.page + 1 }
+                    setFilters(newFilters)
+                  }}
+                  disabled={!pagination.hasNext}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

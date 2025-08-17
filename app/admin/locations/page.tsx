@@ -35,6 +35,9 @@ export default function LocationManagementPage() {
     sortOrder: "ASC"
   })
 
+  // Separate search input state
+  const [searchInput, setSearchInput] = useState("")
+
   // Form state
   const [newLocation, setNewLocation] = useState<CreateLocationRequest>({
     location_id: "",
@@ -62,54 +65,12 @@ export default function LocationManagementPage() {
     }
   }
 
-  const handleCreateLocation = async () => {
-    if (!newLocation.location_id.trim() || !newLocation.name.trim()) {
-      showNotification.error("Please fill in all required fields")
-      return
-    }
-
-    setCreating(true)
-    try {
-      await locationsAPI.createLocation(newLocation)
-      showNotification.success("Location created successfully")
-      setNewLocation({ location_id: "", name: "" })
-      fetchLocations()
-    } catch (error) {
-      showNotification.error("Failed to create location")
-    } finally {
-      setCreating(false)
-    }
-  }
-
-  const handleUpdateLocation = async (id: string, name: string) => {
-    if (!name.trim()) {
-      showNotification.error("Location name cannot be empty")
-      return
-    }
-
-    try {
-      await locationsAPI.updateLocation(id, { name })
-      showNotification.success("Location updated successfully")
-      setEditing(null)
-      fetchLocations()
-    } catch (error) {
-      showNotification.error("Failed to update location")
-    }
-  }
-
-  const handleDeleteLocation = async (id: string) => {
-    try {
-      await locationsAPI.deleteLocation(id)
-      showNotification.success("Location deleted successfully")
-      setDeleting(null)
-      fetchLocations()
-    } catch (error) {
-      showNotification.error("Failed to delete location")
-    }
-  }
-
   const handleSearch = (searchTerm: string) => {
-    setFilters(prev => ({ ...prev, search: searchTerm, page: 1 }))
+    setSearchInput(searchTerm)
+  }
+
+  const performSearch = () => {
+    setFilters(prev => ({ ...prev, search: searchInput, page: 1 }))
   }
 
   const handleSort = (sortBy: string, sortOrder: 'ASC' | 'DESC') => {
@@ -138,47 +99,6 @@ export default function LocationManagementPage() {
         <Badge variant="secondary">Total: {totalItems} locations</Badge>
       </div>
 
-      {/* Create New Location */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Create New Location
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="locationId">Location ID</Label>
-              <Input
-                id="locationId"
-                value={newLocation.location_id}
-                onChange={(e) => setNewLocation(prev => ({ ...prev, location_id: e.target.value }))}
-                placeholder="e.g., 9999"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="locationName">Location Name</Label>
-              <Input
-                id="locationName"
-                value={newLocation.name}
-                onChange={(e) => setNewLocation(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., New York, USA"
-              />
-            </div>
-            <div className="flex items-end">
-              <Button 
-                onClick={handleCreateLocation} 
-                disabled={creating}
-                className="w-full"
-              >
-                {creating ? "Creating..." : "Create Location"}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Filters and Search */}
       <Card>
         <CardHeader>
@@ -188,15 +108,25 @@ export default function LocationManagementPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="search"
-                  placeholder="Search locations..."
-                  value={filters.search || ""}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="search"
+                    placeholder="Search locations..."
+                    value={searchInput}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        performSearch()
+                      }
+                    }}
+                    className="pl-10"
+                  />
+                </div>
+                <Button onClick={performSearch} size="sm">
+                  Search
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
@@ -265,7 +195,6 @@ export default function LocationManagementPage() {
                   <th className="border border-gray-300 px-4 py-2 text-left">Name</th>
                   <th className="border border-gray-300 px-4 py-2 text-left">Created At</th>
                   <th className="border border-gray-300 px-4 py-2 text-left">Updated At</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -288,7 +217,7 @@ export default function LocationManagementPage() {
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              handleUpdateLocation(location.location_id, location.name)
+                            
                             } else if (e.key === 'Escape') {
                               setEditing(null)
                               fetchLocations()
@@ -305,47 +234,6 @@ export default function LocationManagementPage() {
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
                       {formatDate(location.updated_at)}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      <div className="flex gap-2">
-                        {editing === location.location_id ? (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => handleUpdateLocation(location.location_id, location.name)}
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setEditing(null)
-                                fetchLocations()
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setEditing(location.location_id)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setDeleting(location.location_id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
                     </td>
                   </tr>
                 ))}
@@ -420,12 +308,12 @@ export default function LocationManagementPage() {
                 >
                   Cancel
                 </Button>
-                <Button
+                {/* <Button
                   variant="destructive"
                   onClick={() => handleDeleteLocation(deleting)}
                 >
                   Delete
-                </Button>
+                </Button> */}
               </div>
             </CardContent>
           </Card>
