@@ -34,6 +34,12 @@ const transformApplicationData = (apiData: any): Application => {
     updatedAt: apiData.updatedAt,
     submittedBy: apiData.created_by_id,
     reviewedBy: apiData.reviewed_by_id,
+    sheet_no: apiData.sheet_no,
+    print_time_stamp: apiData.print_time_stamp,
+    print_user_id: apiData.print_user_id,
+    qc_time_stamp: apiData.qc_time_stamp,
+    active: apiData.active,
+    created_by_id: apiData.created_by_id,
     remarks: apiData.remarks,
     region: apiData.region,
     assignedAgency: apiData.assignedAgency,
@@ -564,5 +570,73 @@ export const applicationAPI = {
   // Get verification document URL for viewing
   getVerificationDocumentUrl: (id: string): string => {
     return `${apiClient.defaults.baseURL}/applications/${id}/verification-document`
+  },
+
+  // Get completed applications with filters and pagination
+  getCompletedApplications: async (filters: {
+    page?: number
+    limit?: number
+    search?: string
+    citizen_id?: string
+    application_id?: string
+    sheet_no?: string
+    date_from?: string
+    date_to?: string
+    sort_by?: string
+    sort_order?: 'ASC' | 'DESC'
+  } = {}): Promise<{
+    data: Application[]
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
+  }> => {
+    const params = new URLSearchParams()
+    
+    // Add all optional parameters
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.search) params.append('search', filters.search)
+    if (filters.citizen_id) params.append('citizen_id', filters.citizen_id)
+    if (filters.application_id) params.append('application_id', filters.application_id)
+    if (filters.sheet_no) params.append('sheet_no', filters.sheet_no)
+    if (filters.date_from) params.append('date_from', filters.date_from)
+    if (filters.date_to) params.append('date_to', filters.date_to)
+    if (filters.sort_by) params.append('sort_by', filters.sort_by)
+    if (filters.sort_order) params.append('sort_order', filters.sort_order)
+
+    const response = await apiClient.get(`/applications/completed?${params.toString()}`)
+    
+    console.log('Raw API response:', response.data)
+    
+    // Handle the actual API response structure
+    let applications = []
+    let paginationData: any = {}
+    
+    if (response.data.completed_applications) {
+      // API returns { completed_applications: [...], pagination: {...} }
+      applications = response.data.completed_applications.map(transformApplicationData)
+      paginationData = response.data.pagination || {}
+    } else if (response.data.data) {
+      // API returns { data: [...], page: 1, ... }
+      applications = response.data.data.map(transformApplicationData)
+      paginationData = response.data
+    } else {
+      // Fallback
+      applications = []
+      paginationData = {}
+    }
+    
+    return {
+      data: applications,
+      page: paginationData.current_page || paginationData.page || 1,
+      limit: paginationData.limit || 10,
+      total: paginationData.total_count || paginationData.total || 0,
+      totalPages: paginationData.total_pages || paginationData.totalPages || 0,
+      hasNext: paginationData.has_next || paginationData.hasNext || false,
+      hasPrev: paginationData.has_prev || paginationData.hasPrev || false
+    }
   },
 }

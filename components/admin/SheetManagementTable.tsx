@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { sheetsAPI, Sheet, SheetStats, SheetFilters } from "@/lib/api/sheets"
+import { sheetsAPI, Sheet } from "@/lib/api/sheets"
 import { userAPI } from "@/lib/api/users"
 import { locationsAPI } from "@/lib/api/locations"
 import { showNotification } from "@/lib/utils/notifications"
 import { formatDate } from "@/lib/utils/formatting"
+import { Search, Filter, ChevronLeft, ChevronRight, Upload, ClipboardList } from "lucide-react"
 import LocationSelector from "@/components/ui/location-selector"
 
 interface User {
@@ -21,9 +22,17 @@ interface User {
   role: string
 }
 
-export default function SheetManagementPage() {
+interface SheetFilters {
+  page: number
+  limit: number
+  operator_id?: number
+  location_id?: number
+  status?: 'EMPTY' | 'QC_PASS' | 'QC_FAIL'
+}
+
+export function SheetManagementTable() {
   const [sheets, setSheets] = useState<Sheet[]>([])
-  const [stats, setStats] = useState<SheetStats | null>(null)
+  const [stats, setStats] = useState<any>(null)
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState(false)
@@ -41,7 +50,7 @@ export default function SheetManagementPage() {
     page: 1,
     limit: 10
   })
-  
+
   // Separate filter input states
   const [filterInputs, setFilterInputs] = useState({
     operator_id: "all",
@@ -49,7 +58,7 @@ export default function SheetManagementPage() {
     status: "all",
     limit: "10"
   })
-  
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -67,34 +76,6 @@ export default function SheetManagementPage() {
   useEffect(() => {
     fetchData()
   }, [filters])
-
-  const applyFilters = () => {
-    setFilters(prev => ({
-      ...prev,
-      operator_id: filterInputs.operator_id && filterInputs.operator_id !== 'all' ? parseInt(filterInputs.operator_id) : undefined,
-      location_id: filterInputs.location_id && filterInputs.location_id !== 'all' ? parseInt(filterInputs.location_id) : undefined,
-      status: filterInputs.status && filterInputs.status !== 'all' ? filterInputs.status as 'EMPTY' | 'QC_PASS' | 'QC_FAIL' : undefined,
-      limit: parseInt(filterInputs.limit),
-      page: 1 // Reset to first page when applying filters
-    }))
-  }
-
-  const clearFilters = () => {
-    setFilterInputs({
-      operator_id: "all",
-      location_id: "all", 
-      status: "all",
-      limit: "10"
-    })
-    setFilters(prev => ({
-      ...prev,
-      operator_id: undefined,
-      location_id: undefined,
-      status: undefined,
-      limit: 10,
-      page: 1
-    }))
-  }
 
   const fetchData = async () => {
     try {
@@ -149,14 +130,15 @@ export default function SheetManagementPage() {
       }
       
       setSheets(sheetsArray)
-      setPagination(paginationData)
       setStats(statsData)
-      setUsers(usersData.filter((user: any) => user.role === 'MISSION_OPERATOR'))
+      setUsers(usersData || [])
+      setPagination(paginationData)
     } catch (error) {
       console.error('Error fetching data:', error)
-      showNotification.error("Failed to fetch data")
-      // Set default values on error
+      showNotification.error('Failed to fetch data')
       setSheets([])
+      setStats(null)
+      setUsers([])
       setPagination({
         page: 1,
         limit: 10,
@@ -170,9 +152,37 @@ export default function SheetManagementPage() {
     }
   }
 
+  const applyFilters = () => {
+    setFilters(prev => ({
+      ...prev,
+      operator_id: filterInputs.operator_id && filterInputs.operator_id !== 'all' ? parseInt(filterInputs.operator_id) : undefined,
+      location_id: filterInputs.location_id && filterInputs.location_id !== 'all' ? parseInt(filterInputs.location_id) : undefined,
+      status: filterInputs.status && filterInputs.status !== 'all' ? filterInputs.status as 'EMPTY' | 'QC_PASS' | 'QC_FAIL' : undefined,
+      limit: parseInt(filterInputs.limit),
+      page: 1 // Reset to first page when applying filters
+    }))
+  }
+
+  const clearFilters = () => {
+    setFilterInputs({
+      operator_id: "all",
+      location_id: "all", 
+      status: "all",
+      limit: "10"
+    })
+    setFilters(prev => ({
+      ...prev,
+      operator_id: undefined,
+      location_id: undefined,
+      status: undefined,
+      limit: 10,
+      page: 1
+    }))
+  }
+
   const handleAssignSheets = async () => {
-    if (!selectedOperator  || !sheetNumbers.trim()) {
-      showNotification.error("Please fill in all required fields")
+    if (!selectedOperator || !sheetNumbers.trim()) {
+      showNotification.error("Please select an operator and enter sheet numbers")
       return
     }
 
@@ -308,129 +318,120 @@ export default function SheetManagementPage() {
 
   if (!mounted || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-8">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p>Loading sheet management...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Loading sheet management...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Sheet Management</h1>
-        <Button 
-          onClick={() => {
-            console.log('Current filters:', filters)
-            console.log('Current sheets:', sheets)
-            console.log('Current pagination:', pagination)
-            fetchData()
-          }}
-          variant="outline"
-          size="sm"
-        >
-          Refresh Data
-        </Button>
+    <div className="space-y-6">
+      {/* Statistics Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Sheets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total_sheets}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Available Sheets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{stats.available_sheets}</div>
+            </CardContent>
+          </Card>
+          
+          {stats.qc_pass_sheets !== undefined && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">QC Pass</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{stats.qc_pass_sheets}</div>
+              </CardContent>
+            </Card>
+          )}
+          {stats.qc_fail_sheets !== undefined && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">QC Fail</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{stats.qc_fail_sheets}</div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Assignment Section */}
+      <div className="grid grid-cols-1 gap-6">
+        {/* Manual Assignment */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Assign Sheets Manually</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="operator">Operator</Label>
+                <Select value={selectedOperator} onValueChange={setSelectedOperator}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select operator" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users
+                      .filter(user => user.role === 'MISSION_OPERATOR')
+                      .map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.fullName} ({user.email})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sheetNumbers">Sheet Numbers</Label>
+              <textarea
+                id="sheetNumbers"
+                value={sheetNumbers}
+                onChange={(e) => setSheetNumbers(e.target.value)}
+                placeholder="Enter sheet numbers (comma or newline separated)"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={4}
+              />
+            </div>
+
+            <Button 
+              onClick={handleAssignSheets} 
+              disabled={assigning}
+              className="w-full"
+            >
+              {assigning ? "Assigning..." : "Assign Sheets"}
+            </Button>
+          </CardContent>
+        </Card>
+
+    
       </div>
-
-             {/* Statistics Cards */}
-       {stats && (
-                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-           <Card>
-             <CardHeader className="pb-2">
-               <CardTitle className="text-sm font-medium">Total Sheets</CardTitle>
-             </CardHeader>
-             <CardContent>
-               <div className="text-2xl font-bold">{stats.total_sheets}</div>
-             </CardContent>
-           </Card>
-           <Card>
-             <CardHeader className="pb-2">
-               <CardTitle className="text-sm font-medium">Available Sheets</CardTitle>
-             </CardHeader>
-             <CardContent>
-               <div className="text-2xl font-bold text-green-600">{stats.available_sheets}</div>
-             </CardContent>
-           </Card>
-           
-           {stats.qc_pass_sheets !== undefined && (
-             <Card>
-               <CardHeader className="pb-2">
-                 <CardTitle className="text-sm font-medium">QC Pass</CardTitle>
-               </CardHeader>
-               <CardContent>
-                 <div className="text-2xl font-bold text-green-600">{stats.qc_pass_sheets}</div>
-               </CardContent>
-             </Card>
-           )}
-           {stats.qc_fail_sheets !== undefined && (
-             <Card>
-               <CardHeader className="pb-2">
-                 <CardTitle className="text-sm font-medium">QC Fail</CardTitle>
-               </CardHeader>
-               <CardContent>
-                 <div className="text-2xl font-bold text-red-600">{stats.qc_fail_sheets}</div>
-               </CardContent>
-             </Card>
-           )}
-         </div>
-       )}
-
-             {/* Assignment Section */}
-       <div className="grid grid-cols-1 gap-6">
-         {/* Manual Assignment */}
-         <Card>
-           <CardHeader>
-             <CardTitle>Assign Sheets Manually</CardTitle>
-           </CardHeader>
-           <CardContent className="space-y-4">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <Label htmlFor="operator">Operator</Label>
-                 <Select value={selectedOperator} onValueChange={setSelectedOperator}>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Select operator" />
-                   </SelectTrigger>
-                   <SelectContent>
-                     {users.map((user) => (
-                       <SelectItem key={user.id} value={user.id}>
-                         {user.fullName} ({user.email})
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
-                 </Select>
-               </div>
-             </div>
-
-             <div className="space-y-2">
-               <Label htmlFor="sheetNumbers">Sheet Numbers</Label>
-               <textarea
-                 id="sheetNumbers"
-                 value={sheetNumbers}
-                 onChange={(e) => setSheetNumbers(e.target.value)}
-                 placeholder="Enter sheet numbers (comma or newline separated)"
-                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 rows={4}
-               />
-             </div>
-
-             <Button 
-               onClick={handleAssignSheets} 
-               disabled={assigning}
-               className="w-full"
-             >
-               {assigning ? "Assigning..." : "Assign Sheets"}
-             </Button>
-           </CardContent>
-         </Card>
-       </div>
 
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filters
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -445,11 +446,13 @@ export default function SheetManagementPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All operators</SelectItem>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.fullName}
-                    </SelectItem>
-                  ))}
+                  {users
+                    .filter(user => user.role === 'MISSION_OPERATOR')
+                    .map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.fullName}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -466,24 +469,24 @@ export default function SheetManagementPage() {
               />
             </div>
 
-                          <div className="space-y-2">
-                <Label htmlFor="filterStatus">Status</Label>
-                <Select 
-                  value={filterInputs.status} 
-                  onValueChange={(value) => setFilterInputs(prev => ({ 
-                    ...prev, 
-                    status: value 
-                  }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status (or leave empty for all)" />
-                  </SelectTrigger>
-                                 <SelectContent>
-                   <SelectItem value="all">All statuses</SelectItem>
-                   <SelectItem value="EMPTY">Empty</SelectItem>
-                   <SelectItem value="QC_PASS">QC Pass</SelectItem>
-                   <SelectItem value="QC_FAIL">QC Fail</SelectItem>
-                 </SelectContent>
+            <div className="space-y-2">
+              <Label htmlFor="filterStatus">Status</Label>
+              <Select 
+                value={filterInputs.status} 
+                onValueChange={(value) => setFilterInputs(prev => ({ 
+                  ...prev, 
+                  status: value 
+                }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status (or leave empty for all)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="EMPTY">Empty</SelectItem>
+                  <SelectItem value="QC_PASS">QC Pass</SelectItem>
+                  <SelectItem value="QC_FAIL">QC Fail</SelectItem>
+                </SelectContent>
               </Select>
             </div>
             
@@ -523,7 +526,7 @@ export default function SheetManagementPage() {
       {/* Sheets Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Sheets</CardTitle>
+          <CardTitle>Sheets ({pagination.total})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -547,20 +550,20 @@ export default function SheetManagementPage() {
                     <td className="border border-gray-300 px-4 py-2">
                       {sheet.operator_name}
                     </td>
-                                         <td className="border border-gray-300 px-4 py-2">
-                                               <Badge 
-                          variant={
-                            sheet.status === 'QC_PASS' ? 'default' :
-                            sheet.status === 'QC_FAIL' ? 'destructive' : 
-                            'secondary'
-                          }
-                          className={
-                            sheet.status === 'QC_PASS' ? 'bg-green-600 hover:bg-green-700' : ''
-                          }
-                        >
-                         {sheet.status}
-                       </Badge>
-                     </td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      <Badge 
+                        variant={
+                          sheet.status === 'QC_PASS' ? 'default' :
+                          sheet.status === 'QC_FAIL' ? 'destructive' : 
+                          'secondary'
+                        }
+                        className={
+                          sheet.status === 'QC_PASS' ? 'bg-green-600 hover:bg-green-700' : ''
+                        }
+                      >
+                        {sheet.status}
+                      </Badge>
+                    </td>
                     <td className="border border-gray-300 px-4 py-2">
                       {formatDate(sheet.issued_at)}
                     </td>
@@ -597,6 +600,7 @@ export default function SheetManagementPage() {
                   }}
                   disabled={!pagination.hasPrev}
                 >
+                  <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
                 <div className="flex items-center space-x-1">
@@ -617,9 +621,6 @@ export default function SheetManagementPage() {
                       </Button>
                     )
                   })}
-                  {pagination.totalPages > 5 && (
-                    <span className="px-2 text-sm text-gray-500">...</span>
-                  )}
                 </div>
                 <Button
                   variant="outline"
@@ -631,6 +632,7 @@ export default function SheetManagementPage() {
                   disabled={!pagination.hasNext}
                 >
                   Next
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>

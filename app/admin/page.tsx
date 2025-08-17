@@ -7,6 +7,9 @@ import { Users, FileText, CheckCircle, XCircle, Plus, UserPlus, ClipboardList, M
 import { ApplicationsTable } from "@/components/dashboard/ApplicationsTable"
 import { UserManagementTable } from "@/components/admin/UserManagementTable"
 import { CreateUserModal } from "@/components/admin/CreateUserModal"
+import { CompletedApplicationsTable } from "@/components/admin/CompletedApplicationsTable"
+import { LocationManagementTable } from "@/components/admin/LocationManagementTable"
+import { SheetManagementTable } from "@/components/admin/SheetManagementTable"
 import { Application } from "@/lib/types"
 import { applicationAPI } from "@/lib/api/applications"
 import { showNotification } from "@/lib/utils/notifications"
@@ -16,7 +19,7 @@ import { useAuthStore } from "@/lib/stores/auth-store"
 export default function AdminDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'applications' | 'users' | 'sheets' | 'locations'>('applications')
+  const [activeTab, setActiveTab] = useState<'applications' | 'users' | 'sheets' | 'locations' | 'completed'>('applications')
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
   const { logout } = useAuthStore()
   const [stats, setStats] = useState({
@@ -115,6 +118,16 @@ export default function AdminDashboard() {
            >
              Location Management
            </button>
+           <button
+             onClick={() => setActiveTab('completed')}
+             className={`px-6 py-3 font-medium text-sm ${
+               activeTab === 'completed'
+                 ? 'border-b-2 border-blue-500 text-blue-600'
+                 : 'text-gray-500 hover:text-gray-700'
+             }`}
+           >
+             Completed Applications
+           </button>
         </div>
 
         {/* Stats Cards */}
@@ -186,61 +199,15 @@ export default function AdminDashboard() {
         )}
 
                  {activeTab === 'sheets' && (
-           <div className="space-y-4">
-             <div className="flex justify-between items-center">
-               <h2 className="text-xl font-semibold">Sheet Management</h2>
-               <Button
-                 onClick={() => window.location.href = '/admin/sheets'}
-                 className="flex items-center gap-2"
-               >
-                 <ClipboardList className="h-4 w-4" />
-                 Manage Sheets
-               </Button>
-             </div>
-             <div className="text-center py-8">
-               <ClipboardList className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-               <h3 className="text-lg font-medium text-gray-900 mb-2">Sheet Management</h3>
-               <p className="text-gray-500 mb-4">
-                 Assign sheet numbers to operators and track their usage.
-               </p>
-               <Button
-                 onClick={() => window.location.href = '/admin/sheets'}
-                 className="flex items-center gap-2 mx-auto"
-               >
-                 <ClipboardList className="h-4 w-4" />
-                 Go to Sheet Management
-               </Button>
-             </div>
-           </div>
+           <SheetManagementTable />
          )}
 
          {activeTab === 'locations' && (
-           <div className="space-y-4">
-             <div className="flex justify-between items-center">
-               <h2 className="text-xl font-semibold">Location Management</h2>
-               <Button
-                 onClick={() => window.location.href = '/admin/locations'}
-                 className="flex items-center gap-2"
-               >
-                 <MapPin className="h-4 w-4" />
-                 Manage Locations
-               </Button>
-             </div>
-             <div className="text-center py-8">
-               <MapPin className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-               <h3 className="text-lg font-medium text-gray-900 mb-2">Location Management</h3>
-               <p className="text-gray-500 mb-4">
-                 Manage foreign mission offices and locations for sheet assignments.
-               </p>
-               <Button
-                 onClick={() => window.location.href = '/admin/locations'}
-                 className="flex items-center gap-2 mx-auto"
-               >
-                 <MapPin className="h-4 w-4" />
-                 Go to Location Management
-               </Button>
-             </div>
-           </div>
+           <LocationManagementTable />
+         )}
+
+         {activeTab === 'completed' && (
+           <CompletedApplicationsTable />
          )}
 
         {/* Create User Modal */}

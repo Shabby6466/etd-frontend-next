@@ -61,6 +61,11 @@ export interface Application {
   securityDeposit: string
   investor: string
   requestedBy?: string
+  print_time_stamp?: string
+  print_user_id?: string
+  qc_time_stamp?: string
+  active?: boolean
+  created_by_id?: string
   reason_for_deport: string
   transportMode: string
   isFiaBlacklist?: boolean
@@ -71,6 +76,7 @@ export interface Application {
   remarks?: string
   region?: Region
   assignedAgency?: string
+  sheet_no?: string
   attachments?: ApplicationAttachment[]
   approvalHistory?: ApprovalHistory[]
   createdBy?: {
