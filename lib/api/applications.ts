@@ -360,7 +360,7 @@ export const applicationAPI = {
       console.log('User from store:', user)
       
       // Determine agency from current user
-      userAgency = user?.agency
+      userAgency = user?.agency || user?.state
       if (!userAgency) {
         // For testing: if user is MINISTRY or AGENCY, determine agency from state
         if (user?.role === 'MINISTRY' || user?.role === 'AGENCY') {

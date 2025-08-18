@@ -111,6 +111,16 @@ export interface Application {
   passport_api_data?: any
   // Processing fields
   processing?: Processing
+  // Agency tracking fields
+  agency_tracking?: Array<{
+    id: number
+    agency_name: string
+    status: string
+    remarks?: string
+    attachment_url?: string
+    submitted_at?: string
+    completed_at?: string
+  }>
 }
 
 export interface ApplicationAttachment {

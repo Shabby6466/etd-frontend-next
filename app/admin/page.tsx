@@ -10,6 +10,7 @@ import { CreateUserModal } from "@/components/admin/CreateUserModal"
 import { CompletedApplicationsTable } from "@/components/admin/CompletedApplicationsTable"
 import { LocationManagementTable } from "@/components/admin/LocationManagementTable"
 import { SheetManagementTable } from "@/components/admin/SheetManagementTable"
+import { AgencyStatistics } from "@/components/admin/AgencyStatistics"
 import { Application } from "@/lib/types"
 import { applicationAPI } from "@/lib/api/applications"
 import { showNotification } from "@/lib/utils/notifications"
@@ -19,7 +20,7 @@ import { useAuthStore } from "@/lib/stores/auth-store"
 export default function AdminDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'applications' | 'users' | 'sheets' | 'locations' | 'completed'>('applications')
+  const [activeTab, setActiveTab] = useState<'applications' | 'users' | 'sheets' | 'locations' | 'completed' | 'agency-stats'>('applications')
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
   const { logout } = useAuthStore()
   const [stats, setStats] = useState({
@@ -128,6 +129,16 @@ export default function AdminDashboard() {
            >
              Completed Applications
            </button>
+           <button
+             onClick={() => setActiveTab('agency-stats')}
+             className={`px-6 py-3 font-medium text-sm ${
+               activeTab === 'agency-stats'
+                 ? 'border-b-2 border-blue-500 text-blue-600'
+                 : 'text-gray-500 hover:text-gray-700'
+             }`}
+           >
+             Agency Statistics
+           </button>
         </div>
 
         {/* Stats Cards */}
@@ -208,6 +219,10 @@ export default function AdminDashboard() {
 
          {activeTab === 'completed' && (
            <CompletedApplicationsTable />
+         )}
+
+         {activeTab === 'agency-stats' && (
+           <AgencyStatistics />
          )}
 
         {/* Create User Modal */}

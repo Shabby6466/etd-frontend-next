@@ -1,0 +1,951 @@
+# Agency Tracking API Documentation
+
+## Overview
+The Agency Tracking system provides detailed tracking of agency verification processes for applications. It replaces the previous JSON-based agency tracking with a relational database structure for better performance and reporting.
+
+---
+
+## 🔐 Authentication
+All endpoints require JWT authentication:
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+---
+
+## 📋 API Endpoints
+
+### 1. Get Agency Statistics (Admin/Ministry Only)
+**GET** `/v1/api/agency-tracking/statistics/overview`
+
+**Description:** Retrieve statistics for all agencies across all applications.
+
+**Access:** ADMIN, MINISTRY
+
+**Response:**
+```json
+{
+  "agency_statistics": [
+    {
+      "agency_name": "INTELLIGENCE_BUREAU",
+      "status": "PENDING",
+      "count": "5"
+    },
+    {
+      "agency_name": "INTELLIGENCE_BUREAU", 
+      "status": "COMPLETED",
+      "count": "12"
+    },
+    {
+      "agency_name": "SPECIAL_BRANCH_PUNJAB",
+      "status": "PENDING",
+      "count": "3"
+    }
+  ]
+}
+```
+
+---
+
+### 2. Get Agency Tracking for Application
+**GET** `/v1/api/agency-tracking/:applicationId`
+
+**Description:** Retrieve all agency tracking records for a specific application.
+
+**Access:** ADMIN, MINISTRY, AGENCY, MISSION_OPERATOR
+
+**Parameters:**
+- `applicationId` (path): Application ID (e.g., "10000000003E")
+
+**Response:**
+```json
+{
+  "application_id": "10000000003E",
+  "agency_tracking": [
+    {
+      "id": 1,
+      "application_id": "10000000003E",
+      "agency_name": "INTELLIGENCE_BUREAU",
+      "status": "PENDING",
+      "remarks": null,
+      "attachment_url": null,
+      "submitted_at": null,
+      "submitted_by_user_id": 2,
+      "completed_at": null,
+      "completed_by_user_id": null,
+      "created_at": "2025-08-17T22:30:00.000Z",
+      "updated_at": "2025-08-17T22:30:00.000Z",
+      "submittedBy": {
+        "id": 2,
+        "email": "ministry@example.com",
+        "fullName": "Ministry User",
+        "role": "MINISTRY"
+      },
+      "completedBy": null
+    },
+    {
+      "id": 2,
+      "application_id": "10000000003E", 
+      "agency_name": "SPECIAL_BRANCH_PUNJAB",
+      "status": "COMPLETED",
+      "remarks": "Verification completed successfully",
+      "attachment_url": "uploads/attachments/123/file.pdf",
+      "submitted_at": "2025-08-17T22:30:00.000Z",
+      "submitted_by_user_id": 2,
+      "completed_at": "2025-08-17T22:35:00.000Z",
+      "completed_by_user_id": 3,
+      "created_at": "2025-08-17T22:30:00.000Z",
+      "updated_at": "2025-08-17T22:35:00.000Z",
+      "submittedBy": {
+        "id": 2,
+        "email": "ministry@example.com",
+        "fullName": "Ministry User",
+        "role": "MINISTRY"
+      },
+      "completedBy": {
+        "id": 3,
+        "email": "agency@example.com",
+        "fullName": "Agency User",
+        "role": "AGENCY"
+      }
+    }
+  ]
+}
+```
+
+---
+
+### 3. Get Specific Agency Tracking
+**GET** `/v1/api/agency-tracking/:applicationId/:agencyName`
+
+**Description:** Retrieve agency tracking record for a specific agency and application.
+
+**Access:** ADMIN, MINISTRY, AGENCY, MISSION_OPERATOR
+
+**Parameters:**
+- `applicationId` (path): Application ID (e.g., "10000000003E")
+- `agencyName` (path): Agency name (e.g., "INTELLIGENCE_BUREAU")
+
+**Response:**
+```json
+{
+  "id": 1,
+  "application_id": "10000000003E",
+  "agency_name": "INTELLIGENCE_BUREAU",
+  "status": "COMPLETED",
+  "remarks": "Verification completed successfully",
+  "attachment_url": "uploads/attachments/123/file.pdf",
+  "submitted_at": "2025-08-17T22:30:00.000Z",
+  "submitted_by_user_id": 2,
+  "completed_at": "2025-08-17T22:35:00.000Z",
+  "completed_by_user_id": 3,
+  "created_at": "2025-08-17T22:30:00.000Z",
+  "updated_at": "2025-08-17T22:35:00.000Z",
+  "submittedBy": {
+    "id": 2,
+    "email": "ministry@example.com",
+    "fullName": "Ministry User",
+    "role": "MINISTRY"
+  },
+  "completedBy": {
+    "id": 3,
+    "email": "agency@example.com",
+    "fullName": "Agency User",
+    "role": "AGENCY"
+  }
+}
+```
+
+---
+
+### 4. Get Pending Agencies
+**GET** `/v1/api/agency-tracking/:applicationId/pending`
+
+**Description:** Retrieve all pending agency tracking records for an application.
+
+**Access:** ADMIN, MINISTRY, AGENCY, MISSION_OPERATOR
+
+**Parameters:**
+- `applicationId` (path): Application ID (e.g., "10000000003E")
+
+**Response:**
+```json
+{
+  "application_id": "10000000003E",
+  "pending_agencies": [
+    {
+      "id": 1,
+      "application_id": "10000000003E",
+      "agency_name": "INTELLIGENCE_BUREAU",
+      "status": "PENDING",
+      "remarks": null,
+      "attachment_url": null,
+      "submitted_at": null,
+      "submitted_by_user_id": 2,
+      "completed_at": null,
+      "completed_by_user_id": null,
+      "created_at": "2025-08-17T22:30:00.000Z",
+      "updated_at": "2025-08-17T22:30:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### 5. Get Completed Agencies
+**GET** `/v1/api/agency-tracking/:applicationId/completed`
+
+**Description:** Retrieve all completed agency tracking records for an application.
+
+**Access:** ADMIN, MINISTRY, AGENCY, MISSION_OPERATOR
+
+**Parameters:**
+- `applicationId` (path): Application ID (e.g., "10000000003E")
+
+**Response:**
+```json
+{
+  "application_id": "10000000003E",
+  "completed_agencies": [
+    {
+      "id": 2,
+      "application_id": "10000000003E",
+      "agency_name": "SPECIAL_BRANCH_PUNJAB",
+      "status": "COMPLETED",
+      "remarks": "Verification completed successfully",
+      "attachment_url": "uploads/attachments/123/file.pdf",
+      "submitted_at": "2025-08-17T22:30:00.000Z",
+      "submitted_by_user_id": 2,
+      "completed_at": "2025-08-17T22:35:00.000Z",
+      "completed_by_user_id": 3,
+      "created_at": "2025-08-17T22:30:00.000Z",
+      "updated_at": "2025-08-17T22:35:00.000Z",
+      "submittedBy": {
+        "id": 2,
+        "email": "ministry@example.com",
+        "fullName": "Ministry User",
+        "role": "MINISTRY"
+      },
+      "completedBy": {
+        "id": 3,
+        "email": "agency@example.com",
+        "fullName": "Agency User",
+        "role": "AGENCY"
+      }
+    }
+  ]
+}
+```
+
+---
+
+### 6. Submit Agency Verification (Agency Only)
+**POST** `/v1/api/agency-tracking/:applicationId/:agencyName/submit`
+
+**Description:** Submit verification remarks and attachment for a specific agency.
+
+**Access:** AGENCY
+
+**Parameters:**
+- `applicationId` (path): Application ID (e.g., "10000000003E")
+- `agencyName` (path): Agency name (e.g., "INTELLIGENCE_BUREAU")
+
+**Request Body (multipart/form-data):**
+```json
+{
+  "agency_name": "INTELLIGENCE_BUREAU",
+  "remarks": "Verification completed successfully",
+  "attachment_url": "uploads/attachments/123/file.pdf" // Optional
+}
+```
+
+**File Upload:**
+- `attachment`: PDF file (optional, max 5MB)
+
+**Response:**
+```json
+{
+  "message": "Agency verification submitted successfully",
+  "agency_tracking": {
+    "id": 1,
+    "application_id": "10000000003E",
+    "agency_name": "INTELLIGENCE_BUREAU",
+    "status": "COMPLETED",
+    "remarks": "Verification completed successfully",
+    "attachment_url": "uploads/attachments/123/file.pdf",
+    "submitted_at": "2025-08-17T22:30:00.000Z",
+    "submitted_by_user_id": 2,
+    "completed_at": "2025-08-17T22:35:00.000Z",
+    "completed_by_user_id": 3,
+    "created_at": "2025-08-17T22:30:00.000Z",
+    "updated_at": "2025-08-17T22:35:00.000Z"
+  }
+}
+```
+
+---
+
+## 🔄 Updated Existing APIs
+
+### Updated: Get Application by ID
+**GET** `/v1/api/applications/:id`
+
+**New Response Field:**
+```json
+{
+  "application_id": "10000000003E",
+  "citizen_id": "1234567890123",
+  "first_name": "John",
+  "last_name": "Doe",
+  // ... other application fields
+  "processing": {
+    "tracking_id": "10000000003E",
+    "sheet_no": "2001",
+    "print_time_stamp": "2025-08-17T20:21:09.456Z",
+    "print_user_id": 2
+  },
+  "agency_tracking": [
+    {
+      "id": 1,
+      "agency_name": "INTELLIGENCE_BUREAU",
+      "status": "PENDING",
+      "remarks": null,
+      "attachment_url": null,
+      "submitted_at": null,
+      "completed_at": null,
+      "created_at": "2025-08-17T22:30:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## 🎯 Agency Status Values
+
+```typescript
+enum AgencyTrackingStatus {
+  PENDING = "PENDING",
+  COMPLETED = "COMPLETED", 
+  FAILED = "FAILED"
+}
+```
+
+---
+
+## 🏢 Available Agency Names
+
+```typescript
+enum VerificationAgency {
+  INTELLIGENCE_BUREAU = "INTELLIGENCE_BUREAU",
+  SPECIAL_BRANCH_PUNJAB = "SPECIAL_BRANCH_PUNJAB",
+  SPECIAL_BRANCH_SINDH = "SPECIAL_BRANCH_SINDH",
+  SPECIAL_BRANCH_KPK = "SPECIAL_BRANCH_KPK",
+  SPECIAL_BRANCH_BALOCHISTAN = "SPECIAL_BRANCH_BALOCHISTAN",
+  SPECIAL_BRANCH_FEDERAL = "SPECIAL_BRANCH_FEDERAL"
+}
+```
+
+---
+
+## 🚀 Frontend Integration Guide
+
+### 1. Agency Tracking Dashboard Component
+
+```typescript
+// components/AgencyTrackingDashboard.tsx
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+interface AgencyTracking {
+  id: number;
+  application_id: string;
+  agency_name: string;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  remarks?: string;
+  attachment_url?: string;
+  submitted_at?: string;
+  completed_at?: string;
+  submittedBy?: {
+    id: number;
+    email: string;
+    fullName: string;
+    role: string;
+  };
+  completedBy?: {
+    id: number;
+    email: string;
+    fullName: string;
+    role: string;
+  };
+}
+
+const AgencyTrackingDashboard: React.FC<{ applicationId: string }> = ({ applicationId }) => {
+  const [tracking, setTracking] = useState<AgencyTracking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchAgencyTracking();
+  }, [applicationId]);
+
+  const fetchAgencyTracking = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`/v1/api/agency-tracking/${applicationId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setTracking(response.data.agency_tracking);
+    } catch (err) {
+      setError('Failed to fetch agency tracking');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
+      case 'COMPLETED': return 'bg-green-100 text-green-800';
+      case 'FAILED': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (loading) return <div>Loading agency tracking...</div>;
+  if (error) return <div className="text-red-600">{error}</div>;
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h2 className="text-xl font-semibold mb-4">Agency Tracking</h2>
+      <div className="space-y-4">
+        {tracking.map((agency) => (
+          <div key={agency.id} className="border rounded-lg p-4">
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-medium">{agency.agency_name}</h3>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(agency.status)}`}>
+                {agency.status}
+              </span>
+            </div>
+            
+            {agency.remarks && (
+              <p className="text-gray-600 text-sm mb-2">{agency.remarks}</p>
+            )}
+            
+            <div className="text-xs text-gray-500 space-y-1">
+              <p>Submitted: {agency.submitted_at ? new Date(agency.submitted_at).toLocaleString() : 'Not submitted'}</p>
+              {agency.completed_at && (
+                <p>Completed: {new Date(agency.completed_at).toLocaleString()}</p>
+              )}
+              {agency.attachment_url && (
+                <a 
+                  href={agency.attachment_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View Attachment
+                </a>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default AgencyTrackingDashboard;
+```
+
+### 2. Agency Verification Submission Component
+
+```typescript
+// components/AgencyVerificationForm.tsx
+import React, { useState } from 'react';
+import axios from 'axios';
+
+interface AgencyVerificationFormProps {
+  applicationId: string;
+  agencyName: string;
+  onSuccess: () => void;
+}
+
+const AgencyVerificationForm: React.FC<AgencyVerificationFormProps> = ({
+  applicationId,
+  agencyName,
+  onSuccess
+}) => {
+  const [remarks, setRemarks] = useState('');
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('agency_name', agencyName);
+      formData.append('remarks', remarks);
+      if (attachment) {
+        formData.append('attachment', attachment);
+      }
+
+      await axios.post(
+        `/v1/api/agency-tracking/${applicationId}/${agencyName}/submit`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      onSuccess();
+      setRemarks('');
+      setAttachment(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to submit verification');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Agency: {agencyName}
+        </label>
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Remarks *
+        </label>
+        <textarea
+          value={remarks}
+          onChange={(e) => setRemarks(e.target.value)}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          rows={4}
+          placeholder="Enter verification remarks..."
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Attachment (PDF, max 5MB)
+        </label>
+        <input
+          type="file"
+          accept=".pdf"
+          onChange={(e) => setAttachment(e.target.files?.[0] || null)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      {error && (
+        <div className="text-red-600 text-sm">{error}</div>
+      )}
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+      >
+        {loading ? 'Submitting...' : 'Submit Verification'}
+      </button>
+    </form>
+  );
+};
+
+export default AgencyVerificationForm;
+```
+
+### 3. Agency Statistics Component
+
+```typescript
+// components/AgencyStatistics.tsx
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+interface AgencyStatistic {
+  agency_name: string;
+  status: string;
+  count: string;
+}
+
+const AgencyStatistics: React.FC = () => {
+  const [statistics, setStatistics] = useState<AgencyStatistic[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStatistics();
+  }, []);
+
+  const fetchStatistics = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/v1/api/agency-tracking/statistics/overview', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setStatistics(response.data.agency_statistics);
+    } catch (err) {
+      console.error('Failed to fetch statistics:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
+      case 'COMPLETED': return 'bg-green-100 text-green-800';
+      case 'FAILED': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (loading) return <div>Loading statistics...</div>;
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h2 className="text-xl font-semibold mb-4">Agency Statistics</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {statistics.map((stat, index) => (
+          <div key={index} className="border rounded-lg p-4">
+            <h3 className="font-medium text-gray-900">{stat.agency_name}</h3>
+            <div className="flex items-center justify-between mt-2">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(stat.status)}`}>
+                {stat.status}
+              </span>
+              <span className="text-2xl font-bold text-blue-600">{stat.count}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default AgencyStatistics;
+```
+
+### 4. Updated Application Detail Component
+
+```typescript
+// components/ApplicationDetail.tsx
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import AgencyTrackingDashboard from './AgencyTrackingDashboard';
+
+interface Application {
+  application_id: string;
+  citizen_id: string;
+  first_name: string;
+  last_name: string;
+  status: string;
+  processing?: {
+    tracking_id: string;
+    sheet_no: string;
+    print_time_stamp: string;
+    print_user_id: number;
+  };
+  agency_tracking?: Array<{
+    id: number;
+    agency_name: string;
+    status: string;
+    remarks?: string;
+    attachment_url?: string;
+    submitted_at?: string;
+    completed_at?: string;
+  }>;
+}
+
+const ApplicationDetail: React.FC<{ applicationId: string }> = ({ applicationId }) => {
+  const [application, setApplication] = useState<Application | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchApplication();
+  }, [applicationId]);
+
+  const fetchApplication = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`/v1/api/applications/${applicationId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setApplication(response.data);
+    } catch (err) {
+      console.error('Failed to fetch application:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div>Loading application...</div>;
+  if (!application) return <div>Application not found</div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Application Details */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold mb-4">Application Details</h1>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-500">Application ID</label>
+            <p className="text-lg">{application.application_id}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Citizen ID</label>
+            <p className="text-lg">{application.citizen_id}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Name</label>
+            <p className="text-lg">{application.first_name} {application.last_name}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Status</label>
+            <p className="text-lg">{application.status}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Processing Information */}
+      {application.processing && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Processing Information</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">Sheet Number</label>
+              <p className="text-lg">{application.processing.sheet_no}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Print Time</label>
+              <p className="text-lg">
+                {new Date(application.processing.print_time_stamp).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Agency Tracking */}
+      <AgencyTrackingDashboard applicationId={applicationId} />
+    </div>
+  );
+};
+
+export default ApplicationDetail;
+```
+
+---
+
+## 🔧 API Service Functions
+
+```typescript
+// services/agencyTrackingService.ts
+import axios from 'axios';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3837';
+
+export const agencyTrackingService = {
+  // Get agency statistics
+  getStatistics: async () => {
+    const response = await axios.get(`${API_BASE_URL}/v1/api/agency-tracking/statistics/overview`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    return response.data;
+  },
+
+  // Get agency tracking for application
+  getAgencyTracking: async (applicationId: string) => {
+    const response = await axios.get(`${API_BASE_URL}/v1/api/agency-tracking/${applicationId}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    return response.data;
+  },
+
+  // Get specific agency tracking
+  getAgencyTrackingByAgency: async (applicationId: string, agencyName: string) => {
+    const response = await axios.get(`${API_BASE_URL}/v1/api/agency-tracking/${applicationId}/${agencyName}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    return response.data;
+  },
+
+  // Get pending agencies
+  getPendingAgencies: async (applicationId: string) => {
+    const response = await axios.get(`${API_BASE_URL}/v1/api/agency-tracking/${applicationId}/pending`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    return response.data;
+  },
+
+  // Get completed agencies
+  getCompletedAgencies: async (applicationId: string) => {
+    const response = await axios.get(`${API_BASE_URL}/v1/api/agency-tracking/${applicationId}/completed`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    return response.data;
+  },
+
+  // Submit agency verification
+  submitVerification: async (applicationId: string, agencyName: string, data: FormData) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/v1/api/agency-tracking/${applicationId}/${agencyName}/submit`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+    return response.data;
+  }
+};
+```
+
+---
+
+## 📱 Usage Examples
+
+### 1. Display Agency Tracking in Application List
+```typescript
+// In your application list component
+const ApplicationList = () => {
+  const [applications, setApplications] = useState([]);
+
+  const handleViewAgencyTracking = async (applicationId: string) => {
+    try {
+      const tracking = await agencyTrackingService.getAgencyTracking(applicationId);
+      // Open modal or navigate to tracking details
+      console.log('Agency tracking:', tracking);
+    } catch (error) {
+      console.error('Failed to fetch agency tracking:', error);
+    }
+  };
+
+  return (
+    <div>
+      {applications.map(app => (
+        <div key={app.application_id}>
+          <span>{app.application_id}</span>
+          <button onClick={() => handleViewAgencyTracking(app.application_id)}>
+            View Agency Tracking
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+};
+```
+
+### 2. Agency Dashboard for Statistics
+```typescript
+// In your admin/ministry dashboard
+const AdminDashboard = () => {
+  const [statistics, setStatistics] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const stats = await agencyTrackingService.getStatistics();
+        setStatistics(stats);
+      } catch (error) {
+        console.error('Failed to fetch statistics:', error);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  return (
+    <div>
+      <h1>Admin Dashboard</h1>
+      <AgencyStatistics />
+    </div>
+  );
+};
+```
+
+### 3. Agency User Verification Form
+```typescript
+// For agency users to submit verification
+const AgencyVerificationPage = () => {
+  const { applicationId, agencyName } = useParams();
+
+  const handleVerificationSubmit = async (formData: FormData) => {
+    try {
+      await agencyTrackingService.submitVerification(applicationId, agencyName, formData);
+      // Show success message and redirect
+    } catch (error) {
+      // Handle error
+    }
+  };
+
+  return (
+    <div>
+      <h1>Submit Verification for {agencyName}</h1>
+      <AgencyVerificationForm
+        applicationId={applicationId}
+        agencyName={agencyName}
+        onSuccess={() => console.log('Verification submitted successfully')}
+      />
+    </div>
+  );
+};
+```
+
+---
+
+## 🎨 UI/UX Recommendations
+
+1. **Status Indicators**: Use color-coded badges for agency status (PENDING=yellow, COMPLETED=green, FAILED=red)
+2. **Progress Tracking**: Show progress bars for applications with multiple agencies
+3. **Real-time Updates**: Consider WebSocket integration for real-time status updates
+4. **Filtering**: Add filters for status, agency, and date ranges
+5. **Export**: Add export functionality for agency tracking reports
+6. **Notifications**: Implement notifications for agency status changes
+7. **Mobile Responsive**: Ensure all components work well on mobile devices
+
+---
+
+## 🔒 Security Considerations
+
+1. **Role-based Access**: Ensure proper role checking on frontend and backend
+2. **File Upload Security**: Validate file types and sizes
+3. **Input Validation**: Sanitize all user inputs
+4. **Token Management**: Properly handle JWT token expiration
+5. **Error Handling**: Don't expose sensitive information in error messages
+
+---
+
+## 🧪 Testing
+
+### API Testing with cURL
+```bash
+# Get agency tracking
+curl -X GET "http://localhost:3837/v1/api/agency-tracking/10000000003E" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Submit verification
+curl -X POST "http://localhost:3837/v1/api/agency-tracking/10000000003E/INTELLIGENCE_BUREAU/submit" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "agency_name=INTELLIGENCE_BUREAU" \
+  -F "remarks=Verification completed" \
+  -F "attachment=@/path/to/file.pdf"
+
+# Get statistics
+curl -X GET "http://localhost:3837/v1/api/agency-tracking/statistics/overview" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+This comprehensive documentation provides everything needed to integrate the new agency tracking APIs into your frontend application!
