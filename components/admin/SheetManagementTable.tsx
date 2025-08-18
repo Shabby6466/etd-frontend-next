@@ -12,7 +12,7 @@ import { userAPI } from "@/lib/api/users"
 import { locationsAPI } from "@/lib/api/locations"
 import { showNotification } from "@/lib/utils/notifications"
 import { formatDate } from "@/lib/utils/formatting"
-import { Search, Filter, ChevronLeft, ChevronRight, Upload, ClipboardList } from "lucide-react"
+import { Search, Filter, ChevronLeft, ChevronRight, Upload, ClipboardList, RefreshCw } from "lucide-react"
 import LocationSelector from "@/components/ui/location-selector"
 
 interface User {
@@ -526,7 +526,19 @@ export function SheetManagementTable() {
       {/* Sheets Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Sheets ({pagination.total})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Sheets ({pagination.total})</CardTitle>
+            <Button 
+              onClick={fetchData} 
+              variant="outline" 
+              size="sm"
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Edit } from "lucide-react"
+import { Trash2, Edit, RefreshCw } from "lucide-react"
 import { User } from "@/lib/types"
 import { showNotification } from "@/lib/utils/notifications"
 import { userAPI } from "@/lib/api/users"
@@ -95,7 +95,19 @@ export function UserManagementTable() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>All Users ({users.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>All Users ({users.length})</CardTitle>
+            <Button 
+              onClick={fetchUsers} 
+              variant="outline" 
+              size="sm"
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

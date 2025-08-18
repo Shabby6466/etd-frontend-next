@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Send, Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
+import { FileText, Send, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react"
 import { ApplicationsTable } from "@/components/dashboard/ApplicationsTable"
 import { Application, Region } from "@/lib/types"
 import { applicationAPI } from "@/lib/api/applications"
@@ -115,6 +115,16 @@ export default function MinistryDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-4">
+            <Button 
+              onClick={fetchApplications} 
+              variant="outline" 
+              size="sm"
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
             <Button 
               variant="outline" 
               onClick={async () => {

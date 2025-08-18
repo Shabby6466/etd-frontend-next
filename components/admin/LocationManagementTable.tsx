@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { locationsAPI, Location } from "@/lib/api/locations"
 import { showNotification } from "@/lib/utils/notifications"
 import { formatDate } from "@/lib/utils/formatting"
-import { Search, Filter, ChevronLeft, ChevronRight, Plus, Edit, Trash2 } from "lucide-react"
+import { Search, Filter, ChevronLeft, ChevronRight, Plus, Edit, Trash2, RefreshCw } from "lucide-react"
 
 interface LocationFilters {
   page: number
@@ -226,7 +226,19 @@ export function LocationManagementTable() {
       {/* Locations Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Locations ({pagination.total})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Locations ({pagination.total})</CardTitle>
+            <Button 
+              onClick={fetchLocations} 
+              variant="outline" 
+              size="sm"
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

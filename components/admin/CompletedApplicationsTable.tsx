@@ -11,7 +11,7 @@ import { applicationAPI } from "@/lib/api/applications"
 import { Application } from "@/lib/types"
 import { showNotification } from "@/lib/utils/notifications"
 import { formatDate } from "@/lib/utils/formatting"
-import { Search, Filter, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, Filter, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
 
 interface CompletedApplicationFilters {
   page: number
@@ -309,7 +309,19 @@ export function CompletedApplicationsTable() {
       {/* Applications Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Completed Applications ({pagination.total})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Completed Applications ({pagination.total})</CardTitle>
+            <Button 
+              onClick={fetchCompletedApplications} 
+              variant="outline" 
+              size="sm"
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

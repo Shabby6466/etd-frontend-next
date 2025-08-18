@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { sheetsAPI, Sheet, SheetStats } from "@/lib/api/sheets"
 import { showNotification } from "@/lib/utils/notifications"
 import { formatDate } from "@/lib/utils/formatting"
+import { RefreshCw } from "lucide-react"
 
 export default function OperatorSheetsPage() {
   const [sheets, setSheets] = useState<Sheet[]>([])
@@ -51,7 +52,13 @@ export default function OperatorSheetsPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">My Sheets</h1>
-        <Button onClick={fetchData} variant="outline">
+        <Button 
+          onClick={fetchData} 
+          variant="outline"
+          disabled={loading}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>

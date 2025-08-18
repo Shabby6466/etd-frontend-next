@@ -10,7 +10,7 @@ import { showNotification } from "@/lib/utils/notifications"
 import { formatDate, formatDateTime, formatStatus, getStatusVariant } from "@/lib/utils/formatting"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { Application } from "@/lib/types"
-import { Eye, FileText, Clock, CheckCircle, XCircle, LogOut, Download, Upload, Send } from "lucide-react"
+import { Eye, FileText, Clock, CheckCircle, XCircle, LogOut, Download, Upload, Send, RefreshCw } from "lucide-react"
 import { SubmitVerificationModal } from "@/components/agency/SubmitVerificationModal"
 import { PDFLink } from "@/components/ui/PDFViewer"
 
@@ -49,13 +49,7 @@ export default function AgencyDashboard() {
       setApplications(applicationsWithTracking)
       setFetchingTracking(false)
       
-      // Store debug info
-      setDebugInfo({
-        totalApplications: response.data.length,
-        applicationsWithTracking: applicationsWithTracking.length,
-        userAgency: userAgency,
-        allApplications: response.data.map(app => ({ id: app.id, status: app.status }))
-      })
+     
     } catch (error) {
       console.error('Failed to fetch agency applications:', error)
       showNotification.error('Failed to fetch agency applications')
@@ -135,40 +129,29 @@ export default function AgencyDashboard() {
               Welcome, {user?.fullName} ({user?.state || user?.agency})
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={async () => {
-              await logout()
-              window.location.href = '/login'
-            }}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button 
+              onClick={fetchApplications} 
+              variant="outline" 
+              size="sm"
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                await logout()
+                window.location.href = '/login'
+              }}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
-
-        {/* Debug Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Debug Info</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm space-y-2">
-              <p><strong>Current User Agency:</strong> {user?.state || user?.agency || 'Not set'}</p>
-              <p><strong>Total Applications Loaded:</strong> {applications.length}</p>
-              <p><strong>Total Applications in System:</strong> {debugInfo.totalApplications || 0}</p>
-              <p><strong>Applications with Agency Tracking:</strong> {debugInfo.applicationsWithTracking || 0}</p>
-              <p><strong>User Email:</strong> {user?.email}</p>
-              <p><strong>User Role:</strong> {user?.role}</p>
-              <details className="mt-2">
-                <summary>All Applications</summary>
-                <pre className="text-xs bg-gray-100 p-2 mt-2 overflow-auto max-h-40">
-                  {JSON.stringify(debugInfo.allApplications || [], null, 2)}
-                </pre>
-              </details>
-            </div>
-          </CardContent>
-        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Applications List */}

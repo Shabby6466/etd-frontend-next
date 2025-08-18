@@ -377,7 +377,7 @@ export function AgencyStatistics() {
       <CardContent>
         <div className="space-y-6">
           {/* Debug Info */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle>Debug Info</CardTitle>
             </CardHeader>
@@ -394,7 +394,7 @@ export function AgencyStatistics() {
                 </details>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Tab Buttons */}
           <div className="flex gap-2 border-b">

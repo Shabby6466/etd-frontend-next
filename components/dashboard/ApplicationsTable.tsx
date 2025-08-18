@@ -24,7 +24,8 @@ import {
   AlertTriangle,
   FileText,
   Download,
-  Shield
+  Shield,
+  RefreshCw
 } from "lucide-react"
 import { Application, Region, UserRole } from "@/lib/types"
 import { formatDate, formatStatus, getStatusVariant } from "@/lib/utils/formatting"
@@ -139,6 +140,16 @@ export function ApplicationsTable({
                   className="pl-10 w-64"
                 />
               </div>
+              <Button 
+                onClick={onRefresh} 
+                variant="outline" 
+                size="sm"
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
               {userRole === 'MISSION_OPERATOR' && (
                 <Button onClick={() => router.push("/applications/new")}>
                   <Plus className="h-4 w-4 mr-2" />

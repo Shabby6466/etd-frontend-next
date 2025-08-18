@@ -1055,9 +1055,9 @@ export default function ApplicationViewPage() {
             <CardContent>
               <div className="flex flex-wrap gap-3">
                 {/* Debug info */}
-                <div className="w-full text-xs text-gray-500 mb-2">
+                {/* <div className="w-full text-xs text-gray-500 mb-2">
                   Debug: Role={role}, Status={application?.status}, CanPerformAction={canPerformAction}
-                </div>
+                </div> */}
                 
                 {/* Agency Actions for Verification */}
                 {role === "AGENCY" && application.status === "PENDING_VERIFICATION" && (
