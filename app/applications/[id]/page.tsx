@@ -40,20 +40,27 @@ export default function ApplicationViewPage() {
 
   const role: UserRole | undefined = user?.role as UserRole | undefined
   console.log('User role:', role)
+  console.log('User object:', user)
   console.log('Application status:', application?.status)
+  console.log('Role === "MINISTRY":', role === "MINISTRY")
+  console.log('Status === "DRAFT":', application?.status === "DRAFT")
   const canPerformAction = useMemo(() => {
     if (!application) return false
     const status = application.status
+    console.log('Checking canPerformAction for role:', role, 'status:', status)
     switch (role) {
       case "MISSION_OPERATOR":
         return status === "DRAFT"
       case "AGENCY":
         return ["SUBMITTED", "AGENCY_REVIEW", "PENDING_VERIFICATION"].includes(status)
       case "MINISTRY":
-        return ["DRAFT", "SUBMITTED", "MINISTRY_REVIEW", "AGENCY_REVIEW", "VERIFICATION_SUBMITTED", "VERIFICATION_RECEIVED"].includes(status)
+        const ministryAllowed = ["DRAFT", "SUBMITTED", "MINISTRY_REVIEW", "AGENCY_REVIEW", "VERIFICATION_SUBMITTED", "VERIFICATION_RECEIVED"].includes(status)
+        console.log('Ministry allowed statuses check:', ministryAllowed)
+        return ministryAllowed
       case "ADMIN":
         return true
       default:
+        console.log('No matching role case, returning false')
         return false
     }
   }, [application, role])
@@ -62,7 +69,8 @@ export default function ApplicationViewPage() {
 
   const canPrint = useMemo(() => {
     if (!application) return false
-    return role === "MISSION_OPERATOR" && application.status === "READY_FOR_PRINT"
+    const allowedStatuses = ['READY_FOR_PRINT',]
+    return (role === "MISSION_OPERATOR" || role === "MINISTRY" || role === "ADMIN") && allowedStatuses.includes(application.status)
   }, [application, role])
 
 
@@ -368,12 +376,29 @@ export default function ApplicationViewPage() {
     }
   }
 
+  const handleNavigateToPrint = () => {
+    if (!application) return
+    // Open print page in a new tab
+    window.open(`/applications/${application.id}/print`, '_blank')
+  }
+
   const handleSendForVerification = async (data: {
     agencies: string[]
-    verification_document?: File
     remarks?: string
   }) => {
     if (!application) return
+
+    console.log('Application page - Received verification data:', {
+      agencies: data.agencies,
+      agenciesType: typeof data.agencies,
+      agenciesLength: data.agencies.length,
+      agenciesDetails: data.agencies.map((agency, index) => ({
+        index,
+        agency,
+        type: typeof agency,
+        length: agency.length
+      }))
+    })
 
     try {
       setIsActionLoading(true)
@@ -470,6 +495,19 @@ export default function ApplicationViewPage() {
                 <Printer className="mr-2 h-4 w-4" /> Print
               </Button>
             )}
+            {/* Debug button for role testing */}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                console.log('Current user:', user)
+                console.log('Current role:', role)
+                alert(`Current user role: ${role}\nUser object: ${JSON.stringify(user, null, 2)}`)
+              }}
+            >
+              Debug User
+            </Button>
+            
           </div>
         </div>
 
@@ -1016,6 +1054,11 @@ export default function ApplicationViewPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
+                {/* Debug info */}
+                <div className="w-full text-xs text-gray-500 mb-2">
+                  Debug: Role={role}, Status={application?.status}, CanPerformAction={canPerformAction}
+                </div>
+                
                 {/* Agency Actions for Verification */}
                 {role === "AGENCY" && application.status === "PENDING_VERIFICATION" && (
                   <Button onClick={() => setShowSubmitVerificationModal(true)} disabled={isActionLoading}>
@@ -1023,20 +1066,10 @@ export default function ApplicationViewPage() {
                   </Button>
                 )}
 
-                {/* Legacy Agency Actions (for old workflow) */}
-                {role === "AGENCY" && ["SUBMITTED", "AGENCY_REVIEW"].includes(application.status) && (
-                  <>
-                    <Button onClick={handleAgencyApprove} disabled={isActionLoading}>
-                      <CheckCircle className="mr-2 h-4 w-4" /> Approve & Send to Ministry
-                    </Button>
-                    <Button onClick={handleAgencyReject} variant="destructive" disabled={isActionLoading}>
-                      <XCircle className="mr-2 h-4 w-4" /> Reject with Remarks
-                    </Button>
-                  </>
-                )}
+              
 
                 {/* Ministry Actions for DRAFT Applications */}
-                {(role === "MINISTRY" || role === "ADMIN") && application.status === "DRAFT" && (
+                {(role === "MINISTRY" || role === "ADMIN") && application.status === "DRAFT"  && (
                   <>
                     <Button
                       onClick={() => setShowDraftReviewModal(true)}
@@ -1099,9 +1132,9 @@ export default function ApplicationViewPage() {
                     </>
                   )}
 
-                {/* Mission Operator Print Action */}
-                {role === "MISSION_OPERATOR" && canPrint && (
-                  <Button onClick={handlePrintApplication} disabled={isActionLoading}>
+                {/* Print Action for Mission Operator, Ministry, and Admin */}
+                {canPrint && (
+                  <Button onClick={handleNavigateToPrint} disabled={isActionLoading}>
                     <Printer className="mr-2 h-4 w-4" /> Print Application
                   </Button>
                 )}

@@ -91,6 +91,11 @@ export const useAuthStore = create<AuthState>()(
       },
       verifyToken: async () => {
         const { token, isVerifying, tokenExpiry } = get();
+        console.log('=== TOKEN VERIFICATION START ===')
+        console.log('Current token:', token ? 'exists' : 'missing')
+        console.log('Token expiry:', tokenExpiry)
+        console.log('Current time:', Date.now())
+        
         // Check expiry before verifying
         if (tokenExpiry && Date.now() > tokenExpiry) {
           console.log("Token expired, logging out");

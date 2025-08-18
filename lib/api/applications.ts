@@ -168,6 +168,16 @@ export const applicationAPI = {
     return { data: transformedData }
   },
 
+  // Get agency-specific applications
+  getAgencyApplications: async (filters?: any): Promise<{ data: Application[] }> => {
+    const response = await apiClient.get(`/applications/agency/applications`, { params: filters })
+    const rawData = response.data?.applications || []
+    const transformedData = Array.isArray(rawData) 
+      ? rawData.map(transformApplicationData)
+      : []
+    return { data: transformedData }
+  },
+
   // Get application by ID
   getById: async (id: string): Promise<Application> => {
     const response = await apiClient.get(`/applications/${id}`)
@@ -301,46 +311,26 @@ export const applicationAPI = {
   // New workflow endpoints
   sendForVerification: async (id: string, data: {
     agencies: string[]
-    verification_document?: File
     remarks?: string
   }): Promise<Application> => {
     console.log('Sending for verification:', {
       id,
       agencies: data.agencies,
-      hasDocument: !!data.verification_document,
       remarks: data.remarks
     })
 
-    // Create FormData for multipart request
-    const formData = new FormData()
-    
-    // Add each agency as a separate field (array format)
-    data.agencies.forEach(agency => {
-      formData.append('agencies', agency)
-    })
-    
-    // Add verification document (required field)
-    if (data.verification_document) {
-      formData.append('verification_document', data.verification_document)
-    }
-    
-    // Add remarks if provided (optional field)
-    if (data.remarks?.trim()) {
-      formData.append('remarks', data.remarks.trim())
+    // Create JSON request body for agencies and remarks
+    const requestBody = {
+      agencies: data.agencies, // ✅ CORRECT - Array format
+      remarks: data.remarks?.trim() || undefined
     }
 
-    console.log('FormData entries:')
-    for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`${key}: File(${value.name}, ${value.size} bytes)`)
-      } else {
-        console.log(`${key}: ${value}`)
-      }
-    }
+    console.log('Request body:', requestBody)
 
-    const response = await apiClient.post(`/applications/${id}/send-for-verification`, formData, {
+    // Send JSON request
+    const response = await apiClient.post(`/applications/${id}/send-for-verification`, requestBody, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': 'application/json',
       },
     })
     return transformApplicationData(response.data)

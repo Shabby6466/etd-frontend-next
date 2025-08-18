@@ -13,7 +13,6 @@ interface SendForVerificationModalProps {
   onClose: () => void
   onSubmit: (data: {
     agencies: string[]
-    verification_document?: File
     remarks?: string
   }) => Promise<void>
   isLoading?: boolean
@@ -26,7 +25,6 @@ export function SendForVerificationModal({
   isLoading = false
 }: SendForVerificationModalProps) {
   const [selectedAgencies, setSelectedAgencies] = useState<string[]>([])
-  const [verificationDocument, setVerificationDocument] = useState<File | null>(null)
   const [remarks, setRemarks] = useState<string>('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -51,27 +49,11 @@ export function SendForVerificationModal({
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      if (file.type === 'application/pdf') {
-        setVerificationDocument(file)
-        // Clear file error when user selects a valid file
-        if (errors.verification_document) {
-          setErrors(prev => ({ ...prev, verification_document: '' }))
-        }
-      } else {
-        alert('Please select a PDF file')
-        e.target.value = ''
-        setVerificationDocument(null)
-      }
-    }
-  }
+
 
   const validateForm = () => {
     const formData = {
       agencies: selectedAgencies,
-      verification_document: verificationDocument,
       remarks: remarks.trim() || undefined
     }
 
@@ -100,16 +82,26 @@ export function SendForVerificationModal({
     
     const data = {
       agencies: selectedAgencies,
-      verification_document: verificationDocument!,
       remarks: remarks.trim() || undefined
     }
+    
+    console.log('SendForVerificationModal - Submitting data:', {
+      agencies: data.agencies,
+      agenciesType: typeof data.agencies,
+      agenciesLength: data.agencies.length,
+      agenciesDetails: data.agencies.map((agency, index) => ({
+        index,
+        agency,
+        type: typeof agency,
+        length: agency.length
+      }))
+    })
     
     try {
       await onSubmit(data)
       
       // Reset form on success
       setSelectedAgencies([])
-      setVerificationDocument(null)
       setRemarks('')
       setErrors({})
       onClose()
@@ -122,7 +114,6 @@ export function SendForVerificationModal({
   const handleClose = () => {
     // Reset form when closing
     setSelectedAgencies([])
-    setVerificationDocument(null)
     setRemarks('')
     setErrors({})
     onClose()
@@ -173,30 +164,7 @@ export function SendForVerificationModal({
               )}
             </div>
 
-            <div>
-              <Label htmlFor="verification-document">Verification Document (PDF) *</Label>
-              <div className="mt-2">
-                <input
-                  id="verification-document"
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileChange}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                  disabled={isLoading}
-                />
-                {verificationDocument && (
-                  <p className="text-sm text-green-600 mt-1">
-                    Selected: {verificationDocument.name}
-                  </p>
-                )}
-              </div>
-              {errors.verification_document && (
-                <div className="flex items-center mt-1 text-sm text-red-600">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.verification_document}
-                </div>
-              )}
-            </div>
+
 
             <div>
               <Label htmlFor="remarks">Remarks (Optional)</Label>

@@ -19,13 +19,28 @@ interface ApplicationWithAgencyTracking {
   agency_tracking?: AgencyTracking[]
 }
 
+// New interface for application-based statistics
+interface ApplicationBasedStats {
+  agency_name: string
+  pending_applications: number
+  completed_applications: number
+  failed_applications: number
+  total_applications: number
+}
+
 export function AgencyStatistics() {
   const [statistics, setStatistics] = useState<AgencyStats[]>([])
+  const [applicationStats, setApplicationStats] = useState<ApplicationBasedStats[]>([])
   const [applications, setApplications] = useState<ApplicationWithAgencyTracking[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'pending' | 'failed' | 'completed'>('pending')
   const [fetchingTracking, setFetchingTracking] = useState(false)
+  const [summaryStats, setSummaryStats] = useState({
+    totalApplications: 0,
+    applicationsWithTracking: 0,
+    totalAgencyRecords: 0
+  })
 
   useEffect(() => {
     fetchData()
@@ -36,9 +51,9 @@ export function AgencyStatistics() {
       setLoading(true)
       setError(null)
       
-      // Fetch statistics
+      // Fetch raw statistics (for reference)
       const statsResponse = await agencyTrackingAPI.getStatistics()
-      console.log('Stats Response:', statsResponse)
+      console.log('Raw Stats Response:', statsResponse)
       setStatistics(statsResponse.agency_statistics)
       
       // Fetch applications
@@ -70,6 +85,22 @@ export function AgencyStatistics() {
       console.log('Total applications with tracking:', applicationsWithTracking.length)
       
       setApplications(applicationsWithTracking)
+      
+      // Calculate application-based statistics
+      const appStats = calculateApplicationBasedStats(applicationsWithTracking)
+      setApplicationStats(appStats)
+      
+      // Set summary statistics
+      const totalAgencyRecords = applicationsWithTracking.reduce((total, app) => 
+        total + (app.agency_tracking?.length || 0), 0
+      )
+      
+      setSummaryStats({
+        totalApplications: appsResponse.data.length,
+        applicationsWithTracking: applicationsWithTracking.length,
+        totalAgencyRecords: totalAgencyRecords
+      })
+      
       setFetchingTracking(false)
     } catch (err) {
       console.error('Failed to fetch data:', err)
@@ -79,6 +110,66 @@ export function AgencyStatistics() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Calculate application-based statistics
+  const calculateApplicationBasedStats = (apps: ApplicationWithAgencyTracking[]): ApplicationBasedStats[] => {
+    const agencyMap = new Map<string, ApplicationBasedStats>()
+    
+    // Initialize all agencies with zero counts
+    const allAgencies = new Set<string>()
+    apps.forEach(app => {
+      app.agency_tracking?.forEach(tracking => {
+        allAgencies.add(tracking.agency_name)
+      })
+    })
+    
+    allAgencies.forEach(agency => {
+      agencyMap.set(agency, {
+        agency_name: agency,
+        pending_applications: 0,
+        completed_applications: 0,
+        failed_applications: 0,
+        total_applications: 0
+      })
+    })
+    
+    // Count applications per agency
+    apps.forEach(app => {
+      if (!app.agency_tracking || app.agency_tracking.length === 0) return
+      
+      // Group tracking by agency to avoid double-counting applications
+      const agencyTrackingMap = new Map<string, AgencyTracking[]>()
+      app.agency_tracking.forEach(tracking => {
+        if (!agencyTrackingMap.has(tracking.agency_name)) {
+          agencyTrackingMap.set(tracking.agency_name, [])
+        }
+        agencyTrackingMap.get(tracking.agency_name)!.push(tracking)
+      })
+      
+      // For each agency, determine the overall status for this application
+      agencyTrackingMap.forEach((trackings, agencyName) => {
+        const stats = agencyMap.get(agencyName)
+        if (!stats) return
+        
+        stats.total_applications++
+        
+        // Determine overall status for this application with this agency
+        const hasPending = trackings.some(t => t.status === 'PENDING')
+        const hasCompleted = trackings.some(t => t.status === 'COMPLETED')
+        const hasFailed = trackings.some(t => t.status === 'FAILED')
+        
+        if (hasFailed) {
+          stats.failed_applications++
+        } else if (hasCompleted && !hasPending) {
+          stats.completed_applications++
+        } else if (hasPending) {
+          stats.pending_applications++
+        }
+      })
+    })
+    
+    return Array.from(agencyMap.values())
   }
 
   const getStatusColor = (status: string) => {

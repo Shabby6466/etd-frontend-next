@@ -14,14 +14,10 @@ import { Eye, FileText, Clock, CheckCircle, XCircle, LogOut, Download, Upload, S
 import { SubmitVerificationModal } from "@/components/agency/SubmitVerificationModal"
 import { PDFLink } from "@/components/ui/PDFViewer"
 
-interface ApplicationWithAgencyTracking extends Application {
-  agency_tracking?: AgencyTracking[]
-}
-
 export default function AgencyDashboard() {
-  const [applications, setApplications] = useState<ApplicationWithAgencyTracking[]>([])
+  const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedApplication, setSelectedApplication] = useState<ApplicationWithAgencyTracking | null>(null)
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const [showVerificationForm, setShowVerificationForm] = useState(false)
   const [selectedAgency, setSelectedAgency] = useState<string>("")
   const [debugInfo, setDebugInfo] = useState<any>({})
@@ -39,52 +35,17 @@ export default function AgencyDashboard() {
       const userAgency = user?.state || user?.agency
       console.log('Current user agency:', userAgency)
       
-      const response = await applicationAPI.getAll()
-      console.log('All applications:', response.data.length)
+      // Use agency-specific API endpoint instead of fetching all applications
+      const response = await applicationAPI.getAgencyApplications({ agency: userAgency })
+      console.log('Agency applications:', response.data.length)
       
-      // Fetch agency tracking data for each application
-      setFetchingTracking(true)
-      const applicationsWithTracking: ApplicationWithAgencyTracking[] = []
+      // Transform applications to include agency tracking data
+      const applicationsWithTracking: Application[] = response.data.map(app => ({
+        ...app,
+        agency_tracking: app.agency_tracking || []
+      }))
       
-      for (const app of response.data) {
-        try {
-          console.log(`Fetching agency tracking for application: ${app.id}`)
-          const trackingResponse = await agencyTrackingAPI.getAgencyTracking(app.id)
-          console.log(`Agency tracking for ${app.id}:`, trackingResponse.agency_tracking)
-          
-          const appWithTracking: ApplicationWithAgencyTracking = {
-            ...app,
-            agency_tracking: trackingResponse.agency_tracking || []
-          }
-          
-          // Log all tracking entries for this application
-          if (appWithTracking.agency_tracking && appWithTracking.agency_tracking.length > 0) {
-            console.log(`All tracking entries for ${app.id}:`, appWithTracking.agency_tracking.map(t => ({
-              agency: t.agency_name,
-              status: t.status
-            })))
-          }
-          
-          // Only include applications that have pending tracking for the current user's agency
-          const hasPendingForAgency = appWithTracking.agency_tracking?.some(tracking => {
-            const matches = tracking.agency_name === userAgency && tracking.status === 'PENDING'
-            console.log(`Checking tracking: ${tracking.agency_name} vs user agency: ${userAgency}, status: ${tracking.status}, matches: ${matches}`)
-            return matches
-          })
-          
-          console.log(`Application ${app.id} has pending for agency ${userAgency}:`, hasPendingForAgency)
-          
-          if (hasPendingForAgency) {
-            applicationsWithTracking.push(appWithTracking)
-            console.log(`Added application ${app.id} to filtered list`)
-          }
-        } catch (trackingError) {
-          // If no agency tracking exists for this application, skip it
-          console.log(`No agency tracking for application ${app.id}:`, trackingError)
-        }
-      }
-      
-      console.log('Final filtered applications:', applicationsWithTracking.length)
+      console.log('Final agency applications:', applicationsWithTracking.length)
       setApplications(applicationsWithTracking)
       setFetchingTracking(false)
       
@@ -96,15 +57,15 @@ export default function AgencyDashboard() {
         allApplications: response.data.map(app => ({ id: app.id, status: app.status }))
       })
     } catch (error) {
-      console.error('Failed to fetch applications:', error)
-      showNotification.error('Failed to fetch applications')
+      console.error('Failed to fetch agency applications:', error)
+      showNotification.error('Failed to fetch agency applications')
       setFetchingTracking(false)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleViewApplication = (application: ApplicationWithAgencyTracking) => {
+  const handleViewApplication = (application: Application) => {
     setSelectedApplication(application)
     setShowVerificationForm(false)
   }

@@ -26,14 +26,14 @@ export default function MinistryDashboard() {
     try {
       // Fetch applications that are submitted by mission operators and ready for ministry review
       const response = await applicationAPI.getAll({
-        status: ['SUBMITTED', 'MINISTRY_REVIEW', 'AGENCY_REVIEW']
+        status: ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'MINISTRY_REVIEW', 'AGENCY_REVIEW', 'VERIFICATION_SUBMITTED', 'VERIFICATION_RECEIVED']
       })
       setApplications(response.data || [])
       
       // Calculate stats
       const totalApps = response.data?.length || 0
       const pending = response.data?.filter(app => 
-        ['SUBMITTED', 'MINISTRY_REVIEW'].includes(app.status)
+        ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'MINISTRY_REVIEW', 'AGENCY_REVIEW', 'VERIFICATION_SUBMITTED', 'VERIFICATION_RECEIVED'].includes(app.status)
       ).length || 0
       const approved = response.data?.filter(app => 
         ['READY_FOR_PERSONALIZATION', 'READY_FOR_PRINT', 'APPROVED', 'COMPLETED'].includes(app.status)

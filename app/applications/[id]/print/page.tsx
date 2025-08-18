@@ -51,7 +51,7 @@ export default function PrintApplicationPage() {
     }
 
     // Check if application status allows printing
-    const allowedStatuses = ['READY_FOR_PRINT', 'APPROVED', 'VERIFIED']
+    const allowedStatuses = ['READY_FOR_PRINT', 'APPROVED', 'VERIFIED', 'READY_FOR_PERSONALIZATION']
     if (!allowedStatuses.includes(application.status)) {
       showNotification.error(`Application status "${application.status}" does not allow printing. Status must be: ${allowedStatuses.join(', ')}`)
       return
@@ -74,7 +74,7 @@ export default function PrintApplicationPage() {
         window.close()
         // Fallback: if window.close() doesn't work (due to browser security), redirect to dashboard
         setTimeout(() => {
-          router.push('/missions')
+          router.back()
         }, 1000)
       }, 3000) // 3 second delay to allow print dialog to close and user to see success message
     } catch (error) {

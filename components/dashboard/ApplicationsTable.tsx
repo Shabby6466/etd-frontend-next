@@ -77,7 +77,7 @@ export function ApplicationsTable({
       case 'AGENCY':
         return ['SUBMITTED', 'AGENCY_REVIEW'].includes(application.status)
       case 'MINISTRY':
-        return ['SUBMITTED', 'MINISTRY_REVIEW', 'AGENCY_REVIEW'].includes(application.status)
+        return ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'MINISTRY_REVIEW', 'AGENCY_REVIEW', 'VERIFICATION_SUBMITTED', 'VERIFICATION_RECEIVED'].includes(application.status)
       case 'ADMIN':
         return true
       default:
