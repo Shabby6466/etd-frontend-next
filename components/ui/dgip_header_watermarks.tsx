@@ -54,7 +54,7 @@ export const DGIPHeaderWithWatermarks: React.FC<DGIPHeaderWithWatermarksProps> =
 
       {/* Header Banner */}
       <div className="max-w-4xl mx-auto relative z-20">
-        <div className="flex items-center justify-center mb-1 select-none">
+        <div className="flex items-center justify-center mb-4 select-none">
           <div className="flex items-center gap-3">
             <img 
               src={bannerSrc} 
