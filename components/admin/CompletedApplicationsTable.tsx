@@ -352,14 +352,7 @@ export function CompletedApplicationsTable() {
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
                       <Badge 
-                        variant={
-                          application.status === 'APPROVED' ? 'default' :
-                          application.status === 'REJECTED' ? 'destructive' : 
-                          'secondary'
-                        }
-                        className={
-                          application.status === 'APPROVED' ? 'bg-green-600 hover:bg-green-700' : ''
-                        }
+                        variant="success"
                       >
                         {application.status}
                       </Badge>

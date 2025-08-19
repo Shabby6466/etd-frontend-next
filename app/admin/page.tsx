@@ -154,7 +154,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
@@ -194,7 +194,7 @@ export default function AdminDashboard() {
               <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
 
         {/* Content based on active tab */}
         {activeTab === 'applications' && (

@@ -6,12 +6,14 @@ const PASSPORT_URL = "http://10.111.101.24:9009/api/passport"
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 8000, // 8 second timeout for all API calls
   headers: {
     "Content-Type": "application/json",
   },
 })
 export const passportApiClient = axios.create({
   baseURL: PASSPORT_URL,
+  timeout: 8000, // 8 second timeout for all API calls
   headers: {
     "Content-Type": "application/json",
   },

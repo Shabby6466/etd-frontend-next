@@ -11,26 +11,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { verifyToken, isLoading, token, tokenExpiry, isAuthenticated } =
     useAuthStore();
   const [initialized, setInitialized] = useState(false);
-  const [verificationTimeout, setVerificationTimeout] = useState(false);
-
-  // Handle verification timeout
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    if (isLoading && !verificationTimeout) {
-      // Set a 5-second timeout for verification
-      timeoutId = setTimeout(() => {
-        console.log("Auth verification timed out, forcing render");
-        setVerificationTimeout(true);
-        // Force isLoading to false after timeout
-        useAuthStore.setState({ isLoading: false });
-      }, 5000);
-    }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [isLoading, verificationTimeout]);
 
   // Only run token verification once on initial render
   useEffect(() => {
@@ -55,10 +35,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setInitialized(true);
       }
     }
-  }, [initialized, token, tokenExpiry, isAuthenticated, verifyToken]);
+  }, [initialized, token, tokenExpiry, isAuthenticated]); // Removed verifyToken from dependencies
 
-  // Show loading state, but with timeout protection
-  if (isLoading && !verificationTimeout) {
+  // Add a safety timeout to prevent infinite loading
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        console.log("Auth loading timeout - forcing stop");
+        useAuthStore.setState({ isLoading: false });
+      }
+    }, 5000); // 5 second safety timeout
+
+    return () => clearTimeout(timeoutId);
+  }, [isLoading]);
+
+  // Show loading state
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>

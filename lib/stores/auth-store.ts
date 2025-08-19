@@ -127,7 +127,7 @@ export const useAuthStore = create<AuthState>()(
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(
               () => reject(new Error("Token verification timeout")),
-              10000
+              5000
             );
           });
 
@@ -167,7 +167,7 @@ export const useAuthStore = create<AuthState>()(
           persistent: true,
           expires: new Date(expiry),
         });
-        set({ token, tokenExpiry: expiry, isAuthenticated: true });
+        set({ token, tokenExpiry: expiry, isAuthenticated: true, isLoading: false });
         setAutoLogout(expiry);
       },
     }),
@@ -257,6 +257,9 @@ export const useAuthStore = create<AuthState>()(
             useAuthStore.setState({
               isLoading: false,
               isAuthenticated: false,
+              user: null,
+              token: null,
+              tokenExpiry: null,
             });
           }
         };
