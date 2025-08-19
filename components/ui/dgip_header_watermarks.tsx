@@ -59,7 +59,7 @@ export const DGIPHeaderWithWatermarks: React.FC<DGIPHeaderWithWatermarksProps> =
             <img 
               src={bannerSrc} 
               alt="DGIP Logo" 
-              className="w-350 h-full" 
+              className="w-full h-full" 
             />
            
           </div>
