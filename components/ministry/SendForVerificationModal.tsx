@@ -13,7 +13,7 @@ interface SendForVerificationModalProps {
   onClose: () => void
   onSubmit: (data: {
     agencies: string[]
-    remarks?: string
+    remarks: string
   }) => Promise<void>
   isLoading?: boolean
 }
@@ -82,7 +82,7 @@ export function SendForVerificationModal({
     
     const data = {
       agencies: selectedAgencies,
-      remarks: remarks.trim() || undefined
+      remarks: remarks.trim()
     }
     
     console.log('SendForVerificationModal - Submitting data:', {
@@ -167,7 +167,7 @@ export function SendForVerificationModal({
 
 
             <div>
-              <Label htmlFor="remarks">Remarks (Optional)</Label>
+              <Label htmlFor="remarks">Remarks</Label>
               <Textarea
                 id="remarks"
                 value={remarks}

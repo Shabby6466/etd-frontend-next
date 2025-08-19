@@ -384,7 +384,7 @@ export default function ApplicationViewPage() {
 
   const handleSendForVerification = async (data: {
     agencies: string[]
-    remarks?: string
+    remarks: string
   }) => {
     if (!application) return
 
@@ -500,12 +500,45 @@ export default function ApplicationViewPage() {
               variant="outline" 
               size="sm"
               onClick={() => {
+                console.log('=== DEBUG USER ROLE INFO ===')
                 console.log('Current user:', user)
                 console.log('Current role:', role)
-                alert(`Current user role: ${role}\nUser object: ${JSON.stringify(user, null, 2)}`)
+                console.log('User role type:', typeof role)
+                console.log('User object keys:', Object.keys(user || {}))
+                console.log('User state:', user?.state)
+                console.log('User agency:', user?.agency)
+                console.log('Application status:', application?.status)
+                console.log('Can perform action:', canPerformAction)
+                console.log('================================')
+                
+                const debugInfo = `
+🔍 DEBUG USER ROLE INFORMATION:
+
+👤 Current User: ${JSON.stringify(user, null, 2)}
+
+🎭 Current Role: ${role} (${typeof role})
+
+📍 User State: ${user?.state || 'Not set'}
+🏢 User Agency: ${user?.agency || 'Not set'}
+
+📋 Application Status: ${application?.status || 'Not loaded'}
+
+✅ Can Perform Action: ${canPerformAction}
+
+🔧 Role Checks:
+- Role === "MINISTRY": ${role === "MINISTRY"}
+- Role === "AGENCY": ${role === "AGENCY"}
+- Role === "ADMIN": ${role === "ADMIN"}
+- Role === "MISSION_OPERATOR": ${role === "MISSION_OPERATOR"}
+
+📱 User Object Structure:
+${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`).join('\n')}
+                `.trim()
+                
+                alert(debugInfo)
               }}
             >
-              Debug User
+              Debug User Role
             </Button>
             
           </div>
@@ -824,7 +857,7 @@ export default function ApplicationViewPage() {
       </Card> */}
 
         {/* Verification Document - For Agency Users */}
-        {role === "AGENCY" && application.status === "PENDING_VERIFICATION" && application.verificationDocumentUrl && (
+        {role === "AGENCY" && application.status === "PENDING_VERIFICATION"  && (
           <Card>
             <CardHeader>
               <CardTitle>Verification Document</CardTitle>
@@ -844,7 +877,7 @@ export default function ApplicationViewPage() {
                           <div className="flex-1">
                             <p className="text-sm text-blue-800 font-medium mb-1">Verification Remarks</p>
                             <p className="text-sm text-blue-700 leading-relaxed">
-                              {application.verificationRemarks || 'No remarks provided.'}
+                              {application.ministryRemarks || 'No remarks provided.'}
                             </p>
                           </div>
                         </div>
@@ -975,7 +1008,7 @@ export default function ApplicationViewPage() {
                   <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        {/* <div className="w-2 h-2 rounded-full bg-green-500"></div> */}
                         <span className="font-medium text-gray-800">{remark.agency || 'Unknown Agency'}</span>
                       </div>
                       <span className="text-sm text-gray-500">

@@ -11,6 +11,8 @@ import { CompletedApplicationsTable } from "@/components/admin/CompletedApplicat
 import { LocationManagementTable } from "@/components/admin/LocationManagementTable"
 import { SheetManagementTable } from "@/components/admin/SheetManagementTable"
 import { AgencyStatistics } from "@/components/admin/AgencyStatistics"
+import { RejectedApplicationsStats } from "@/components/admin/RejectedApplicationsStats"
+import { RejectedApplicationsTable } from "@/components/admin/RejectedApplicationsTable"
 import { Application } from "@/lib/types"
 import { applicationAPI } from "@/lib/api/applications"
 import { showNotification } from "@/lib/utils/notifications"
@@ -20,7 +22,7 @@ import { useAuthStore } from "@/lib/stores/auth-store"
 export default function AdminDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'applications' | 'users' | 'sheets' | 'locations' | 'completed' | 'agency-stats'>('applications')
+  const [activeTab, setActiveTab] = useState<'applications' | 'users' | 'sheets' | 'locations' | 'completed' | 'rejected' | 'agency-stats'>('applications')
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
   const { logout } = useAuthStore()
   const [stats, setStats] = useState({
@@ -130,6 +132,16 @@ export default function AdminDashboard() {
              Completed Applications
            </button>
            <button
+             onClick={() => setActiveTab('rejected')}
+             className={`px-6 py-3 font-medium text-sm ${
+               activeTab === 'rejected'
+                 ? 'border-b-2 border-blue-500 text-blue-600'
+                 : 'text-gray-500 hover:text-gray-700'
+             }`}
+           >
+             Rejected Applications
+           </button>
+           <button
              onClick={() => setActiveTab('agency-stats')}
              className={`px-6 py-3 font-medium text-sm ${
                activeTab === 'agency-stats'
@@ -219,6 +231,13 @@ export default function AdminDashboard() {
 
          {activeTab === 'completed' && (
            <CompletedApplicationsTable />
+         )}
+
+         {activeTab === 'rejected' && (
+           <div className="space-y-6">
+             <RejectedApplicationsStats />
+             <RejectedApplicationsTable />
+           </div>
          )}
 
          {activeTab === 'agency-stats' && (

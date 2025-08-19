@@ -180,7 +180,7 @@ export function ApplicationsTable({
                 <tr key={application.id} className="border-b hover:bg-gray-50">
                   <td className="p-3">
                     <span className="font-mono text-sm">
-                      {application.id ? application.id.substring(0, 8) + '...' : 'N/A'}
+                      {application.id}
                     </span>
                   </td>
                   <td className="p-3">

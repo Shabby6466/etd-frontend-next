@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreHorizontal } from "lucide-react"
 interface MinistryReviewModalProps {
   isOpen: boolean
   onClose: () => void
@@ -268,17 +274,37 @@ export function MinistryReviewModal({
                   <Label htmlFor="rejection-reason">
                     Rejection Reason *
                   </Label>
-                  <Input
+                  <DropdownMenu  >
+                  <DropdownMenuTrigger asChild>
+                          <p className="w-full flex w-[256px] p-2 rounded-3xl border-2 border-gray-100">Select Status</p>
+                      
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-full flex-col w-[256px] p-2 rounded-3xl   ">
+                        <DropdownMenuItem
+                          // onClick={() => router.push(`/applications/${application.id}`)}
+                          className="bg-transparent hover:bg-transparent focus:bg-transparent p-2"
+                        >
+                          Very Very Bad Boy
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          // onClick={() => router.push(`/applications/${application.id}`)}
+                          className="bg-transparent hover:bg-transparent focus:bg-transparent p-2"
+                        >
+                          Very Very VERY VERY Bad Boy
+                        </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu >
+                  {/* <Input
                     id="rejection-reason"
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
                     placeholder="Enter reason for rejection"
                     className="w-full"
                     required
-                  />
-                  {!rejectionReason.trim() && (
+                  /> */
+                  /* {!rejectionReason.trim() && (
                     <p className="text-xs text-red-600">Rejection reason is required</p>
-                  )}
+                  )} */}
                 </div>
 
                 {/* Action Buttons for Rejection */}
