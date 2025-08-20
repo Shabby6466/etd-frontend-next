@@ -139,8 +139,8 @@ export default function ApplicationViewPage() {
   }
 
   // New Ministry Review handlers
-  const handleMinistryReviewApprove = async (data: { 
-    approved: boolean; 
+  const handleMinistryReviewApprove = async (data: {
+    approved: boolean;
     black_list_check: boolean;
     etd_issue_date?: string;
     etd_expiry_date?: string;
@@ -176,9 +176,9 @@ export default function ApplicationViewPage() {
     }
   }
 
-  const handleMinistryReviewReject = async (data: { 
-    approved: boolean; 
-    black_list_check: boolean; 
+  const handleMinistryReviewReject = async (data: {
+    approved: boolean;
+    black_list_check: boolean;
     rejection_reason: string;
     etd_issue_date?: string;
     etd_expiry_date?: string;
@@ -214,7 +214,7 @@ export default function ApplicationViewPage() {
     }
   }
 
-  const handleDraftApprove = async (data: { 
+  const handleDraftApprove = async (data: {
     black_list_check?: boolean;
     etd_issue_date?: string;
     etd_expiry_date?: string;
@@ -239,7 +239,7 @@ export default function ApplicationViewPage() {
     }
   }
 
-  const handleDraftReject = async (data: { 
+  const handleDraftReject = async (data: {
     rejection_reason: string;
     black_list_check?: boolean;
     etd_issue_date?: string;
@@ -477,16 +477,41 @@ export default function ApplicationViewPage() {
   }
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: "#E5EDFF" }}>
-      <DGIPWatermarks layerZ={0} />
+    <div className="min-h-screen relative dashboardBackgroundColor" >
+      {/* <DGIPWatermarks  /> */}
+      <div className="pt-12 ">
 
-      <div className="max-w-6xl mx-auto p-6 space-y-6 relative z-10">
+      <DGIPHeader/>
+      </div>
 
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => router.back()}>
+      <div className="max-w-6xl mx-auto p-6 pt-0 space-y-6 relative z-10">
+
+        
+
+        {/* <DGIPHeader /> */}
+        <Card>
+          <div className="flex justify-between gap-2 p-6">
+
+          <CardHeader >
+            <CardTitle >Application #{application.id}</CardTitle>
+          
+        
+            
+            
+          </CardHeader>
+          <div className="flex items-center justify-end gap-4">
+          {/* <Button variant="ghost" onClick={() => router.back()}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
-          <div className="flex items-center gap-2">
+          </Button> */}
+          <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => router.back()}                 
+                  className="text-sm"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />Back to Photo
+                </Button>
+          <div className="flex items-center gap-4">
             <Badge variant={getStatusVariant(application.status)}>
               {formatStatus(application.status)}
             </Badge>
@@ -495,9 +520,9 @@ export default function ApplicationViewPage() {
                 <Printer className="mr-2 h-4 w-4" /> Print
               </Button>
             )}
-            {/* Debug button for role testing */}
-            <Button 
-              variant="outline" 
+            {/* Debug button for role testing
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => {
                 console.log('=== DEBUG USER ROLE INFO ===')
@@ -510,7 +535,7 @@ export default function ApplicationViewPage() {
                 console.log('Application status:', application?.status)
                 console.log('Can perform action:', canPerformAction)
                 console.log('================================')
-                
+
                 const debugInfo = `
 🔍 DEBUG USER ROLE INFORMATION:
 
@@ -534,21 +559,17 @@ export default function ApplicationViewPage() {
 📱 User Object Structure:
 ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`).join('\n')}
                 `.trim()
-                
+
                 alert(debugInfo)
               }}
             >
-              Debug User Role
-            </Button>
-            
+              Debug Role
+            </Button> */}
+
           </div>
         </div>
+          </div>
 
-        <DGIPHeader />
-        <Card>
-          <CardHeader>
-            <CardTitle>Application #{application.id}</CardTitle>
-          </CardHeader>
           <CardContent>
             {/* Header Section with Photos and Data Sources */}
             <div className="mb-8">
@@ -557,7 +578,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                 {(application.image || application.nadra_api_data?.image_url || application.passport_api_data?.image_url) && (
                   <div className={`${(application.nadra_api_data?.image_url || application.passport_api_data?.image_url) ? 'lg:w-1/2' : 'lg:w-1/3'}`}>
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
-                      <h3 className="text-lg font-semibold mb-4 text-gray-800">Citizen Photographs</h3>
+                      <h3 className="text-lg font-semibold mb-4 text-gray-800">Citizen Photograph</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
                         {/* Main Citizen Photo */}
                         {application.image && (
@@ -857,7 +878,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
       </Card> */}
 
         {/* Verification Document - For Agency Users */}
-        {role === "AGENCY" && application.status === "PENDING_VERIFICATION"  && (
+        {role === "AGENCY" && application.status === "PENDING_VERIFICATION" && (
           <Card>
             <CardHeader>
               <CardTitle>Verification Document</CardTitle>
@@ -1091,7 +1112,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                 {/* <div className="w-full text-xs text-gray-500 mb-2">
                   Debug: Role={role}, Status={application?.status}, CanPerformAction={canPerformAction}
                 </div> */}
-                
+
                 {/* Agency Actions for Verification */}
                 {role === "AGENCY" && application.status === "PENDING_VERIFICATION" && (
                   <Button onClick={() => setShowSubmitVerificationModal(true)} disabled={isActionLoading}>
@@ -1099,10 +1120,10 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                   </Button>
                 )}
 
-              
+
 
                 {/* Ministry Actions for DRAFT Applications */}
-                {(role === "MINISTRY" || role === "ADMIN") && application.status === "DRAFT"  && (
+                {(role === "MINISTRY" || role === "ADMIN") && application.status === "DRAFT" && (
                   <>
                     <Button
                       onClick={() => setShowDraftReviewModal(true)}
@@ -1120,8 +1141,8 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                 {/* Ministry Actions for VERIFICATION_SUBMITTED Applications */}
                 {(role === "MINISTRY" || role === "ADMIN") && application.status === "VERIFICATION_SUBMITTED" && (
                   <>
-                    <Button 
-                      onClick={() => setShowMinistryReviewModal(true)} 
+                    <Button
+                      onClick={() => setShowMinistryReviewModal(true)}
                       disabled={isActionLoading}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
@@ -1152,8 +1173,8 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                 {(role === "MINISTRY" || role === "ADMIN") &&
                   ["SUBMITTED", "UNDER_REVIEW", "AGENCY_REVIEW", "MINISTRY_REVIEW"].includes(application.status) && (
                     <>
-                      <Button 
-                        onClick={() => setShowMinistryReviewModal(true)} 
+                      <Button
+                        onClick={() => setShowMinistryReviewModal(true)}
                         disabled={isActionLoading}
                         className="bg-blue-600 hover:bg-blue-700"
                       >

@@ -45,6 +45,15 @@ interface ApplicationsTableProps {
   onUploadAttachment?: (id: string) => void
   onPrint?: (id: string) => void
   onSubmitVerification?: (id: string, remarks: string, attachment?: File) => Promise<void>
+  // Pagination props
+  pagination?: {
+    currentPage: number
+    itemCount: number
+    itemsPerPage: number
+    totalPages: number
+    totalItems: number
+  }
+  onPageChange?: (page: number) => void
 }
 
 export function ApplicationsTable({ 
@@ -58,7 +67,9 @@ export function ApplicationsTable({
   onSendToAgency,
   onUploadAttachment,
   onPrint,
-  onSubmitVerification
+  onSubmitVerification,
+  pagination,
+  onPageChange
 }: ApplicationsTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [qcModalOpen, setQcModalOpen] = useState(false)
@@ -126,7 +137,7 @@ export function ApplicationsTable({
 
   return (
     <>
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Applications</CardTitle>
@@ -404,6 +415,49 @@ export function ApplicationsTable({
             </div>
           )}
         </div>
+        
+        {/* Pagination Controls */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-gray-600">
+              Showing {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} to {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} applications
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange?.(pagination.currentPage - 1)}
+                disabled={pagination.currentPage <= 1}
+              >
+                Previous
+              </Button>
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  const pageNum = i + 1
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={pagination.currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => onPageChange?.(pageNum)}
+                      className="w-8 h-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  )
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange?.(pagination.currentPage + 1)}
+                disabled={pagination.currentPage >= pagination.totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
 

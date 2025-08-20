@@ -16,6 +16,13 @@ export default function MissionOperatorDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const { user, logout } = useAuthStore()
   const router = useRouter()
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    itemCount: 0,
+    itemsPerPage: 10,
+    totalPages: 0,
+    totalItems: 0
+  })
   const [stats, setStats] = useState({
     total: 0,
     submitted: 0,
@@ -23,17 +30,19 @@ export default function MissionOperatorDashboard() {
     pending: 0,
   })
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (page: number = 1, limit: number = 10) => {
     try {
-      // Fetch applications for user's region
+      // Fetch applications for user's region with pagination
       const response = await applicationAPI.getAll({
-        region: user?.state,
-        submittedBy: user?.id
+        page,
+        limit,
+        // Note: region and submittedBy filters would need to be added to the API if supported
       })
       setApplications(response.data || [])
+      setPagination(response.meta)
       
-      // Calculate stats
-      const totalApps = response.data?.length || 0
+      // Calculate stats from all applications (this might need to be adjusted based on your needs)
+      const totalApps = response.meta.totalItems || 0
       const submitted = response.data?.filter(app => 
         ['SUBMITTED', 'UNDER_REVIEW', 'AGENCY_REVIEW', 'MINISTRY_REVIEW'].includes(app.status)
       ).length || 0
@@ -63,11 +72,11 @@ export default function MissionOperatorDashboard() {
   }
 
   useEffect(() => {
-    fetchApplications()
+    fetchApplications(1, 10)
   }, [user])
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background dashboardBackgroundColor  p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -154,9 +163,11 @@ export default function MissionOperatorDashboard() {
             <ApplicationsTable
               applications={applications}
               isLoading={isLoading}
-              onRefresh={fetchApplications}
+              onRefresh={() => fetchApplications(pagination.currentPage, pagination.itemsPerPage)}
               userRole="MISSION_OPERATOR"
               onPrint={handlePrintApplication}
+              pagination={pagination}
+              onPageChange={(page) => fetchApplications(page, pagination.itemsPerPage)}
             />
           </CardContent>
         </Card>

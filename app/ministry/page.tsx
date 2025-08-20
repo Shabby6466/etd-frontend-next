@@ -14,6 +14,13 @@ export default function MinistryDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { logout } = useAuthStore()
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    itemCount: 0,
+    itemsPerPage: 10,
+    totalPages: 0,
+    totalItems: 0
+  })
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -22,16 +29,18 @@ export default function MinistryDashboard() {
     blacklisted: 0,
   })
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (page: number = 1, limit: number = 10) => {
     try {
       // Fetch applications that are submitted by mission operators and ready for ministry review
       const response = await applicationAPI.getAll({
-        status: ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'MINISTRY_REVIEW', 'AGENCY_REVIEW', 'VERIFICATION_SUBMITTED', 'VERIFICATION_RECEIVED']
+        page,
+        limit
       })
       setApplications(response.data || [])
+      setPagination(response.meta)
       
-      // Calculate stats
-      const totalApps = response.data?.length || 0
+      // Calculate stats from all applications (this might need to be adjusted based on your needs)
+      const totalApps = response.meta.totalItems || 0
       const pending = response.data?.filter(app => 
         ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'MINISTRY_REVIEW', 'AGENCY_REVIEW', 'VERIFICATION_SUBMITTED', 'VERIFICATION_RECEIVED'].includes(app.status)
       ).length || 0
@@ -100,11 +109,11 @@ export default function MinistryDashboard() {
   }
 
   useEffect(() => {
-    fetchApplications()
+    fetchApplications(1, 10)
   }, [])
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background dashboardBackgroundColor p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -116,7 +125,7 @@ export default function MinistryDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <Button 
-              onClick={fetchApplications} 
+              onClick={() => fetchApplications(pagination.currentPage, pagination.itemsPerPage)} 
               variant="outline" 
               size="sm"
               disabled={isLoading}
@@ -138,10 +147,10 @@ export default function MinistryDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 ">
+          <Card className="rounded-3xl" >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 rounded-3xl">
+              <CardTitle className="text-sm font-medium ">Total Applications</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -149,7 +158,7 @@ export default function MinistryDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
               <Clock className="h-4 w-4 text-yellow-600" />
@@ -159,7 +168,7 @@ export default function MinistryDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Approved</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-600" />
@@ -169,7 +178,7 @@ export default function MinistryDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl"> 
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Rejected</CardTitle>
               <XCircle className="h-4 w-4 text-red-600" />
@@ -179,7 +188,7 @@ export default function MinistryDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Blacklisted</CardTitle>
               <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -191,7 +200,7 @@ export default function MinistryDashboard() {
         </div>
 
         {/* Applications Table */}
-        <Card>
+        <Card className="rounded-3xl">
           <CardHeader>
             <CardTitle>Applications for Ministry Review</CardTitle>
           </CardHeader>
@@ -199,12 +208,14 @@ export default function MinistryDashboard() {
             <ApplicationsTable
               applications={applications}
               isLoading={isLoading}
-              onRefresh={fetchApplications}
+              onRefresh={() => fetchApplications(pagination.currentPage, pagination.itemsPerPage)}
               userRole="MINISTRY"
               onApprove={handleApproveApplication}
               onReject={handleRejectApplication}
               onBlacklist={handleBlacklistApplication}
               onSendToAgency={handleSendToAgency}
+              pagination={pagination}
+              onPageChange={(page) => fetchApplications(page, pagination.itemsPerPage)}
             />
           </CardContent>
         </Card>

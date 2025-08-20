@@ -56,8 +56,11 @@ export function AgencyStatistics() {
       console.log('Raw Stats Response:', statsResponse)
       setStatistics(statsResponse.agency_statistics)
       
-      // Fetch applications
-      const appsResponse = await applicationAPI.getAll()
+      // Fetch applications with pagination
+      const appsResponse = await applicationAPI.getAll({
+        page: 1,
+        limit: 100 // Fetch more applications for statistics
+      })
       console.log('Apps Response:', appsResponse)
       
       // Fetch agency tracking data for each application

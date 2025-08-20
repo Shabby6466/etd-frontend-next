@@ -32,10 +32,24 @@ export default function AdminDashboard() {
     pending: 0,
   })
 
-  const fetchApplications = async () => {
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    itemCount: 0,
+    itemsPerPage: 10,
+    totalPages: 0,
+    totalItems: 0
+  })
+
+  const fetchApplications = async (page: number = 1, limit: number = 10) => {
     try {
-      const response = await applicationAPI.getAll()
+      setIsLoading(true)
+      const response = await applicationAPI.getAll({
+        page,
+        limit
+      })
       setApplications(response.data)
+      setPagination(response.meta)
     } catch (error) {
       showNotification.error("Failed to fetch applications")
     } finally {
@@ -53,12 +67,12 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => {
-    fetchApplications()
+    fetchApplications(1, 10)
     fetchStats()
   }, [])
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4 dashboardBackgroundColor">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -201,7 +215,9 @@ export default function AdminDashboard() {
           <ApplicationsTable
             applications={applications}
             isLoading={isLoading}
-            onRefresh={fetchApplications}
+            onRefresh={() => fetchApplications(pagination.currentPage, pagination.itemsPerPage)}
+            pagination={pagination}
+            onPageChange={(page) => fetchApplications(page, pagination.itemsPerPage)}
           />
         )}
 

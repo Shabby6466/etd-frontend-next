@@ -20,6 +20,8 @@ import { DGIPHeaderWithWatermarks } from "@/components/ui/dgip_header_watermarks
 import ETDApplicationPhotoCard from "@/components/ui/etd_application_photo_card"
 import { DetailForm } from "@/components/forms/DetailForm"
 import SheetSelector from "@/components/operator/SheetSelector"
+import DGIPHeader from "@/components/ui/dgip_header"
+import { ArrowLeft } from "lucide-react"
 
 export function CitizenForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -462,9 +464,9 @@ export function CitizenForm() {
   }
 
   return (
-    <div className="min-h-screen p-4" style={{ backgroundColor: '#E5EDFF' }}>
+    <div className="min-h-screen p-4 dashboardBackgroundColor">
       <DGIPHeaderWithWatermarks />
-      <div className="relative z-20 max-w-4xl mx-auto">
+      <div className="relative z-20 max-w-4xl mx-auto ">
         {!showFullForm ? (
           // Show photo card first
           <ETDApplicationPhotoCard
@@ -505,7 +507,7 @@ export function CitizenForm() {
                   onClick={() => setShowFullForm(false)}
                   className="text-sm"
                 >
-                  ← Back to Photo
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back to Photo
                 </Button>
               </div>
             </CardHeader>

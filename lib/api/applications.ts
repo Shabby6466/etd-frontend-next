@@ -158,14 +158,105 @@ export interface CreateApplicationData {
 
 
 export const applicationAPI = {
-  // Get all applications with filters
-  getAll: async (filters?: any): Promise<{ data: Application[] }> => {
-    const response = await apiClient.get(`/applications`, { params: filters })
-    const rawData = response.data || []
-    const transformedData = Array.isArray(rawData) 
-      ? rawData.map(transformApplicationData)
-      : []
-    return { data: transformedData }
+  // Get all applications with filters and pagination
+  getAll: async (filters: {
+    page?: number
+    limit?: number
+    search?: string
+    citizen_id?: string
+    application_id?: string
+    sheet_no?: string
+    date_from?: string
+    date_to?: string
+    sort_by?: string
+    sort_order?: 'ASC' | 'DESC'
+    status?: string
+  } = {}): Promise<{
+    data: Application[]
+    meta: {
+      currentPage: number
+      itemCount: number
+      itemsPerPage: number
+      totalPages: number
+      totalItems: number
+    }
+  }> => {
+    const params = new URLSearchParams()
+    
+    // Add all optional parameters
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.search) params.append('search', filters.search)
+    if (filters.citizen_id) params.append('citizen_id', filters.citizen_id)
+    if (filters.application_id) params.append('application_id', filters.application_id)
+    if (filters.sheet_no) params.append('sheet_no', filters.sheet_no)
+    if (filters.date_from) params.append('date_from', filters.date_from)
+    if (filters.date_to) params.append('date_to', filters.date_to)
+    if (filters.sort_by) params.append('sort_by', filters.sort_by)
+    if (filters.sort_order) params.append('sort_order', filters.sort_order)
+    if (filters.status) params.append('status', filters.status)
+
+    const response = await apiClient.get(`/applications?${params.toString()}`)
+    
+    console.log('Raw applications API response:', response.data)
+    
+    // Handle the API response structure
+    let applications = []
+    let meta = {
+      currentPage: 1,
+      itemCount: 0,
+      itemsPerPage: 10,
+      totalPages: 0,
+      totalItems: 0
+    }
+    
+    if (response.data.data && response.data.meta) {
+      // API returns { data: [...], meta: {...} }
+      applications = response.data.data.map(transformApplicationData)
+      meta = {
+        currentPage: response.data.meta.currentPage || 1,
+        itemCount: response.data.meta.itemCount || 0,
+        itemsPerPage: response.data.meta.itemsPerPage || 10,
+        totalPages: response.data.meta.totalPages || 0,
+        totalItems: response.data.meta.totalItems || 0
+      }
+    } else if (response.data.applications && response.data.pagination) {
+      // Fallback for different API structure
+      applications = response.data.applications.map(transformApplicationData)
+      const pagination = response.data.pagination
+      meta = {
+        currentPage: pagination.current_page || pagination.page || 1,
+        itemCount: pagination.item_count || pagination.limit || 0,
+        itemsPerPage: pagination.items_per_page || pagination.limit || 10,
+        totalPages: pagination.total_pages || pagination.totalPages || 0,
+        totalItems: pagination.total_items || pagination.total || 0
+      }
+    } else if (Array.isArray(response.data)) {
+      // Fallback for array response (no pagination)
+      applications = response.data.map(transformApplicationData)
+      meta = {
+        currentPage: 1,
+        itemCount: applications.length,
+        itemsPerPage: applications.length,
+        totalPages: 1,
+        totalItems: applications.length
+      }
+    } else {
+      // Fallback for empty response
+      applications = []
+      meta = {
+        currentPage: 1,
+        itemCount: 0,
+        itemsPerPage: 10,
+        totalPages: 0,
+        totalItems: 0
+      }
+    }
+    
+    return {
+      data: applications,
+      meta
+    }
   },
 
   // Get agency-specific applications

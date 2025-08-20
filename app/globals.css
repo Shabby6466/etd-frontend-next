@@ -57,6 +57,7 @@
     @apply bg-white text-gray-900;
     font-family: 'Inter', sans-serif;
   }
+  
 }
 
 @layer components {
@@ -157,4 +158,20 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* .backgroundColor {
+  background-image: 
+    radial-gradient(circle at bottom left, #fff 0%, transparent 90%),
+    linear-gradient(to right, rgba(0, 144, 77, 0.8), rgba(82, 95, 177, 0.55));
+} */
+.backgroundColor {
+  background-image: 
+    
+    linear-gradient(to top, #fff, #95e5ff);
+}
+
+.dashboardBackgroundColor {
+  background-image: 
+    linear-gradient(to bottom, #fff, #b3ecff);
 }
