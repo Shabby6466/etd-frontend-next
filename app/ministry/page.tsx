@@ -127,7 +127,6 @@ export default function MinistryDashboard() {
             <Button 
               onClick={() => fetchApplications(pagination.currentPage, pagination.itemsPerPage)} 
               variant="outline" 
-              size="sm"
               disabled={isLoading}
               className="flex items-center gap-2"
             >

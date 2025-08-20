@@ -11,7 +11,7 @@ export function RejectedApplicationsStats() {
     console.error('Error loading rejected applications stats:', error)
     return (
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="rounded-3xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Rejected</CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -45,7 +45,7 @@ export function RejectedApplicationsStats() {
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Rejected</CardTitle>
           <FileText className="h-4 w-4 text-red-600" />
@@ -58,7 +58,7 @@ export function RejectedApplicationsStats() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Today</CardTitle>
           <Calendar className="h-4 w-4 text-orange-600" />
@@ -71,7 +71,7 @@ export function RejectedApplicationsStats() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">This Month</CardTitle>
           <TrendingUp className="h-4 w-4 text-blue-600" />

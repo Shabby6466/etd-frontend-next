@@ -29,7 +29,7 @@ module.exports = {
           800: '#2e326c',
           900: '#222655',
         },
-        background: '#E5EDFF',
+        background: '#FFFFF',
         card: 'rgba(255, 255, 255, 0.9)',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

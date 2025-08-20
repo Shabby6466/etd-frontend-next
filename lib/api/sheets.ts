@@ -48,12 +48,13 @@ export interface SheetFilters {
 
 export interface PaginatedSheetsResponse {
   data: Sheet[]
-  page: number
-  limit: number
-  total: number
-  totalPages: number
-  hasNext: boolean
-  hasPrev: boolean
+  meta: {
+    currentPage: number
+    itemCount: number
+    itemsPerPage: number
+    totalPages: number
+    totalItems: number
+  }
 }
 
 export const sheetsAPI = {
@@ -92,7 +93,66 @@ export const sheetsAPI = {
     if (filters?.status) params.append('status', filters.status)
 
     const response = await apiClient.get(`/sheets?${params.toString()}`)
-    return response.data
+    
+    console.log('Raw sheets API response:', response.data)
+    
+    // Handle the API response structure
+    let sheets = []
+    let meta = {
+      currentPage: 1,
+      itemCount: 0,
+      itemsPerPage: 10,
+      totalPages: 0,
+      totalItems: 0
+    }
+    
+    if (response.data.data && response.data.meta) {
+      // API returns { data: [...], meta: {...} }
+      sheets = response.data.data
+      meta = {
+        currentPage: response.data.meta.currentPage || 1,
+        itemCount: response.data.meta.itemCount || 0,
+        itemsPerPage: response.data.meta.itemsPerPage || 10,
+        totalPages: response.data.meta.totalPages || 0,
+        totalItems: response.data.meta.totalItems || 0
+      }
+    } else if (response.data.sheets && response.data.pagination) {
+      // Fallback for different API structure
+      sheets = response.data.sheets
+      const pagination = response.data.pagination
+      meta = {
+        currentPage: pagination.current_page || pagination.page || 1,
+        itemCount: pagination.item_count || pagination.limit || 0,
+        itemsPerPage: pagination.items_per_page || pagination.limit || 10,
+        totalPages: pagination.total_pages || pagination.totalPages || 0,
+        totalItems: pagination.total_items || pagination.total || 0
+      }
+    } else if (Array.isArray(response.data)) {
+      // Fallback for array response (no pagination)
+      sheets = response.data
+      meta = {
+        currentPage: 1,
+        itemCount: sheets.length,
+        itemsPerPage: sheets.length,
+        totalPages: 1,
+        totalItems: sheets.length
+      }
+    } else {
+      // Fallback for empty response
+      sheets = []
+      meta = {
+        currentPage: 1,
+        itemCount: 0,
+        itemsPerPage: 10,
+        totalPages: 0,
+        totalItems: 0
+      }
+    }
+    
+    return {
+      data: sheets,
+      meta
+    }
   },
 
   // Get available sheets for operator

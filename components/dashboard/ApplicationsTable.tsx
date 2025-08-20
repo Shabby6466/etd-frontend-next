@@ -154,7 +154,6 @@ export function ApplicationsTable({
               <Button 
                 onClick={onRefresh} 
                 variant="outline" 
-                size="sm"
                 disabled={isLoading}
                 className="flex items-center gap-2"
               >

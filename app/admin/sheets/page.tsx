@@ -51,12 +51,11 @@ export default function SheetManagementPage() {
   })
   
   const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
+    currentPage: 1,
+    itemCount: 0,
+    itemsPerPage: 10,
     totalPages: 0,
-    hasNext: false,
-    hasPrev: false
+    totalItems: 0
   })
 
   // Handle hydration
@@ -111,15 +110,14 @@ export default function SheetManagementPage() {
       console.log('Stats API response:', statsData)
       console.log('Users API response:', usersData)
       
-      // Handle both paginated and non-paginated responses
+      // Handle the new pagination structure
       let sheetsArray: Sheet[] = []
       let paginationData = {
-        page: 1,
-        limit: 10,
-        total: 0,
+        currentPage: 1,
+        itemCount: 0,
+        itemsPerPage: 10,
         totalPages: 0,
-        hasNext: false,
-        hasPrev: false
+        totalItems: 0
       }
       
       if (sheetsData && typeof sheetsData === 'object') {
@@ -127,23 +125,31 @@ export default function SheetManagementPage() {
           // API returned a simple array
           sheetsArray = sheetsData
           paginationData = {
-            page: 1,
-            limit: sheetsArray.length,
-            total: sheetsArray.length,
+            currentPage: 1,
+            itemCount: sheetsArray.length,
+            itemsPerPage: sheetsArray.length,
             totalPages: 1,
-            hasNext: false,
-            hasPrev: false
+            totalItems: sheetsArray.length
           }
-        } else if (sheetsData.data && Array.isArray(sheetsData.data)) {
-          // API returned paginated response
+        } else if (sheetsData.data && Array.isArray(sheetsData.data) && sheetsData.meta) {
+          // API returned paginated response with new structure
           sheetsArray = sheetsData.data
           paginationData = {
-            page: sheetsData.page || 1,
-            limit: sheetsData.limit || 10,
-            total: sheetsData.total || 0,
-            totalPages: sheetsData.totalPages || 0,
-            hasNext: sheetsData.hasNext || false,
-            hasPrev: sheetsData.hasPrev || false
+            currentPage: sheetsData.meta.currentPage || 1,
+            itemCount: sheetsData.meta.itemCount || 0,
+            itemsPerPage: sheetsData.meta.itemsPerPage || 10,
+            totalPages: sheetsData.meta.totalPages || 0,
+            totalItems: sheetsData.meta.totalItems || 0
+          }
+        } else if (sheetsData.data && Array.isArray(sheetsData.data)) {
+          // Fallback for old pagination structure
+          sheetsArray = sheetsData.data
+          paginationData = {
+            currentPage: (sheetsData as any).page || 1,
+            itemCount: (sheetsData as any).limit || 10,
+            itemsPerPage: (sheetsData as any).limit || 10,
+            totalPages: (sheetsData as any).totalPages || 0,
+            totalItems: (sheetsData as any).total || 0
           }
         }
       }
@@ -158,12 +164,11 @@ export default function SheetManagementPage() {
       // Set default values on error
       setSheets([])
       setPagination({
-        page: 1,
-        limit: 10,
-        total: 0,
+        currentPage: 1,
+        itemCount: 0,
+        itemsPerPage: 10,
         totalPages: 0,
-        hasNext: false,
-        hasPrev: false
+        totalItems: 0
       })
     } finally {
       setLoading(false)
@@ -338,7 +343,7 @@ export default function SheetManagementPage() {
              {/* Statistics Cards */}
        {stats && (
                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-           <Card>
+           <Card className="rounded-3xl">
              <CardHeader className="pb-2">
                <CardTitle className="text-sm font-medium">Total Sheets</CardTitle>
              </CardHeader>
@@ -346,7 +351,7 @@ export default function SheetManagementPage() {
                <div className="text-2xl font-bold">{stats.total_sheets}</div>
              </CardContent>
            </Card>
-           <Card>
+           <Card className="rounded-3xl">
              <CardHeader className="pb-2">
                <CardTitle className="text-sm font-medium">Available Sheets</CardTitle>
              </CardHeader>
@@ -356,7 +361,7 @@ export default function SheetManagementPage() {
            </Card>
            
            {stats.qc_pass_sheets !== undefined && (
-             <Card>
+             <Card className="rounded-3xl">
                <CardHeader className="pb-2">
                  <CardTitle className="text-sm font-medium">QC Pass</CardTitle>
                </CardHeader>
@@ -366,7 +371,7 @@ export default function SheetManagementPage() {
              </Card>
            )}
            {stats.qc_fail_sheets !== undefined && (
-             <Card>
+             <Card className="rounded-3xl">
                <CardHeader className="pb-2">
                  <CardTitle className="text-sm font-medium">QC Fail</CardTitle>
                </CardHeader>
@@ -381,7 +386,7 @@ export default function SheetManagementPage() {
              {/* Assignment Section */}
        <div className="grid grid-cols-1 gap-6">
          {/* Manual Assignment */}
-         <Card>
+         <Card className="rounded-3xl"  >
            <CardHeader>
              <CardTitle>Assign Sheets Manually</CardTitle>
            </CardHeader>
@@ -582,20 +587,20 @@ export default function SheetManagementPage() {
           </div>
           
           {/* Pagination Controls */}
-          {sheets && sheets.length > 0 && (
+          {sheets && sheets.length > 0 && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
               <div className="text-sm text-gray-600">
-                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} sheets
+                Showing {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} to {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} sheets
               </div>
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const newFilters = { ...filters, page: pagination.page - 1 }
+                    const newFilters = { ...filters, page: pagination.currentPage - 1 }
                     setFilters(newFilters)
                   }}
-                  disabled={!pagination.hasPrev}
+                  disabled={pagination.currentPage <= 1}
                 >
                   Previous
                 </Button>
@@ -605,7 +610,7 @@ export default function SheetManagementPage() {
                     return (
                       <Button
                         key={pageNum}
-                        variant={pagination.page === pageNum ? "default" : "outline"}
+                        variant={pagination.currentPage === pageNum ? "default" : "outline"}
                         size="sm"
                         onClick={() => {
                           const newFilters = { ...filters, page: pageNum }
@@ -625,10 +630,10 @@ export default function SheetManagementPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const newFilters = { ...filters, page: pagination.page + 1 }
+                    const newFilters = { ...filters, page: pagination.currentPage + 1 }
                     setFilters(newFilters)
                   }}
-                  disabled={!pagination.hasNext}
+                  disabled={pagination.currentPage >= pagination.totalPages}
                 >
                   Next
                 </Button>

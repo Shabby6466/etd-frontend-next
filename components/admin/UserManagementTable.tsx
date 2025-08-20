@@ -4,17 +4,19 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Edit, RefreshCw } from "lucide-react"
+import { Trash2, Edit, RefreshCw, UserPlus } from "lucide-react"
 import { User } from "@/lib/types"
 import { showNotification } from "@/lib/utils/notifications"
 import { userAPI } from "@/lib/api/users"
 import { EditUserModal } from "./EditUserModal"
+import { CreateUserModal } from "./CreateUserModal"
 
 export function UserManagementTable() {
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
 
   const fetchUsers = async () => {
     try {
@@ -93,20 +95,30 @@ export function UserManagementTable() {
 
   return (
     <>
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>All Users ({users.length})</CardTitle>
+            <div className="flex items-center gap-2">
+
+              <Button
+                onClick={() => setIsCreateUserModalOpen(true)}
+                className="flex items-center gap-2 "
+                >
+                <UserPlus className="h-4 w-4" />
+                Create User
+              </Button>
+          
             <Button 
               onClick={fetchUsers} 
               variant="outline" 
-              size="sm"
               disabled={isLoading}
-              className="flex items-center gap-2"
-            >
+              className="flex items-center gap-2 "
+              >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
+              </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -185,6 +197,11 @@ export function UserManagementTable() {
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         onUserUpdated={handleUserUpdated}
+      />
+
+      <CreateUserModal
+        open={isCreateUserModalOpen}
+        onOpenChange={setIsCreateUserModalOpen}
       />
     </>
   )

@@ -244,17 +244,17 @@ export function AgencyStatistics() {
 
     return (
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse border border-gray-300">
+        <table className="w-full">
           <thead>
-            <tr className="bg-gray-50">
-              <th className="border border-gray-300 px-4 py-2 text-left">Application ID</th>
-              <th className="border border-gray-300 px-4 py-2 text-left">Citizen Name</th>
-              <th className="border border-gray-300 px-4 py-2 text-left">Agency</th>
-              <th className="border border-gray-300 px-4 py-2 text-left">Status</th>
-              <th className="border border-gray-300 px-4 py-2 text-left">Submitted At</th>
-              <th className="border border-gray-300 px-4 py-2 text-left">Completed At</th>
-              <th className="border border-gray-300 px-4 py-2 text-left">Remarks</th>
-              <th className="border border-gray-300 px-4 py-2 text-left">Actions</th>
+            <tr className="border-b">
+              <th className="text-left p-4 font-medium">Application ID</th>
+              <th className="text-left p-4 font-medium">Citizen Name</th>
+              <th className="text-left p-4 font-medium">Agency</th>
+              <th className="text-center p-4 font-medium">Status</th>
+              <th className="text-left p-4 font-medium">Submitted At</th>
+              <th className="text-left p-4 font-medium">Completed At</th>
+              <th className="text-left p-4 font-medium">Remarks</th>
+              <th className="text-left p-4 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -262,37 +262,45 @@ export function AgencyStatistics() {
               const agencyTracking = application.agency_tracking?.filter(tracking => tracking.status === status)
               
               return agencyTracking?.map((tracking) => (
-                <tr key={`${application.id}-${tracking.agency_name}`} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 px-4 py-2 font-mono">
-                    {application.id}
+                <tr key={`${application.id}-${tracking.agency_name}`} className="border-b hover:bg-gray-50">
+                  <td className="p-3">
+                    <span className="font-mono text-sm">
+                      {application.id}
+                    </span>
                   </td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {application.firstName} {application.lastName}
+                  <td className="p-3">
+                    <div className="font-medium">
+                      {application.firstName} {application.lastName}
+                    </div>
                   </td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {tracking.agency_name}
+                  <td className="p-3">
+                    <div className="font-medium">
+                      {tracking.agency_name}
+                    </div>
                   </td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    <Badge 
-                      variant="outline"
-                      className={`flex items-center gap-1 ${getStatusColor(tracking.status)}`}
-                    >
-                      {getStatusIcon(tracking.status)}
-                      {tracking.status}
-                    </Badge>
+                  <td className="p-3">
+                    <div className="flex justify-center">
+                      <Badge 
+                        variant="outline"
+                        className={`flex items-center gap-1 ${getStatusColor(tracking.status)}`}
+                      >
+                        {getStatusIcon(tracking.status)}
+                        {tracking.status}
+                      </Badge>
+                    </div>
                   </td>
-                  <td className="border border-gray-300 px-4 py-2">
+                  <td className="p-3 text-sm text-gray-500">
                     {tracking.submitted_at ? formatDate(tracking.submitted_at) : '-'}
                   </td>
-                  <td className="border border-gray-300 px-4 py-2">
+                  <td className="p-3 text-sm text-gray-500">
                     {tracking.completed_at ? formatDate(tracking.completed_at) : '-'}
                   </td>
-                  <td className="border border-gray-300 px-4 py-2 max-w-xs">
-                    <div className="truncate" title={tracking.remarks || ''}>
+                  <td className="p-3 max-w-xs">
+                    <div className="truncate text-sm text-gray-600" title={tracking.remarks || ''}>
                       {tracking.remarks || '-'}
                     </div>
                   </td>
-                  <td className="border border-gray-300 px-4 py-2">
+                  <td className="p-3">
                     {tracking.attachment_url && (
                       <div className="flex gap-1">
                         <Button
@@ -327,7 +335,7 @@ export function AgencyStatistics() {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <CardTitle>Agency Statistics</CardTitle>
         </CardHeader>
@@ -347,7 +355,7 @@ export function AgencyStatistics() {
 
   if (error) {
     return (
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <CardTitle>Agency Statistics</CardTitle>
         </CardHeader>
@@ -364,7 +372,7 @@ export function AgencyStatistics() {
   }
 
   return (
-    <Card>
+    <Card className="rounded-3xl">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -400,7 +408,7 @@ export function AgencyStatistics() {
           </Card> */}
 
           {/* Tab Buttons */}
-          <div className="flex gap-2 border-b">
+          <div className="flex gap-2">
             <Button
               variant={activeTab === 'pending' ? 'default' : 'outline'}
               onClick={() => setActiveTab('pending')}
@@ -429,7 +437,7 @@ export function AgencyStatistics() {
 
           {/* Content */}
           {activeTab === 'pending' && (
-            <Card>
+            <Card className="rounded-3xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5" />
@@ -443,7 +451,7 @@ export function AgencyStatistics() {
           )}
 
           {activeTab === 'failed' && (
-            <Card>
+            <Card className="rounded-3xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <XCircle className="h-5 w-5" />
@@ -457,7 +465,7 @@ export function AgencyStatistics() {
           )}
 
           {activeTab === 'completed' && (
-            <Card>
+            <Card className="rounded-3xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5" />

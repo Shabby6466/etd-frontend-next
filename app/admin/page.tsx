@@ -94,7 +94,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-gray-200">
+        <div className="flex ">
           <button
             onClick={() => setActiveTab('applications')}
             className={`px-6 py-3 font-medium text-sm ${
@@ -167,48 +167,6 @@ export default function AdminDashboard() {
            </button>
         </div>
 
-        {/* Stats Cards */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Approved</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-              <XCircle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
-              <Users className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-            </CardContent>
-          </Card>
-        </div> */}
 
         {/* Content based on active tab */}
         {activeTab === 'applications' && (
@@ -223,8 +181,7 @@ export default function AdminDashboard() {
 
         {activeTab === 'users' && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">User Management</h2>
+            {/* <div className="flex justify-between items-center">
               <Button
                 onClick={() => setIsCreateUserModalOpen(true)}
                 className="flex items-center gap-2"
@@ -232,7 +189,7 @@ export default function AdminDashboard() {
                 <UserPlus className="h-4 w-4" />
                 Create User
               </Button>
-            </div>
+            </div> */}
             <UserManagementTable />
           </div>
         )}
@@ -261,10 +218,10 @@ export default function AdminDashboard() {
          )}
 
         {/* Create User Modal */}
-        <CreateUserModal
+        {/* <CreateUserModal
           open={isCreateUserModalOpen}
           onOpenChange={setIsCreateUserModalOpen}
-        />
+        /> */}
       </div>
     </div>
   )

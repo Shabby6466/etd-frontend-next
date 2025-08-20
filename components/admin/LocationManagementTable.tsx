@@ -16,7 +16,7 @@ interface LocationFilters {
   page: number
   limit: number
   search?: string
-  sortBy?: string
+  sortBy?: 'name' | 'location_id' | 'created_at'
   sortOrder?: 'ASC' | 'DESC'
 }
 
@@ -94,7 +94,7 @@ export function LocationManagementTable() {
     setFilters(prev => ({
       ...prev,
       search: filterInputs.search || undefined,
-      sortBy: filterInputs.sortBy,
+      sortBy: filterInputs.sortBy as 'name' | 'location_id' | 'created_at',
       sortOrder: filterInputs.sortOrder as 'ASC' | 'DESC',
       limit: parseInt(filterInputs.limit),
       page: 1 // Reset to first page when applying filters
@@ -132,7 +132,7 @@ export function LocationManagementTable() {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -224,14 +224,13 @@ export function LocationManagementTable() {
       </Card>
 
       {/* Locations Table */}
-      <Card>
+      <Card className="rounded-3xl" >
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Locations ({pagination.total})</CardTitle>
             <Button 
               onClick={fetchLocations} 
               variant="outline" 
-              size="sm"
               disabled={loading}
               className="flex items-center gap-2"
             >
@@ -242,29 +241,25 @@ export function LocationManagementTable() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 px-4 py-2 text-left">Location ID</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Name</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Created At</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Updated At</th>
+                <tr className="border-b">
+                  <th className="text-left p-4 font-medium">Location ID</th>
+                  <th className="text-left p-4 font-medium">Name</th>  
                 </tr>
               </thead>
               <tbody>
                 {locations && locations.length > 0 ? locations.map((location) => (
-                  <tr key={location.location_id} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-2 font-mono">
-                      {location.location_id}
+                  <tr key={location.location_id} className="border-b hover:bg-gray-50">
+                    <td className="p-3">
+                      <span className="font-mono text-sm">
+                        {location.location_id}
+                      </span>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {location.name}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {formatDate(location.createdAt)}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {formatDate(location.updatedAt)}
+                    <td className="p-3">
+                      <div className="font-medium">
+                        {location.name}
+                      </div>
                     </td>
                   </tr>
                 )) : null}

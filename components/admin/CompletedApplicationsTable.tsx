@@ -162,7 +162,7 @@ export function CompletedApplicationsTable() {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -307,7 +307,7 @@ export function CompletedApplicationsTable() {
       </Card>
 
       {/* Applications Table */}
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Completed Applications ({pagination.total})</CardTitle>
@@ -325,49 +325,59 @@ export function CompletedApplicationsTable() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 px-4 py-2 text-left">Application ID</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Citizen ID</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Name</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Status</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Sheet No</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Created</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Print Time</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Created By</th>
+                <tr className="border-b">
+                  <th className="text-left p-4 font-medium">Application ID</th>
+                  <th className="text-left p-4 font-medium">Citizen ID</th>
+                  <th className="text-left p-4 font-medium">Name</th>
+                  <th className="text-center p-4 font-medium">Status</th>
+                  <th className="text-left p-4 font-medium">Sheet No</th>
+                  <th className="text-left p-4 font-medium">Created</th>
+                  <th className="text-left p-4 font-medium">Print Time</th>
+                  <th className="text-left p-4 font-medium">Created By</th>
                 </tr>
               </thead>
               <tbody>
                 {applications && applications.length > 0 ? applications.map((application) => (
-                  <tr key={application.id} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-2 font-mono">
-                      {application.id}
+                  <tr key={application.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3">
+                      <span className="font-mono text-sm">
+                        {application.id}
+                      </span>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 font-mono">
-                      {application.citizenId}
+                    <td className="p-3">
+                      <span className="font-mono text-sm">
+                        {application.citizenId}
+                      </span>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {application.firstName} {application.lastName}
+                    <td className="p-3">
+                      <div className="font-medium">
+                        {application.firstName} {application.lastName}
+                      </div>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      <Badge 
-                        variant="success"
-                      >
-                        {application.status}
-                      </Badge>
+                    <td className="p-3">
+                      <div className="flex justify-center">
+                        <Badge variant="success">
+                          {application.status}
+                        </Badge>
+                      </div>
                     </td>
-                      <td className="border border-gray-300 px-4 py-2 font-mono">
+                    <td className="p-3">
+                      <span className="font-mono text-sm">
                         {application.sheet_no || '-'}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {formatDate(application.createdAt)}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {(application as any).print_time_stamp ? formatDate((application as any).print_time_stamp) : '-'}
-                      </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {application.created_by_id || '-'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-sm text-gray-500">
+                      {formatDate(application.createdAt)}
+                    </td>
+                    <td className="p-3 text-sm text-gray-500">
+                      {(application as any).print_time_stamp ? formatDate((application as any).print_time_stamp) : '-'}
+                    </td>
+                    <td className="p-3">
+                      <span className="font-mono text-sm">
+                        {application.created_by_id || '-'}
+                      </span>
                     </td>
                   </tr>
                 )) : null}

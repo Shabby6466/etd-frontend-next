@@ -60,12 +60,11 @@ export function SheetManagementTable() {
   })
 
   const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
+    currentPage: 1,
+    itemCount: 0,
+    itemsPerPage: 10,
     totalPages: 0,
-    hasNext: false,
-    hasPrev: false
+    totalItems: 0
   })
 
   // Handle hydration
@@ -92,15 +91,14 @@ export function SheetManagementTable() {
       console.log('Stats API response:', statsData)
       console.log('Users API response:', usersData)
       
-      // Handle both paginated and non-paginated responses
+      // Handle the new pagination structure
       let sheetsArray: Sheet[] = []
       let paginationData = {
-        page: 1,
-        limit: 10,
-        total: 0,
+        currentPage: 1,
+        itemCount: 0,
+        itemsPerPage: 10,
         totalPages: 0,
-        hasNext: false,
-        hasPrev: false
+        totalItems: 0
       }
       
       if (sheetsData && typeof sheetsData === 'object') {
@@ -108,23 +106,31 @@ export function SheetManagementTable() {
           // API returned a simple array
           sheetsArray = sheetsData
           paginationData = {
-            page: 1,
-            limit: sheetsArray.length,
-            total: sheetsArray.length,
+            currentPage: 1,
+            itemCount: sheetsArray.length,
+            itemsPerPage: sheetsArray.length,
             totalPages: 1,
-            hasNext: false,
-            hasPrev: false
+            totalItems: sheetsArray.length
           }
-        } else if (sheetsData.data && Array.isArray(sheetsData.data)) {
-          // API returned paginated response
+        } else if (sheetsData.data && Array.isArray(sheetsData.data) && sheetsData.meta) {
+          // API returned paginated response with new structure
           sheetsArray = sheetsData.data
           paginationData = {
-            page: sheetsData.page || 1,
-            limit: sheetsData.limit || 10,
-            total: sheetsData.total || 0,
-            totalPages: sheetsData.totalPages || 0,
-            hasNext: sheetsData.hasNext || false,
-            hasPrev: sheetsData.hasPrev || false
+            currentPage: sheetsData.meta.currentPage || 1,
+            itemCount: sheetsData.meta.itemCount || 0,
+            itemsPerPage: sheetsData.meta.itemsPerPage || 10,
+            totalPages: sheetsData.meta.totalPages || 0,
+            totalItems: sheetsData.meta.totalItems || 0
+          }
+        } else if (sheetsData.data && Array.isArray(sheetsData.data)) {
+          // Fallback for old pagination structure
+          sheetsArray = sheetsData.data
+          paginationData = {
+            currentPage: (sheetsData as any).page || 1,
+            itemCount: (sheetsData as any).limit || 10,
+            itemsPerPage: (sheetsData as any).limit || 10,
+            totalPages: (sheetsData as any).totalPages || 0,
+            totalItems: (sheetsData as any).total || 0
           }
         }
       }
@@ -140,12 +146,11 @@ export function SheetManagementTable() {
       setStats(null)
       setUsers([])
       setPagination({
-        page: 1,
-        limit: 10,
-        total: 0,
+        currentPage: 1,
+        itemCount: 0,
+        itemsPerPage: 10,
         totalPages: 0,
-        hasNext: false,
-        hasPrev: false
+        totalItems: 0
       })
     } finally {
       setLoading(false)
@@ -332,7 +337,7 @@ export function SheetManagementTable() {
       {/* Statistics Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Total Sheets</CardTitle>
             </CardHeader>
@@ -340,7 +345,7 @@ export function SheetManagementTable() {
               <div className="text-2xl font-bold">{stats.total_sheets}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Available Sheets</CardTitle>
             </CardHeader>
@@ -350,7 +355,7 @@ export function SheetManagementTable() {
           </Card>
           
           {stats.qc_pass_sheets !== undefined && (
-            <Card>
+            <Card className="rounded-3xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">QC Pass</CardTitle>
               </CardHeader>
@@ -360,7 +365,7 @@ export function SheetManagementTable() {
             </Card>
           )}
           {stats.qc_fail_sheets !== undefined && (
-            <Card>
+            <Card className="rounded-3xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">QC Fail</CardTitle>
               </CardHeader>
@@ -375,7 +380,7 @@ export function SheetManagementTable() {
       {/* Assignment Section */}
       <div className="grid grid-cols-1 gap-6">
         {/* Manual Assignment */}
-        <Card>
+        <Card className="rounded-3xl">
           <CardHeader>
             <CardTitle>Assign Sheets Manually</CardTitle>
           </CardHeader>
@@ -426,7 +431,7 @@ export function SheetManagementTable() {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -435,14 +440,15 @@ export function SheetManagementTable() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-3xl">
               <Label htmlFor="filterOperator">Operator</Label>
               <Select 
+            
                 value={filterInputs.operator_id} 
                 onValueChange={(value) => setFilterInputs(prev => ({ ...prev, operator_id: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select operator (or leave empty for all)" />
+                  <SelectValue  placeholder="Select operator (or leave empty for all)" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All operators</SelectItem>
@@ -524,14 +530,13 @@ export function SheetManagementTable() {
       </Card>
 
       {/* Sheets Table */}
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Sheets ({pagination.total})</CardTitle>
+                         <CardTitle>Sheets ({pagination.totalItems})</CardTitle>
             <Button 
               onClick={fetchData} 
               variant="outline" 
-              size="sm"
               disabled={loading}
               className="flex items-center gap-2"
             >
@@ -542,48 +547,56 @@ export function SheetManagementTable() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 px-4 py-2 text-left">Sheet No</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Operator</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Status</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Issued At</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Used At</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Application</th>
+                <tr className="border-b">
+                  <th className="text-left p-4 font-medium">Sheet No</th>
+                  <th className="text-left p-4 font-medium">Operator</th>
+                  <th className="text-center p-4 font-medium">Status</th>
+                  <th className="text-left p-4 font-medium">Issued At</th>
+                  <th className="text-left p-4 font-medium">Used At</th>
+                  <th className="text-left p-4 font-medium">Application</th>
                 </tr>
               </thead>
               <tbody>
                 {sheets && sheets.length > 0 ? sheets.map((sheet) => (
-                  <tr key={sheet.sheet_no} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-2 font-mono">
-                      {sheet.sheet_no}
+                  <tr key={sheet.sheet_no} className="border-b hover:bg-gray-50">
+                    <td className="p-3">
+                      <span className="font-mono text-sm">
+                        {sheet.sheet_no}
+                      </span>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {sheet.operator_name}
+                    <td className="p-3">
+                      <div className="font-medium">
+                        {sheet.operator_name || 'Unassigned'}
+                      </div>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      <Badge 
-                        variant={
-                          sheet.status === 'QC_PASS' ? 'default' :
-                          sheet.status === 'QC_FAIL' ? 'destructive' : 
-                          'secondary'
-                        }
-                        className={
-                          sheet.status === 'QC_PASS' ? 'bg-green-600 hover:bg-green-700' : ''
-                        }
-                      >
-                        {sheet.status}
-                      </Badge>
+                    <td className="p-3">
+                      <div className="flex justify-center">
+                        <Badge 
+                          variant={
+                            sheet.status === 'QC_PASS' ? 'default' :
+                            sheet.status === 'QC_FAIL' ? 'destructive' : 
+                            'secondary'
+                          }
+                          className={
+                            sheet.status === 'QC_PASS' ? 'bg-green-600 hover:bg-green-700' : ''
+                          }
+                        >
+                          {sheet.status}
+                        </Badge>
+                      </div>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
+                    <td className="p-3 text-sm text-gray-500">
                       {formatDate(sheet.issued_at)}
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
+                    <td className="p-3 text-sm text-gray-500">
                       {sheet.used_at ? formatDate(sheet.used_at) : '-'}
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {sheet.used_by_application || '-'}
+                    <td className="p-3">
+                      <span className="font-mono text-sm">
+                        {sheet.used_by_application || '-'}
+                      </span>
                     </td>
                   </tr>
                 )) : null}
@@ -596,59 +609,59 @@ export function SheetManagementTable() {
             )}
           </div>
           
-          {/* Pagination Controls */}
-          {sheets && sheets.length > 0 && (
-            <div className="flex items-center justify-between mt-6">
-              <div className="text-sm text-gray-600">
-                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} sheets
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const newFilters = { ...filters, page: pagination.page - 1 }
-                    setFilters(newFilters)
-                  }}
-                  disabled={!pagination.hasPrev}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    const pageNum = i + 1
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={pagination.page === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          const newFilters = { ...filters, page: pageNum }
-                          setFilters(newFilters)
-                        }}
-                        className="w-8 h-8 p-0"
-                      >
-                        {pageNum}
-                      </Button>
-                    )
-                  })}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const newFilters = { ...filters, page: pagination.page + 1 }
-                    setFilters(newFilters)
-                  }}
-                  disabled={!pagination.hasNext}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+                     {/* Pagination Controls */}
+           {sheets && sheets.length > 0 && pagination.totalPages > 1 && (
+             <div className="flex items-center justify-between mt-6">
+               <div className="text-sm text-gray-600">
+                 Showing {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} to {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} sheets
+               </div>
+               <div className="flex items-center space-x-2">
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => {
+                     const newFilters = { ...filters, page: pagination.currentPage - 1 }
+                     setFilters(newFilters)
+                   }}
+                   disabled={pagination.currentPage <= 1}
+                 >
+                   <ChevronLeft className="h-4 w-4" />
+                   Previous
+                 </Button>
+                 <div className="flex items-center space-x-1">
+                   {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                     const pageNum = i + 1
+                     return (
+                       <Button
+                         key={pageNum}
+                         variant={pagination.currentPage === pageNum ? "default" : "outline"}
+                         size="sm"
+                         onClick={() => {
+                           const newFilters = { ...filters, page: pageNum }
+                           setFilters(newFilters)
+                         }}
+                         className="w-8 h-8 p-0"
+                       >
+                         {pageNum}
+                       </Button>
+                     )
+                   })}
+                 </div>
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => {
+                     const newFilters = { ...filters, page: pagination.currentPage + 1 }
+                     setFilters(newFilters)
+                   }}
+                   disabled={pagination.currentPage >= pagination.totalPages}
+                 >
+                   Next
+                   <ChevronRight className="h-4 w-4" />
+                 </Button>
+               </div>
+             </div>
+           )}
         </CardContent>
       </Card>
     </div>
