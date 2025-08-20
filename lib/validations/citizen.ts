@@ -33,7 +33,8 @@ export const citizenSchema = z.object({
   investor: z.string().optional(),
   securityDeposit: z.string().optional(),
   passport_api_data: z.any().optional(),
-  nadra_api_data: z.any().optional()
+  nadra_api_data: z.any().optional(),
+  passport_response_id: z.string().optional()
 })
 
 export type CitizenFormData = z.infer<typeof citizenSchema>

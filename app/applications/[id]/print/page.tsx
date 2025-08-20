@@ -281,7 +281,7 @@ export default function PrintApplicationPage() {
                   <div className="absolute bottom-0 left-0 w-full h-[340px]">
                     {/* Left side - Photograph */}
                     {application.image && (
-                      <div className="absolute left-[18px] bottom-[200px] w-[125px] h-[160px] border border-gray-400">
+                      <div className="absolute left-[18px] bottom-[200px] w-[125px] h-[160px]">
                         <img
                           src={`data:image/jpeg;base64,${application.image}`}
                           alt="Citizen Photograph"

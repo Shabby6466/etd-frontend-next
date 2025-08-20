@@ -121,6 +121,7 @@ export interface Application {
     submitted_at?: string
     completed_at?: string
   }>
+  isPassportResponseFetched?:string
 }
 
 export interface ApplicationAttachment {

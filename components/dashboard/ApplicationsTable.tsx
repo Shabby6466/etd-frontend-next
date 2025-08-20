@@ -290,41 +290,44 @@ export function ApplicationsTable({
                     </td>
                   )}
                   <td className="p-3">
+                  <Button onClick={() => router.push(`/applications/${application.id}`)}>
+                          {/* <MoreHorizontal className="h-4 w-4" /> */}
+                          View Details
+                        </Button>
+                         {/* {canPerformQC(application) && (
+                          <Button
+                            onClick={() => handleQcClick(application)}
+                          >
+                            <Shield className="mr-2 h-4 w-4" />
+                            Quality Control
+                          </Button>
+                        )} */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                        
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() => router.push(`/applications/${application.id}`)}
                         >
-                          View Details
+                          
                         </DropdownMenuItem>
                         
                         {/* Mission Operator Actions */}
-                        {userRole === 'MISSION_OPERATOR' && canPrint(application) && (
+                        {/* {userRole === 'MISSION_OPERATOR' && canPrint(application) && (
                           <DropdownMenuItem
                             onClick={() => onPrint?.(application.id)}
                           >
                             <Printer className="mr-2 h-4 w-4" />
                             Print Document
                           </DropdownMenuItem>
-                        )}
+                        )} */}
 
                         {/* QC Actions - Available when status is READY_FOR_QC */}
-                        {canPerformQC(application) && (
-                          <DropdownMenuItem
-                            onClick={() => handleQcClick(application)}
-                          >
-                            <Shield className="mr-2 h-4 w-4" />
-                            Quality Control
-                          </DropdownMenuItem>
-                        )}
+                       
 
                         {/* Agency Actions - Verification Workflow */}
-                        {userRole === 'AGENCY' && application.status === 'PENDING_VERIFICATION' && (
+                        {/* {userRole === 'AGENCY' && application.status === 'PENDING_VERIFICATION' && (
                           <DropdownMenuItem
                             onClick={() => {
                               const remarks = prompt('Enter verification remarks:')
@@ -334,10 +337,10 @@ export function ApplicationsTable({
                             <Upload className="mr-2 h-4 w-4" />
                             Submit Verification
                           </DropdownMenuItem>
-                        )}
+                        )} */}
 
                         {/* Legacy Agency Actions (for backward compatibility) */}
-                        {userRole === 'AGENCY' && ['SUBMITTED', 'AGENCY_REVIEW'].includes(application.status) && (
+                        {/* {userRole === 'AGENCY' && ['SUBMITTED', 'AGENCY_REVIEW'].includes(application.status) && (
                           <>
                             <DropdownMenuItem
                               onClick={() => onUploadAttachment?.(application.id)}
@@ -361,46 +364,10 @@ export function ApplicationsTable({
                               Reject with Remarks
                             </DropdownMenuItem>
                           </>
-                        )}
+                        )} */}
 
                         {/* Ministry Actions */}
-                        {userRole === 'MINISTRY' && canPerformAction(application) && (
-                          <>
-                            <DropdownMenuItem
-                              onClick={() => onApprove?.(application.id)}
-                            >
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Approve Application
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                const remarks = prompt('Enter rejection remarks:')
-                                if (remarks) onReject?.(application.id, remarks)
-                              }}
-                            >
-                              <XCircle className="mr-2 h-4 w-4" />
-                              Reject Application
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                const remarks = prompt('Enter blacklist reason:')
-                                if (remarks) onBlacklist?.(application.id, remarks)
-                              }}
-                            >
-                              <AlertTriangle className="mr-2 h-4 w-4" />
-                              Blacklist Application
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                const region = prompt('Select region (PUNJAB, SINDH, KPK, BALOCHISTAN):') as Region
-                                if (region) onSendToAgency?.(application.id, region)
-                              }}
-                            >
-                              <Send className="mr-2 h-4 w-4" />
-                              Send to Agency
-                            </DropdownMenuItem>
-                          </>
-                        )}
+                       
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </td>

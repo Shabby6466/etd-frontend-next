@@ -85,6 +85,7 @@ const transformApplicationData = (apiData: any): Application => {
     reviewedAt: apiData.reviewed_at,
     // Processing fields
     processing: apiData.processing || null,
+    isPassportResponseFetched: apiData.isPassportResponseFetched || false,
   }
 }
 

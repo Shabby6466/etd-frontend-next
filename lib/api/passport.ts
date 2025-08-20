@@ -28,6 +28,24 @@ export interface PassportApiResponse {
   guardian_last_name: string
 }
 
+export interface PassportResponseData {
+  citizen_id: string
+  image_url: string
+  first_name: string
+  last_name: string
+  father_name: string
+  pakistan_city: string
+  gender: string
+  date_of_birth: string
+  birth_country: string
+  birth_city: string
+  profession: string
+  pakistan_address: string
+  response_status: string
+  api_response_date: string
+  raw_response: any
+}
+
 export const passportAPI = {
   getCitizenData: async (citizenNo: string): Promise<PassportApiResponse> => {
     try {
@@ -55,6 +73,21 @@ export const passportAPI = {
       return data
     } catch (error) {
       console.error('Error fetching passport data:', error)
+      throw error
+    }
+  },
+
+  // Store passport response data in the database
+  storePassportResponse: async (data: PassportResponseData): Promise<any> => {
+    try {
+      console.log('Storing passport response data:', data)
+      
+      const response = await apiClient.post('/applications/passport-response', data)
+      console.log('Passport response stored successfully:', response.data)
+      
+      return response.data
+    } catch (error) {
+      console.error('Error storing passport response:', error)
       throw error
     }
   }

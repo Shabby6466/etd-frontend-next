@@ -32,6 +32,9 @@ export function CitizenForm() {
   const [initialCitizenId, setInitialCitizenId] = useState("")
   const [initialImageBase64, setInitialImageBase64] = useState<string>("")
   const [selectedSheet, setSelectedSheet] = useState<string>("")
+  const [passportDetailData, setPassportDetailData] = useState<any>(null)
+  const [nadraDetailData, setNadraDetailData] = useState<any>(null)
+  const [isPassportDataFetched, setIsPassportDataFetched] = useState<boolean>(false)
   const router = useRouter()
   const { user } = useAuthStore()
 
@@ -113,6 +116,7 @@ export function CitizenForm() {
       status: "DRAFT",
       passport_api_data: undefined,
       nadra_api_data: undefined,
+      passport_response_id: undefined,
     },
   })
 
@@ -225,6 +229,59 @@ export function CitizenForm() {
       // Store passport API data for submission
       form.setValue("passport_api_data", passportData)
 
+             // Set passport detail data for display
+       setPassportDetailData({
+         first_name: mappedData.first_name,
+         last_name: mappedData.last_name,
+         father_name: mappedData.father_name,
+         gender: mappedData.gender,
+         pakistan_city: mappedData.pakistan_city,
+         date_of_birth: mappedData.date_of_birth,
+         birth_country: mappedData.birth_country,
+         birth_city: mappedData.birth_city,
+         profession: mappedData.profession,
+         pakistan_address: mappedData.pakistan_address,
+       })
+
+       // Mark passport data as fetched
+       setIsPassportDataFetched(true)
+
+       // Clear NADRA detail data
+       setNadraDetailData(null)
+
+      // Store passport response data in the database
+      try {
+        const passportResponseData = {
+          citizen_id: citizenId,
+          image_url: passportData.photograph ? `data:image/jpeg;base64,${passportData.photograph}` : "",
+          first_name: mappedData.first_name || "",
+          last_name: mappedData.last_name || "",
+          father_name: mappedData.father_name || "",
+          pakistan_city: mappedData.pakistan_city || "",
+          gender: mappedData.gender || "",
+          date_of_birth: mappedData.date_of_birth || "",
+          birth_country: mappedData.birth_country || "",
+          birth_city: mappedData.birth_city || "",
+          profession: mappedData.profession || "",
+          pakistan_address: mappedData.pakistan_address || "",
+          response_status: "SUCCESS",
+          api_response_date: new Date().toISOString(),
+          raw_response: passportData
+        }
+        
+        const passportResponse = await passportAPI.storePassportResponse(passportResponseData)
+        console.log('Passport response data stored successfully:', passportResponse)
+        
+        // Store the passport response ID for later use in application creation
+        if (passportResponse && passportResponse.id) {
+          form.setValue("passport_response_id", passportResponse.id)
+          console.log('Passport response ID stored:', passportResponse.id)
+        }
+      } catch (storeError) {
+        console.error('Failed to store passport response data:', storeError)
+        // Don't show error to user as this is a background operation
+      }
+
       showNotification.success("Data fetched successfully from Passport API")
     } catch (passportError) {
       console.warn('Passport API failed, trying NADRA API:', passportError)
@@ -290,6 +347,60 @@ export function CitizenForm() {
       // Store passport API data for submission
       form.setValue("passport_api_data", passportData)
 
+             // Set passport detail data for display
+       setPassportDetailData({
+         first_name: mappedData.first_name,
+         last_name: mappedData.last_name,
+         father_name: mappedData.father_name,
+         mother_name: "Not available",
+         gender: mappedData.gender,
+         pakistan_city: mappedData.pakistan_city,
+         date_of_birth: mappedData.date_of_birth,
+         birth_country: mappedData.birth_country,
+         birth_city: mappedData.birth_city,
+         profession: mappedData.profession,
+         pakistan_address: "Not available"
+       })
+
+       // Mark passport data as fetched
+       setIsPassportDataFetched(true)
+
+       // Clear NADRA detail data
+       setNadraDetailData(null)
+
+      // Store passport response data in the database
+      try {
+        const passportResponseData = {
+          citizen_id: citizenId,
+          image_url: passportData.photograph ? `data:image/jpeg;base64,${passportData.photograph}` : "",
+          first_name: mappedData.first_name || "",
+          last_name: mappedData.last_name || "",
+          father_name: mappedData.father_name || "",
+          pakistan_city: mappedData.pakistan_city || "",
+          gender: mappedData.gender || "",
+          date_of_birth: mappedData.date_of_birth || "",
+          birth_country: mappedData.birth_country || "",
+          birth_city: mappedData.birth_city || "",
+          profession: mappedData.profession || "",
+          pakistan_address: mappedData.pakistan_address || "",
+          response_status: "SUCCESS",
+          api_response_date: new Date().toISOString(),
+          raw_response: passportData
+        }
+        
+        const passportResponse = await passportAPI.storePassportResponse(passportResponseData)
+        console.log('Passport response data stored successfully:', passportResponse)
+        
+        // Store the passport response ID for later use in application creation
+        if (passportResponse && passportResponse.id) {
+          form.setValue("passport_response_id", passportResponse.id)
+          console.log('Passport response ID stored:', passportResponse.id)
+        }
+      } catch (storeError) {
+        console.error('Failed to store passport response data:', storeError)
+        // Don't show error to user as this is a background operation
+      }
+
       showNotification.success("Data fetched successfully from Passport API")
     } catch (passportError) {
       console.warn('Passport API failed, trying NADRA API:', passportError)
@@ -333,83 +444,53 @@ export function CitizenForm() {
       const now = new Date().toISOString()
       
       // Create passport API data if we have passport information (optional)
-      const passportApiData = data.passport_api_data ? {
-        createdAt: now,
-        updatedAt: now,
-        citizen_id: data.citizen_id,
-        image_url: data.image ? `data:image/jpeg;base64,${data.image}` : "",
-        first_name: data.first_name,
-        last_name: data.last_name,
-        father_name: data.father_name,
-        pakistan_city: data.pakistan_city,
-        gender: data.gender,
-        date_of_birth: data.date_of_birth,
-        birth_country: data.birth_country,
-        birth_city: data.birth_city,
-        profession: data.profession,
-        pakistan_address: data.pakistan_address,
-        response_status: "SUCCESS",
-        api_response_date: now,
-        raw_response: data.passport_api_data
-      } : undefined
+      const passportApiData = data.passport_api_data ?? undefined
 
       // Create NADRA API data if we have NADRA information (optional)
-      const nadraApiData = data.nadra_api_data ? {
-        createdAt: now,
-        updatedAt: now,
-        citizen_id: data.citizen_id,
-        image_url: data.image ? `data:image/jpeg;base64,${data.image}` : "",
-        first_name: data.first_name,
-        last_name: data.last_name,
-        father_name: data.father_name,
-        mother_name: data.mother_name,
-        pakistan_city: data.pakistan_city,
-        date_of_birth: data.date_of_birth,
-        birth_country: data.birth_country,
-        birth_city: data.birth_city,
-        profession: data.profession,
-        pakistan_address: data.pakistan_address,
-        response_status: "SUCCESS",
-        api_response_date: now,
-        raw_response: data.nadra_api_data
-      } : undefined
+      const nadraApiData = data.nadra_api_data ?? undefined
 
-      console.log('Passport API data:', passportApiData ? 'present' : 'not present')
-      console.log('NADRA API data:', nadraApiData ? 'present' : 'not present')
+             console.log('Passport API data:', passportApiData ? 'present' : 'not present')
+       console.log('NADRA API data:', nadraApiData ? 'present' : 'not present')
 
-      // Format the application data according to the new API structure
-      const applicationData = {
-        first_name: data.first_name,
-        last_name: data.last_name,
-        image: data.image,
-        father_name: data.father_name,
-        mother_name: data.mother_name,
-        citizen_id: data.citizen_id,
-        gender: data.gender,
-        pakistan_city: data.pakistan_city,
-        date_of_birth: data.date_of_birth,
-        birth_country: data.birth_country,
-        birth_city: data.birth_city,
-        profession: data.profession,
-        pakistan_address: data.pakistan_address,
-        height: data.height || "",
-        color_of_hair: data.color_of_hair || "",
-        color_of_eyes: data.color_of_eyes || "",
-        departure_date: data.departure_date,
-        transport_mode: data.transport_mode || "",
-        investor: data.investor || "",
-        requested_by: data.requested_by,
-        reason_for_deport: data.reason_for_deport || "",
-        amount: data.amount || 0,
-        currency: data.currency || "",
-        is_fia_blacklist: data.is_fia_blacklist || false,
-        status: "DRAFT",
-        passport_photo_url: data.image ? `data:image/jpeg;base64,${data.image}` : undefined,
-        other_documents_url: undefined, // Will be set when documents are uploaded
-        passport_api_data: passportApiData,
-        nadra_api_data: nadraApiData,
-        sheet_number: selectedSheet || undefined
-      }
+       // Check if passport response was fetched using the boolean state
+       const isPassportResponseFetched = isPassportDataFetched
+
+              // Format the application data according to the new API structure
+        const applicationData = {
+         first_name: data.first_name,
+         last_name: data.last_name,
+         image: data.image,
+         father_name: data.father_name,
+         mother_name: data.mother_name,
+         citizen_id: data.citizen_id,
+         gender: data.gender,
+         pakistan_city: data.pakistan_city,
+         date_of_birth: data.date_of_birth,
+         birth_country: data.birth_country,
+         birth_city: data.birth_city,
+         profession: data.profession,
+         pakistan_address: data.pakistan_address,
+         height: data.height || "",
+         color_of_hair: data.color_of_hair || "",
+         color_of_eyes: data.color_of_eyes || "",
+         departure_date: data.departure_date,
+         transport_mode: data.transport_mode || "",
+         investor: data.investor || "",
+         requested_by: data.requested_by,
+         reason_for_deport: data.reason_for_deport || "",
+         amount: data.amount || 0,
+         currency: data.currency || "",
+         is_fia_blacklist: data.is_fia_blacklist || false,
+         status: "DRAFT",
+         passport_photo_url: data.image ? `data:image/jpeg;base64,${data.image}` : undefined,
+         other_documents_url: undefined, // Will be set when documents are uploaded
+         passport_api_data: passportApiData,
+         nadra_api_data: nadraApiData,
+                   sheet_number: selectedSheet || undefined,
+          nadra_response_id: nadraApiData?.id || undefined,
+          passport_response_id: data.passport_response_id || undefined,
+          isPassportResponseFetched: isPassportResponseFetched
+       }
 
       console.log('Sending application data to API:', applicationData)
       console.log('API endpoint: /applications')
@@ -507,7 +588,7 @@ export function CitizenForm() {
                   onClick={() => setShowFullForm(false)}
                   className="text-sm"
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back to Photo
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
               </div>
             </CardHeader>
@@ -540,25 +621,29 @@ export function CitizenForm() {
                     {isFetchingData ? "Fetching..." : "Get Data"}
                   </Button>
                 </div>
-                 {/* DETAIL FORM */}
-                 <div className="mx-auto p-2 space-y-2">
-                 <div className="flex items-center gap-3">
-                 <DetailForm 
-                   data={form.watch()} 
-                   title="Nadra Details"
-                   passportPhoto={passportPhoto}
-                   onNext={() => {}} 
-                   onBack={() => {}} 
-                 />
-                 <DetailForm 
-                   data={form.watch()} 
-                   title="Passport Details"
-                   passportPhoto={passportPhoto}
-                   onNext={() => {}} 
-                   onBack={() => {}} 
-                 />
-                 </div>
-                 </div>
+                                     <div className="mx-auto p-2 space-y-2">
+                   <div className="flex items-center gap-3">
+                     {/* Passport Details - Shows data when passport API is successful */}
+                     <DetailForm 
+                       data={passportDetailData} 
+                       title="Passport Details"
+                       passportPhoto={passportPhoto}
+                       onNext={() => {}} 
+                       onBack={() => {}} 
+                     />
+                     
+                     {/* NADRA Details - Always shows "Not available" for now */}
+                     <DetailForm 
+                       data={{
+                         
+                       }} 
+                       title="NADRA Details"
+                       passportPhoto={null}
+                       onNext={() => {}} 
+                       onBack={() => {}} 
+                     />
+                   </div>
+                   </div>
 
                 {/* Image Upload Section */}
                 <div className="bg-gray-50 p-4 rounded-lg">
