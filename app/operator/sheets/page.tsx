@@ -27,7 +27,7 @@ export default function OperatorSheetsPage() {
         sheetsAPI.getSheetStats(), // Operator can only see their own stats
         sheetsAPI.getAvailableSheets()
       ])
-      setSheets(sheetsData.sort((a, b) => a.sheet_no.localeCompare(b.sheet_no)))
+      setSheets(sheetsData.data.sort((a, b) => a.sheet_no.localeCompare(b.sheet_no)))
       setStats(statsData)
       setAvailableSheets(availableData)
     } catch (error) {

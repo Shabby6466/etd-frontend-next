@@ -39,17 +39,27 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log error details for debugging
+    console.log('API Error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      data: error.response?.data,
+      message: error.message
+    })
+
     if (error.response?.status === 401) {
-      // Only auto-logout if it's not a login endpoint
+      // Only auto-logout if it's not a login endpoint or token verification endpoint
       const isLoginEndpoint = error.config?.url?.includes('/auth/login')
+      const isVerifyEndpoint = error.config?.url?.includes('/auth/verify')
       
-      if (!isLoginEndpoint && typeof window !== "undefined") {
-        console.log('401 error on non-login endpoint, logging out')
+      if (!isLoginEndpoint && !isVerifyEndpoint && typeof window !== "undefined") {
+        console.log('401 error on non-auth endpoint, logging out')
         const { logout } = useAuthStore.getState()
         logout()
         window.location.href = "/login"
-      } else if (isLoginEndpoint) {
-        console.log('401 error on login endpoint, not auto-logging out')
+      } else if (isLoginEndpoint || isVerifyEndpoint) {
+        console.log('401 error on auth endpoint, not auto-logging out')
       }
     }
     return Promise.reject(error)

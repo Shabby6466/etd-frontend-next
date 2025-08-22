@@ -27,7 +27,8 @@ interface SheetFilters {
   limit: number
   operator_id?: number
   location_id?: number
-  status?: 'EMPTY' | 'QC_PASS' | 'QC_FAIL'
+  status?: 'EMPTY' | 'USED' | 'QC_PASS' | 'QC_FAIL'
+  number?: string
 }
 
 export function SheetManagementTable() {
@@ -56,7 +57,8 @@ export function SheetManagementTable() {
     operator_id: "all",
     location_id: "all",
     status: "all",
-    limit: "10"
+    limit: "10",
+    number: ""
   })
 
   const [pagination, setPagination] = useState({
@@ -162,7 +164,8 @@ export function SheetManagementTable() {
       ...prev,
       operator_id: filterInputs.operator_id && filterInputs.operator_id !== 'all' ? parseInt(filterInputs.operator_id) : undefined,
       location_id: filterInputs.location_id && filterInputs.location_id !== 'all' ? parseInt(filterInputs.location_id) : undefined,
-      status: filterInputs.status && filterInputs.status !== 'all' ? filterInputs.status as 'EMPTY' | 'QC_PASS' | 'QC_FAIL' : undefined,
+      status: filterInputs.status && filterInputs.status !== 'all' ? filterInputs.status as 'EMPTY' | 'USED' | 'QC_PASS' | 'QC_FAIL' : undefined,
+      number: filterInputs.number && filterInputs.number.trim() !== '' ? filterInputs.number.trim() : undefined,
       limit: parseInt(filterInputs.limit),
       page: 1 // Reset to first page when applying filters
     }))
@@ -173,13 +176,15 @@ export function SheetManagementTable() {
       operator_id: "all",
       location_id: "all", 
       status: "all",
-      limit: "10"
+      limit: "10",
+      number: ""
     })
     setFilters(prev => ({
       ...prev,
       operator_id: undefined,
       location_id: undefined,
       status: undefined,
+      number: undefined,
       limit: 10,
       page: 1
     }))
@@ -439,7 +444,7 @@ export function SheetManagementTable() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2 rounded-3xl">
               <Label htmlFor="filterOperator">Operator</Label>
               <Select 
@@ -490,10 +495,26 @@ export function SheetManagementTable() {
                 <SelectContent>
                   <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="EMPTY">Empty</SelectItem>
+                  <SelectItem value="USED">Used</SelectItem>
                   <SelectItem value="QC_PASS">QC Pass</SelectItem>
                   <SelectItem value="QC_FAIL">QC Fail</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="filterNumber">Sheet Number</Label>
+              <Input
+                id="filterNumber"
+                placeholder="Enter sheet number"
+                value={filterInputs.number}
+                onChange={(e) => setFilterInputs(prev => ({ 
+                  ...prev, 
+                  number: e.target.value 
+
+                }))}
+                className="rounded-xl"
+              />
             </div>
             
             <div className="space-y-2">
@@ -519,10 +540,10 @@ export function SheetManagementTable() {
           </div>
           
           <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={clearFilters} variant="outline" size="sm">
+            <Button onClick={clearFilters} variant="outline" size="sm" className="rounded-xl">
               Clear Filters
             </Button>
-            <Button onClick={applyFilters} size="sm">
+            <Button onClick={applyFilters} size="sm" className="rounded-3xl">
               Apply Filters
             </Button>
           </div>

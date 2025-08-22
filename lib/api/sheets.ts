@@ -33,7 +33,7 @@ export interface SheetStats {
 export interface SheetStatsFilters {
   page?: number
   limit?: number
-  status?: 'EMPTY' | 'QC_PASS' | 'QC_FAIL'
+  status?: 'EMPTY' | 'USED' | 'QC_PASS' | 'QC_FAIL'
   operator_id?: number
   location_id?: number
 }
@@ -43,7 +43,8 @@ export interface SheetFilters {
   limit?: number
   operator_id?: number
   location_id?: number
-  status?: 'EMPTY' | 'QC_PASS' | 'QC_FAIL'
+  status?: 'EMPTY' | 'USED' | 'QC_PASS' | 'QC_FAIL'
+  number?: string
 }
 
 export interface PaginatedSheetsResponse {
@@ -91,6 +92,7 @@ export const sheetsAPI = {
     if (filters?.operator_id) params.append('operator_id', filters.operator_id.toString())
     if (filters?.location_id) params.append('location_id', filters.location_id.toString())
     if (filters?.status) params.append('status', filters.status)
+    if (filters?.number) params.append('number', filters.number)
 
     const response = await apiClient.get(`/sheets?${params.toString()}`)
     

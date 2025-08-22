@@ -75,11 +75,25 @@ export function LoginForm() {
         }
       } else {
         console.error('Login failed:', result.error)
+        // Show the specific error message from the API
         showNotification.error(result.error || "Login failed")
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error)
-      showNotification.error("An error occurred during login")
+      // Enhanced error logging for debugging
+      console.log('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      })
+      
+      // Try to extract error message from response
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          "An error occurred during login"
+      showNotification.error(errorMessage)
     } finally {
       setIsLoading(false)
     }

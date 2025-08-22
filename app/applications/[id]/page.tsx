@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Application, Region, UserRole } from "@/lib/types";
 import { applicationAPI } from "@/lib/api/applications";
 import { attachmentAPI } from "@/lib/api/attachments";
+import { passportAPI } from "@/lib/api/passport";
 import {
   formatDate,
   formatDateTime,
@@ -57,6 +58,8 @@ export default function ApplicationViewPage() {
   const [selectedApplication, setSelectedApplication] =
     useState<Application | null>(null);
   const [qcModalOpen, setQcModalOpen] = useState(false);
+  const [passportResponseData, setPassportResponseData] = useState<any>(null);
+  const [isPassportLoading, setIsPassportLoading] = useState(false);
   const role: UserRole | undefined = user?.role as UserRole | undefined;
   console.log("User role:", role);
   console.log("User object:", user);
@@ -104,6 +107,15 @@ export default function ApplicationViewPage() {
     );
   }, [application, role]);
 
+  const canPerformQC = useMemo(() => {
+    if (!application) return false;
+    const allowedStatuses = ["READY_FOR_QC"];
+    return (
+      (role === "MISSION_OPERATOR") &&
+      allowedStatuses.includes(application.status)
+    );
+  }, [application, role]);
+
   const refresh = async () => {
     if (!params?.id) return;
     setIsLoading(true);
@@ -117,61 +129,82 @@ export default function ApplicationViewPage() {
     }
   };
 
+  const fetchPassportResponse = async (volumeTrackingId: string) => {
+    if (!volumeTrackingId) return;
+    setIsPassportLoading(true);
+    try {
+      const response = await passportAPI.getPassportResponseByVolumeTracking(volumeTrackingId);
+      if (response) {
+        setPassportResponseData(response);
+      }
+    } catch (error) {
+      console.error('Error fetching passport response:', error);
+    } finally {
+      setIsPassportLoading(false);
+    }
+  };
+
   useEffect(() => {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params?.id]);
 
-  const handleUploadAttachment = async (file: File) => {
-    if (!application) return;
-    setIsActionLoading(true);
-    try {
-      await attachmentAPI.upload(application.id, file);
-      showNotification.success("Attachment uploaded");
-      await refresh();
-    } catch {
-      showNotification.error("Failed to upload attachment");
-    } finally {
-      setIsActionLoading(false);
+  useEffect(() => {
+    if (application?.id) {
+      fetchPassportResponse(application.id);
     }
-  };
+  }, [application?.id]);
 
-  const handleAgencyApprove = async () => {
-    if (!application) return;
-    setIsActionLoading(true);
-    try {
-      await applicationAPI.agencyApprove(application.id);
-      showNotification.success("Application approved and sent to Ministry");
-      await refresh();
-    } catch (err) {
-      const message = (err as { response?: { data?: { error?: string } } })
-        ?.response?.data?.error;
-      showNotification.error(message || "Failed to approve application");
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
+  // const handleUploadAttachment = async (file: File) => {
+  //   if (!application) return;
+  //   setIsActionLoading(true);
+  //   try {
+  //     await attachmentAPI.upload(application.id, file);
+  //     showNotification.success("Attachment uploaded");
+  //     await refresh();
+  //   } catch {
+  //     showNotification.error("Failed to upload attachment");
+  //   } finally {
+  //     setIsActionLoading(false);
+  //   }
+  // };
 
-  const handleAgencyReject = async () => {
-    if (!application) return;
-    const remarks = window.prompt("Enter rejection remarks:");
-    if (!remarks) return;
-    setIsActionLoading(true);
-    try {
-      await applicationAPI.agencyReject(application.id, remarks);
-      showNotification.success("Application rejected");
-      await refresh();
-    } catch {
-      showNotification.error("Failed to reject application");
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
+  // const handleAgencyApprove = async () => {
+  //   if (!application) return;
+  //   setIsActionLoading(true);
+  //   try {
+  //     await applicationAPI.agencyApprove(application.id);
+  //     showNotification.success("Application approved and sent to Ministry");
+  //     await refresh();
+  //   } catch (err) {
+  //     const message = (err as { response?: { data?: { error?: string } } })
+  //       ?.response?.data?.error;
+  //     showNotification.error(message || "Failed to approve application");
+  //   } finally {
+  //     setIsActionLoading(false);
+  //   }
+  // };
+
+  // const handleAgencyReject = async () => {
+  //   if (!application) return;
+  //   const remarks = window.prompt("Enter rejection remarks:");
+  //   if (!remarks) return;
+  //   setIsActionLoading(true);
+  //   try {
+  //     await applicationAPI.agencyReject(application.id, remarks);
+  //     showNotification.success("Application rejected");
+  //     await refresh();
+  //   } catch {
+  //     showNotification.error("Failed to reject application");
+  //   } finally {
+  //     setIsActionLoading(false);
+  //   }
+  // };
 
   // New Ministry Review handlers
   const handleMinistryReviewApprove = async (data: {
     approved: boolean;
-    black_list_check: boolean;
+    blacklist_check_pass: boolean;
     etd_issue_date?: string;
     etd_expiry_date?: string;
   }) => {
@@ -182,7 +215,7 @@ export default function ApplicationViewPage() {
       if (application.status === "VERIFICATION_RECEIVED") {
         await applicationAPI.updateStatus(application.id, {
           status: "READY_FOR_PERSONALIZATION",
-          black_list_check: data.black_list_check || false,
+          blacklist_check_pass: data.blacklist_check_pass || false,
           ...(data.etd_issue_date && { etd_issue_date: data.etd_issue_date }),
           ...(data.etd_expiry_date && {
             etd_expiry_date: data.etd_expiry_date,
@@ -192,7 +225,7 @@ export default function ApplicationViewPage() {
         // For other statuses, use ministryReview
         await applicationAPI.ministryReview(application.id, {
           approved: true,
-          black_list_check: data.black_list_check,
+          blacklist_check_pass: data.blacklist_check_pass,
           etd_issue_date: data.etd_issue_date,
           etd_expiry_date: data.etd_expiry_date,
         });
@@ -212,7 +245,7 @@ export default function ApplicationViewPage() {
 
   const handleMinistryReviewReject = async (data: {
     approved: boolean;
-    black_list_check: boolean;
+    blacklist_check_pass: boolean;
     rejection_reason: string;
     etd_issue_date?: string;
     etd_expiry_date?: string;
@@ -220,25 +253,34 @@ export default function ApplicationViewPage() {
     if (!application) return;
     setIsActionLoading(true);
     try {
-      // For applications with agency remarks (VERIFICATION_RECEIVED status), use updateStatus
-      if (application.status === "VERIFICATION_RECEIVED") {
+      // For DRAFT status, use updateStatus to reject
+      if (application.status === "DRAFT") {
         await applicationAPI.updateStatus(application.id, {
           status: "REJECTED",
           rejection_reason: data.rejection_reason,
-          black_list_check: false,
+          blacklist_check_pass: false,
+        });
+      }
+      // For applications with agency remarks (VERIFICATION_RECEIVED status), use updateStatus
+      else if (application.status === "VERIFICATION_RECEIVED") {
+        await applicationAPI.updateStatus(application.id, {
+          status: "REJECTED",
+          rejection_reason: data.rejection_reason,
+          blacklist_check_pass: false,
         });
       } else {
         // For other statuses, use ministryReview
         await applicationAPI.ministryReview(application.id, {
           approved: false,
-          black_list_check: false,
+          blacklist_check_pass: false,
           rejection_reason: data.rejection_reason,
           etd_issue_date: undefined,
           etd_expiry_date: undefined,
         });
       }
       showNotification.success("Application rejected");
-      await refresh();
+      // Navigate back instead of refreshing
+      router.back();
     } catch (error) {
       const message =
         (error as any)?.response?.data?.message ||
@@ -246,7 +288,6 @@ export default function ApplicationViewPage() {
       showNotification.error(message);
       throw error; // Re-throw to handle in modal
     } finally {
-      setIsActionLoading(false);
     }
   };
   const handleQcClick = (application: Application) => {
@@ -255,7 +296,7 @@ export default function ApplicationViewPage() {
   };
 
   const handleQcSuccess = () => {
-    refresh();
+    router.back();
   };
 
   if (isLoading) {
@@ -271,7 +312,7 @@ export default function ApplicationViewPage() {
   }
 
   const handleDraftApprove = async (data: {
-    black_list_check?: boolean;
+    blacklist_check_pass?: boolean;
     etd_issue_date?: string;
     etd_expiry_date?: string;
   }) => {
@@ -280,7 +321,7 @@ export default function ApplicationViewPage() {
     try {
       await applicationAPI.updateStatus(application.id, {
         status: "READY_FOR_PERSONALIZATION",
-        black_list_check: data.black_list_check || false,
+        blacklist_check_pass: data.blacklist_check_pass,
         ...(data.etd_issue_date && { etd_issue_date: data.etd_issue_date }),
         ...(data.etd_expiry_date && { etd_expiry_date: data.etd_expiry_date }),
       });
@@ -299,7 +340,7 @@ export default function ApplicationViewPage() {
 
   const handleDraftReject = async (data: {
     rejection_reason: string;
-    black_list_check?: boolean;
+    blacklist_check_pass?: boolean;
     etd_issue_date?: string;
     etd_expiry_date?: string;
   }) => {
@@ -309,11 +350,12 @@ export default function ApplicationViewPage() {
       await applicationAPI.updateStatus(application.id, {
         status: "REJECTED",
         rejection_reason: data.rejection_reason,
-        black_list_check: false,
+        blacklist_check_pass: false,
       });
       showNotification.success("Application rejected");
       setShowDraftReviewModal(false);
-      await refresh();
+      // Navigate back instead of refreshing
+      router.back();
     } catch (error: any) {
       console.error("Failed to reject application:", error);
       showNotification.error(
@@ -324,66 +366,61 @@ export default function ApplicationViewPage() {
     }
   };
 
-  const handleMinistryApprove = async (data: {
-    black_list_check?: boolean;
-    etd_issue_date?: string;
-    etd_expiry_date?: string;
-  }) => {
-    if (!application) return;
-    setIsActionLoading(true);
-    try {
-      // Use status update API for all approvals
-      await applicationAPI.ministryReview(application.id, {
-        approved: true,
-        black_list_check: data.black_list_check || false,
-        etd_issue_date: data.etd_issue_date || "",
-        etd_expiry_date: data.etd_expiry_date || "",
-      });
-      showNotification.success("Application approved");
-      await refresh();
-    } catch (error: any) {
-      console.error("Failed to approve application:", error);
-      showNotification.error(
-        error.response?.data?.message || "Failed to approve application"
-      );
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  const canPerformQC = (application: Application) => {
-    return application.status === "READY_FOR_QC";
-  };
-
-  const handleMinistryReject = async () => {
-    if (!application) return;
-    const rejectionReason = window.prompt("Enter rejection reason:");
-    if (!rejectionReason) return;
-    setIsActionLoading(true);
-    try {
-      // Use new status update API for VERIFICATION_RECEIVED status
-      if (application.status === "VERIFICATION_RECEIVED") {
-        await applicationAPI.ministryReview(application.id, {
-          approved: false,
-          black_list_check: true,
-          rejection_reason: rejectionReason,
-        });
-      } else {
-        // Use legacy API for other statuses
-        await applicationAPI.ministryReview(application.id, {
-          approved: false,
-          black_list_check: true,
-          rejection_reason: rejectionReason,
-        });
-      }
-      showNotification.success("Application rejected");
-      await refresh();
-    } catch {
-      showNotification.error("Failed to reject application");
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
+  // const handleMinistryApprove = async (data: {
+  //   black_list_check?: boolean;
+  //   etd_issue_date?: string;
+  //   etd_expiry_date?: string;
+  // }) => {
+  //   if (!application) return;
+  //   setIsActionLoading(true);
+  //   try {
+  //     // Use status update API for all approvals
+  //     await applicationAPI.ministryReview(application.id, {
+  //       approved: true,
+  //       black_list_check: data.black_list_check || false,
+  //       etd_issue_date: data.etd_issue_date || "",
+  //       etd_expiry_date: data.etd_expiry_date || "",
+  //     });
+  //     showNotification.success("Application approved");
+  //     await refresh();
+  //   } catch (error: any) {
+  //     console.error("Failed to approve application:", error);
+  //     showNotification.error(
+  //       error.response?.data?.message || "Failed to approve application"
+  //     );
+  //   } finally {
+  //     setIsActionLoading(false);
+  //   }
+  // };
+  // const handleMinistryReject = async () => {
+  //   if (!application) return;
+  //   const rejectionReason = window.prompt("Enter rejection reason:");
+  //   if (!rejectionReason) return;
+  //   setIsActionLoading(true);
+  //   try {
+  //     // Use new status update API for VERIFICATION_RECEIVED status
+  //     if (application.status === "VERIFICATION_RECEIVED") {
+  //       await applicationAPI.ministryReview(application.id, {
+  //         approved: false,
+  //         black_list_check: true,
+  //         rejection_reason: rejectionReason,
+  //       });
+  //     } else {
+  //       // Use legacy API for other statuses
+  //       await applicationAPI.ministryReview(application.id, {
+  //         approved: false,
+  //         black_list_check: true,
+  //         rejection_reason: rejectionReason,
+  //       });
+  //     }
+  //     showNotification.success("Application rejected");
+  //     await refresh();
+  //   } catch {
+  //     showNotification.error("Failed to reject application");
+  //   } finally {
+  //     setIsActionLoading(false);
+  //   }
+  // };
 
   // const handleBlacklist = async () => {
   //   if (!application) return
@@ -508,27 +545,27 @@ export default function ApplicationViewPage() {
     }
   };
 
-  const handleDirectReject = async () => {
-    if (!application) return;
-    const remarks = window.prompt("Enter rejection remarks:");
-    if (!remarks) return;
+  // const handleDirectReject = async () => {
+  //   if (!application) return;
+  //   const remarks = window.prompt("Enter rejection remarks:");
+  //   if (!remarks) return;
 
-    try {
-      setIsActionLoading(true);
-      await applicationAPI.updateStatus(application.id, {
-        status: "REJECTED",
-        rejection_reason: remarks,
-      });
-      showNotification.success("Application rejected");
-      await refresh();
-    } catch (error: any) {
-      showNotification.error(
-        error.response?.data?.message || "Failed to reject application"
-      );
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
+  //   try {
+  //     setIsActionLoading(true);
+  //     await applicationAPI.updateStatus(application.id, {
+  //       status: "REJECTED",
+  //       rejection_reason: remarks,
+  //     });
+  //     showNotification.success("Application rejected");
+  //     await refresh();
+  //   } catch (error: any) {
+  //     showNotification.error(
+  //       error.response?.data?.message || "Failed to reject application"
+  //     );
+  //   } finally {
+  //     setIsActionLoading(false);
+  //   }
+  // };
 
   if (isLoading) {
     return (
@@ -585,7 +622,7 @@ export default function ApplicationViewPage() {
                 <Badge variant={getStatusVariant(application.status)}>
                   {formatStatus(application.status)}
                 </Badge>
-                {canPerformQC(application) && (
+                {canPerformQC && (
                   <Button onClick={() => handleQcClick(application)}>
                     <Shield className="mr-2 h-4 w-4" />
                     Quality Control
@@ -652,27 +689,24 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
           <CardContent>
             {/* Header Section with Photos and Data Sources */}
             <div className="mb-8">
-              <div className="flex flex-col lg:flex-row gap-6">
+              <div className="flex gap-2">
                 {/* Photos Section - Dynamic width based on available images */}
-                {(application.image ||
-                  application.nadra_api_data?.image_url ||
-                  application.passport_api_data?.image_url) && (
-                  <div
-                    className={`${
-                      application.nadra_api_data?.image_url ||
-                      application.passport_api_data?.image_url
-                        ? "lg:w-1/2"
-                        : "lg:w-1/3"
-                    }`}
-                  >
-                    <div className="bg-white rounded-lg shadow-sm  p-4 h-full">
+                {(application.image) && (
+                                      <div
+                      className={`${
+                        application.image
+                          ? "lg:w-[40%]"
+                          : "lg:w-[40%]"
+                      }`}
+                    >
+                    <div className="bg-white rounded-lg shadow-sm  p-4 h-full w-[80%]">
                       <h3 className="text-lg font-semibold mb-4 text-gray-800">
                         Citizen Photograph
                       </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
+                      <div className="flex items-center justify-start gap-4">
                         {/* Main Citizen Photo */}
                         {application.image && (
-                          <div className="flex flex-col items-center">
+                          <div className="flex flex-col items-start">
                             <div className="border-2 border-gray-300 rounded-lg p-3 bg-white shadow-sm">
                               <img
                                 src={`data:image/jpeg;base64,${application.image}`}
@@ -685,51 +719,29 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                             </span>
                           </div>
                         )}
-
-                        {/* NADRA Photo */}
-                        {application.nadra_api_data?.image_url && (
-                          <div className="flex flex-col items-center">
-                            <div className="border-2 border-blue-300 rounded-lg p-3 bg-white shadow-sm">
-                              <img
-                                src={application.nadra_api_data.image_url}
-                                alt="NADRA Photograph"
-                                className="w-32 h-40 object-cover rounded"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                  e.currentTarget.nextElementSibling?.classList.remove(
-                                    "hidden"
-                                  );
-                                }}
-                              />
-                              <div className="hidden w-32 h-40 bg-blue-50 border-2 border-blue-300 rounded flex items-center justify-center">
-                                <span className="text-blue-600 text-sm text-center">
-                                  NADRA Photo
-                                  <br />
-                                  Not Available
-                                </span>
-                              </div>
-                            </div>
-                            <span className="text-sm text-blue-600 mt-2">
-                              NADRA Photo
-                            </span>
-                          </div>
-                        )}
-
                         {/* Passport Photo */}
-                        {application.passport_api_data?.image_url && (
-                          <div className="flex flex-col items-center">
+                        {(passportResponseData?.image_url) && (
+                          <div className="flex flex-col items-start">
                             <div className="border-2 border-green-300 rounded-lg p-3 bg-white shadow-sm">
-                              <img
-                                src={application.passport_api_data.image_url}
-                                alt="Passport Photograph"
-                                className="w-32 h-40 object-cover rounded"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                  e.currentTarget.nextElementSibling?.classList.remove(
-                                    "hidden"
-                                  );
-                                }}
-                              />
+                              {isPassportLoading ? (
+                                <div className="w-32 h-40 bg-green-50 border-2 border-green-300 rounded flex items-center justify-center">
+                                  <span className="text-green-600 text-sm text-center">
+                                    Loading...
+                                  </span>
+                                </div>
+                              ) : (
+                                <img
+                                  src={passportResponseData?.image_url}
+                                  alt="Passport Photograph"
+                                  className="w-32 h-40 object-cover rounded"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                    e.currentTarget.nextElementSibling?.classList.remove(
+                                      "hidden"
+                                    );
+                                  }}
+                                />
+                              )}
                               <div className="hidden w-32 h-40 bg-green-50 border-2 border-green-300 rounded flex items-center justify-center">
                                 <span className="text-green-600 text-sm text-center">
                                   Passport Photo
@@ -751,13 +763,12 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                 {/* Data Sources and Quick Info - Dynamic width */}
                 <div
                   className={`${
-                    application.nadra_api_data?.image_url ||
-                    application.passport_api_data?.image_url
-                      ? "lg:w-1/2"
-                      : "lg:w-2/3"
+                    passportResponseData?.image_url
+                      ? "lg:w-[650px]"
+                      : "lg:w-[119%]"
                   }`}
                 >
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full flex flex-col">
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full flex flex-col ">
                     <h3 className="text-lg font-semibold mb-4 text-gray-800">
                       Data Sources & Verification
                     </h3>
@@ -787,7 +798,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                       {/* Passport */}
                       <div
                         className={`flex items-center justify-between rounded-xl border p-4 ${
-                          application.isPassportResponseFetched
+                          passportResponseData?.image_url || application.isPassportResponseFetched
                             ? "bg-green-50/70 border-green-200"
                             : "bg-red-50/70 border-red-20"
                         }`}
@@ -795,14 +806,14 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                         <div className="flex items-center gap-3 min-w-0">
                           <span
                             className={`w-3.5 h-3.5 rounded-full ${
-                              application.isPassportResponseFetched
+                              passportResponseData?.image_url || application.isPassportResponseFetched
                                 ? "bg-green-500"
                                 : "bg-red-500"
                             } shrink-0`}
                           />
                           <span
                             className={`font-medium ${
-                              application.isPassportResponseFetched
+                              passportResponseData?.image_url || application.isPassportResponseFetched
                                 ? "text-green-900"
                                 : "text-red-900"
                             } truncate`}
@@ -812,13 +823,15 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                         </div>
                         <Badge
                           variant={
-                            application.passport_api_data
+                            passportResponseData?.image_url || application.passport_api_data
                               ? "default"
                               : "secondary"
                           }
                           className="shrink-0 px-3 py-1 text-xs rounded-full"
                         >
-                          {application.isPassportResponseFetched
+                          {isPassportLoading 
+                            ? "Loading..." 
+                            : passportResponseData?.image_url || application.isPassportResponseFetched
                             ? "Available"
                             : "Not Available"}
                         </Badge>

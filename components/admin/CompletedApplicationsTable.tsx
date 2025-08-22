@@ -185,7 +185,7 @@ export function CompletedApplicationsTable() {
                       applyFilters()
                     }
                   }}
-                  className="pl-10"
+                  className="pl-10 rounded-xl"
                 />
               </div>
             </div>
@@ -197,6 +197,8 @@ export function CompletedApplicationsTable() {
                 placeholder="Enter citizen ID"
                 value={filterInputs.citizen_id}
                 onChange={(e) => setFilterInputs(prev => ({ ...prev, citizen_id: e.target.value }))}
+                className=" rounded-xl"
+
               />
             </div>
 
@@ -207,6 +209,8 @@ export function CompletedApplicationsTable() {
                 placeholder="Enter application ID"
                 value={filterInputs.application_id}
                 onChange={(e) => setFilterInputs(prev => ({ ...prev, application_id: e.target.value }))}
+                className=" rounded-xl"
+
               />
             </div>
 
@@ -217,6 +221,8 @@ export function CompletedApplicationsTable() {
                 placeholder="Enter sheet number"
                 value={filterInputs.sheet_no}
                 onChange={(e) => setFilterInputs(prev => ({ ...prev, sheet_no: e.target.value }))}
+                className=" rounded-xl"
+
               />
             </div>
 
@@ -227,6 +233,8 @@ export function CompletedApplicationsTable() {
                 type="date"
                 value={filterInputs.date_from}
                 onChange={(e) => setFilterInputs(prev => ({ ...prev, date_from: e.target.value }))}
+                className=" rounded-xl text-gray-500"
+
               />
             </div>
 
@@ -237,6 +245,8 @@ export function CompletedApplicationsTable() {
                 type="date"
                 value={filterInputs.date_to}
                 onChange={(e) => setFilterInputs(prev => ({ ...prev, date_to: e.target.value }))}
+                className=" rounded-xl text-gray-500"
+
               />
             </div>
 
@@ -245,8 +255,10 @@ export function CompletedApplicationsTable() {
               <Select 
                 value={filterInputs.sort_by} 
                 onValueChange={(value) => setFilterInputs(prev => ({ ...prev, sort_by: value }))}
+                
               >
-                <SelectTrigger>
+                <SelectTrigger  className=" text-gray-500"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -266,7 +278,7 @@ export function CompletedApplicationsTable() {
                 value={filterInputs.sort_order} 
                 onValueChange={(value) => setFilterInputs(prev => ({ ...prev, sort_order: value as 'ASC' | 'DESC' }))}
               >
-                <SelectTrigger>
+                <SelectTrigger  className=" text-gray-500">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -282,7 +294,7 @@ export function CompletedApplicationsTable() {
                 value={filterInputs.limit} 
                 onValueChange={(value) => setFilterInputs(prev => ({ ...prev, limit: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger  className=" text-gray-500">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -296,10 +308,10 @@ export function CompletedApplicationsTable() {
           </div>
           
           <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={clearFilters} variant="outline" size="sm">
+            <Button onClick={clearFilters} variant="outline" size="sm" className="rounded-xl">
               Clear Filters
             </Button>
-            <Button onClick={applyFilters} size="sm">
+            <Button onClick={applyFilters} size="sm" className="rounded-xl">
               Apply Filters
             </Button>
           </div>

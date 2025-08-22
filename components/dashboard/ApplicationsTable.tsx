@@ -148,14 +148,14 @@ export function ApplicationsTable({
                   placeholder="Search applications..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
+                  className="pl-10 w-64 rounded-xl"
                 />
               </div>
               <Button 
                 onClick={onRefresh} 
                 variant="outline" 
                 disabled={isLoading}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-white"
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
@@ -221,7 +221,7 @@ export function ApplicationsTable({
                   </td>
                   <td className="p-3">
                     <div className="flex flex-col gap-1 items-center">
-                      <Badge variant={getStatusVariant(application.status)} className="text-center">
+                      <Badge variant={getStatusVariant(application.status)} >
                         {formatStatus(application.status)}
                       </Badge>
                       {application.processing && (
@@ -290,7 +290,7 @@ export function ApplicationsTable({
                     </td>
                   )}
                   <td className="p-3">
-                  <Button onClick={() => router.push(`/applications/${application.id}`)}>
+                  <Button onClick={() => router.push(`/applications/${application.id}`) } className='bg-white text-gray-800  hover:text-gray-100'>
                           {/* <MoreHorizontal className="h-4 w-4" /> */}
                           View Details
                         </Button>

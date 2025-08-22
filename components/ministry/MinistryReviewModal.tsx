@@ -17,13 +17,13 @@ interface MinistryReviewModalProps {
   onClose: () => void
   onApprove: (data: { 
     approved: boolean; 
-    black_list_check: boolean;
+    blacklist_check_pass: boolean;
     etd_issue_date?: string;
     etd_expiry_date?: string;
   }) => Promise<void>
   onReject: (data: { 
     approved: boolean; 
-    black_list_check: boolean; 
+    blacklist_check_pass: boolean; 
     rejection_reason: string;
     etd_issue_date?: string;
     etd_expiry_date?: string;
@@ -52,7 +52,7 @@ export function MinistryReviewModal({
     try {
       await onApprove({
         approved: true,
-        black_list_check: blackListCheck,
+        blacklist_check_pass: blackListCheck,
         etd_issue_date: etdIssueDate || undefined,
         etd_expiry_date: etdExpiryDate || undefined
       })
@@ -75,7 +75,7 @@ export function MinistryReviewModal({
     try {
       await onReject({
         approved: false,
-        black_list_check: false,
+        blacklist_check_pass: false,
         rejection_reason: rejectionReason.trim(),
         etd_issue_date: undefined,
         etd_expiry_date: undefined

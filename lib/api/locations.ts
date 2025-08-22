@@ -3,6 +3,7 @@ import { apiClient } from './client'
 export interface Location {
   location_id: string
   name: string
+  state?: string
   created_at: string
   updated_at: string
 }

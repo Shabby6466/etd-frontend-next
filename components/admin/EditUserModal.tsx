@@ -14,6 +14,7 @@ import { userAPI } from "@/lib/api/users"
 import { locationsAPI } from "@/lib/api/locations"
 import LocationSelector from "@/components/ui/location-selector"
 
+
 const editUserSchema = z.object({
   password: z.string().optional().refine((val) => {
     // Only validate if password is provided and not empty
@@ -21,6 +22,7 @@ const editUserSchema = z.object({
     return val.length >= 6
   }, "Password must be at least 6 characters"),
   locationId: z.string().optional(),
+  state: z.string().optional(),
   agencyType: z.string().optional(),
 })
 
@@ -33,6 +35,85 @@ interface EditUserModalProps {
   onUserUpdated: () => void
 }
 
+// Helper function to get state name from location ID and name
+const getStateFromLocation = (locationId: string, locationName: string): string => {
+  console.log('Getting state for:', { locationId, locationName })
+  
+  // Always return the full location name as the state
+  console.log('Using full location name as state:', locationName)
+  return locationName
+}
+
+// Custom Location Selector Component for EditUserModal
+const CustomLocationSelector = ({ 
+  value, 
+  onValueChange, 
+  placeholder = "Select location" 
+}: {
+  value?: string
+  onValueChange: (value: string, locationName?: string) => void
+  placeholder?: string
+}) => {
+  const [locations, setLocations] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchLocations()
+  }, [])
+
+  const fetchLocations = async () => {
+    try {
+      setLoading(true)
+      const allLocations = await locationsAPI.getAllLocations()
+      console.log('Fetched locations:', allLocations)
+      // Sort locations by name for better UX
+      const sortedLocations = allLocations.sort((a, b) => a.name.localeCompare(b.name))
+      setLocations(sortedLocations)
+    } catch (error) {
+      console.error('Error fetching locations:', error)
+      showNotification.error("Failed to fetch locations")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleValueChange = (selectedValue: string) => {
+    console.log('handleValueChange called with:', selectedValue)
+    const selectedLocation = locations.find((loc: any) => loc.location_id === selectedValue)
+    console.log('Selected location:', selectedLocation)
+    onValueChange(selectedValue, selectedLocation?.name)
+  }
+
+  if (loading) {
+    return (
+      <select disabled className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
+        <option>Loading locations...</option>
+      </select>
+    )
+  }
+
+  return (
+    <select 
+      value={value || ""} 
+      onChange={(e) => {
+        console.log('Native select onChange:', e.target.value)
+        handleValueChange(e.target.value)
+      }}
+      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <option value="">{placeholder}</option>
+      {locations.map((location) => {
+        const stateName = getStateFromLocation(location.location_id, location.name)
+        return (
+          <option key={location.location_id} value={location.location_id}>
+            {location.name} ({location.location_id}) - {stateName}
+          </option>
+        )
+      })}
+    </select>
+  )
+}
+
 export function EditUserModal({ user, open, onOpenChange, onUserUpdated }: EditUserModalProps) {
   const [isLoading, setIsLoading] = useState(false)
 
@@ -41,6 +122,7 @@ export function EditUserModal({ user, open, onOpenChange, onUserUpdated }: EditU
     defaultValues: {
       password: "",
       locationId: "",
+      state: "",
       agencyType: "",
     },
   })
@@ -50,7 +132,8 @@ export function EditUserModal({ user, open, onOpenChange, onUserUpdated }: EditU
     if (user) {
       form.reset({
         password: "",
-        locationId: user.state || "", // For mission operators, location is stored in state
+        locationId: user.locationId || "", // For mission operators, locationId is stored in locationId
+        state: user.state || "", // For mission operators, state is stored in state
         agencyType: user.agency || "", // For agency users, agency type is stored in agency
       })
     }
@@ -71,8 +154,13 @@ export function EditUserModal({ user, open, onOpenChange, onUserUpdated }: EditU
       }
 
       // Role-specific field updates
-      if (user.role === "MISSION_OPERATOR" && data.locationId) {
-        payload.locationId = data.locationId
+      if (user.role === "MISSION_OPERATOR") {
+        if (data.locationId) {
+          payload.locationId = data.locationId
+        }
+        if (data.state) {
+          payload.state = data.state
+        }
       } else if (user.role === "AGENCY" && data.agencyType) {
         payload.agencyType = data.agencyType // Use agencyType parameter
       }
@@ -85,6 +173,8 @@ export function EditUserModal({ user, open, onOpenChange, onUserUpdated }: EditU
       }
 
       console.log('Updating user with payload:', payload)
+      console.log('User role:', user.role)
+      console.log('Form data:', data)
       
       await userAPI.update(user.id, payload)
       showNotification.success("User updated successfully")
@@ -179,15 +269,35 @@ export function EditUserModal({ user, open, onOpenChange, onUserUpdated }: EditU
             {/* Mission Operator - Location Selection */}
             {user.role === "MISSION_OPERATOR" && (
               <div className="space-y-2">
-                <Label htmlFor="locationId">Location</Label>
-                <LocationSelector
-                  value={form.watch("locationId")}
-                  onValueChange={(value) => form.setValue("locationId", value)}
-                  placeholder="Select location"
-                />
+                <Label htmlFor="locationId">Location & State</Label>
+                                 <CustomLocationSelector
+                   value={form.watch("locationId")}
+                   onValueChange={(value, locationName) => {
+                     console.log('Parent onValueChange called:', { value, locationName })
+                     form.setValue("locationId", value)
+                     // Auto-populate state field when location is selected
+                     if (value && locationName) {
+                       const stateName = getStateFromLocation(value, locationName)
+                       console.log('Auto-populating state:', stateName)
+                       form.setValue("state", stateName)
+                     } else {
+                       // Clear state when location is cleared
+                       console.log('Clearing state field')
+                       form.setValue("state", "")
+                     }
+                   }}
+                   placeholder="Select location"
+                 />
                 <p className="text-xs text-gray-500">
-                  Select a new location for this mission operator
+                  Select a location from the dropdown to automatically set both Location ID and State
                 </p>
+                {/* Display current values for reference */}
+                {(form.watch("locationId") || form.watch("state")) && (
+                  <div className="p-2 bg-blue-50 rounded-md text-xs">
+                    <p><strong>Selected Location:</strong> {form.watch("locationId") || "Not set"}</p>
+                    <p><strong>State:</strong> {form.watch("state") || "Not set"}</p>
+                  </div>
+                )}
               </div>
             )}
 

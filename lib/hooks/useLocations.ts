@@ -45,43 +45,6 @@ export function useLocations(filters?: LocationFilters) {
     }
   }
 
-  const createLocation = async (data: { location_id: string; name: string }) => {
-    try {
-      const newLocation = await locationsAPI.createLocation(data)
-      showNotification.success("Location created successfully")
-      await fetchLocations()
-      await fetchAllLocations()
-      return newLocation
-    } catch (error) {
-      showNotification.error("Failed to create location")
-      throw error
-    }
-  }
-
-  const updateLocation = async (id: string, data: { name: string }) => {
-    try {
-      const updatedLocation = await locationsAPI.updateLocation(id, data)
-      showNotification.success("Location updated successfully")
-      await fetchLocations()
-      await fetchAllLocations()
-      return updatedLocation
-    } catch (error) {
-      showNotification.error("Failed to update location")
-      throw error
-    }
-  }
-
-  const deleteLocation = async (id: string) => {
-    try {
-      await locationsAPI.deleteLocation(id)
-      showNotification.success("Location deleted successfully")
-      await fetchLocations()
-      await fetchAllLocations()
-    } catch (error) {
-      showNotification.error("Failed to delete location")
-      throw error
-    }
-  }
 
   const searchLocations = async (query: string, limit?: number) => {
     try {
@@ -104,9 +67,6 @@ export function useLocations(filters?: LocationFilters) {
     pagination,
     fetchLocations,
     fetchAllLocations,
-    createLocation,
-    updateLocation,
-    deleteLocation,
     searchLocations
   }
 }

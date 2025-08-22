@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation"
 export default function MissionOperatorDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSearching, setIsSearching] = useState(false)
   const { user, logout } = useAuthStore()
   const router = useRouter()
   const [pagination, setPagination] = useState({
@@ -29,19 +30,55 @@ export default function MissionOperatorDashboard() {
     approved: 0,
     pending: 0,
   })
+  const [locationInfo, setLocationInfo] = useState<{
+    location_id: string
+    name: string
+  } | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
 
   const fetchApplications = async (page: number = 1, limit: number = 10) => {
     try {
-      // Fetch applications for user's region with pagination
-      const response = await applicationAPI.getAll({
+      // Check if user has locationId
+      if (!user?.locationId) {
+        showNotification.error("Location ID not found. Please contact administrator.")
+        setIsLoading(false)
+        return
+      }
+
+      // Set loading state based on whether this is a search or initial load
+      if (searchTerm || statusFilter) {
+        setIsSearching(true)
+      } else {
+        setIsLoading(true)
+      }
+
+      // Fetch applications for user's specific location with pagination
+      console.log('Fetching applications for location:', user.locationId, {
         page,
         limit,
-        // Note: region and submittedBy filters would need to be added to the API if supported
+        search: searchTerm || undefined,
+        status: statusFilter || undefined,
       })
+      
+      const response = await applicationAPI.getApplicationsByLocation(user.locationId, {
+        page,
+        limit,
+        search: searchTerm || undefined,
+        status: statusFilter || undefined,
+      })
+      
+      console.log('Location applications response:', response)
+      
       setApplications(response.data || [])
       setPagination(response.meta)
       
-      // Calculate stats from all applications (this might need to be adjusted based on your needs)
+      // Store location information if available
+      if (response.location) {
+        setLocationInfo(response.location)
+      }
+      
+      // Calculate stats from all applications
       const totalApps = response.meta.totalItems || 0
       const submitted = response.data?.filter(app => 
         ['SUBMITTED', 'UNDER_REVIEW', 'AGENCY_REVIEW', 'MINISTRY_REVIEW'].includes(app.status)
@@ -60,9 +97,11 @@ export default function MissionOperatorDashboard() {
         pending
       })
     } catch (error) {
+      console.error('Error fetching applications by location:', error)
       showNotification.error("Failed to fetch applications")
     } finally {
       setIsLoading(false)
+      setIsSearching(false)
     }
   }
 
@@ -71,8 +110,22 @@ export default function MissionOperatorDashboard() {
     window.open(`/applications/${applicationId}/print`, '_blank')
   }
 
+  // Debounced search effect
   useEffect(() => {
-    fetchApplications(1, 10)
+    const timeoutId = setTimeout(() => {
+      if (user?.locationId) {
+        fetchApplications(1, 10)
+      }
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, statusFilter])
+
+  // Initial load effect
+  useEffect(() => {
+    if (user?.locationId) {
+      fetchApplications(1, 10)
+    }
   }, [user])
 
   return (
@@ -83,7 +136,8 @@ export default function MissionOperatorDashboard() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Mission Operator Dashboard</h1>
             <p className="text-gray-600">
-              Manage applications for {user?.state} region
+              Manage applications for {locationInfo?.name || user?.state} 
+              {locationInfo?.location_id && ` (Location ID: ${locationInfo.location_id})`}
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -108,7 +162,7 @@ export default function MissionOperatorDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
@@ -118,7 +172,7 @@ export default function MissionOperatorDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Submitted</CardTitle>
               <Clock className="h-4 w-4 text-blue-600" />
@@ -128,7 +182,7 @@ export default function MissionOperatorDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Approved</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-600" />
@@ -138,7 +192,7 @@ export default function MissionOperatorDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Draft</CardTitle>
               <FileText className="h-4 w-4 text-yellow-600" />
@@ -150,19 +204,69 @@ export default function MissionOperatorDashboard() {
         </div>
 
         {/* Applications Table */}
-        <Card>
+        <Card className="rounded-3xl">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              My Applications
+            
               <div className="text-sm text-gray-500 font-normal">
-                Region: {user?.state}
+                Location: {locationInfo?.name || user?.state}
+                {locationInfo?.location_id && ` (ID: ${locationInfo.location_id})`}
               </div>
             </CardTitle>
+            {/* Search Bar */}
+            <div className="flex items-center gap-4 mt-4">
+              <div className="flex-1 max-w-md">
+                <input
+                  type="text"
+                  placeholder="Search by citizen ID, application ID, first name, or last name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Statuses</option>
+                <option value="DRAFT">Draft</option>
+                <option value="SUBMITTED">Submitted</option>
+                <option value="UNDER_REVIEW">Under Review</option>
+                <option value="AGENCY_REVIEW">Agency Review</option>
+                <option value="MINISTRY_REVIEW">Ministry Review</option>
+                <option value="READY_FOR_PERSONALIZATION">Ready for Personalization</option>
+                <option value="READY_FOR_PRINT">Ready for Print</option>
+                <option value="APPROVED">Approved</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+              <Button 
+                onClick={() => fetchApplications(1, pagination.itemsPerPage)}
+                className="px-4 py-2"
+                disabled={isSearching}
+              >
+                {isSearching ? "Searching..." : "Search"}
+              </Button>
+              {(searchTerm || statusFilter) && (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm("")
+                    setStatusFilter("")
+                    fetchApplications(1, pagination.itemsPerPage)
+                  }}
+                  className="px-4 py-2"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <ApplicationsTable
               applications={applications}
-              isLoading={isLoading}
+              isLoading={isLoading || isSearching}
               onRefresh={() => fetchApplications(pagination.currentPage, pagination.itemsPerPage)}
               userRole="MISSION_OPERATOR"
               onPrint={handlePrintApplication}

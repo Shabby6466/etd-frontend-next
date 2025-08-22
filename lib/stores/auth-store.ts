@@ -10,6 +10,7 @@ export interface User {
   role: "ADMIN" | "MINISTRY" | "AGENCY" | "MISSION_OPERATOR";
   state?: string;
   agency?: string;
+  locationId?: string;
 }
 
 interface AuthState {
@@ -61,6 +62,12 @@ export const useAuthStore = create<AuthState>()(
           return { success: true };
         } catch (err: unknown) {
           const message =
+            (
+              err as {
+                response?: { data?: { message?: string; error?: string } };
+                message?: string;
+              }
+            )?.response?.data?.message ||
             (
               err as {
                 response?: { data?: { error?: string } };

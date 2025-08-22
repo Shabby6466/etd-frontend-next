@@ -30,6 +30,30 @@ export interface PassportApiResponse {
 
 export interface PassportResponseData {
   citizen_id: string
+  tracking_id?: string
+  volume_tracking_id?: string
+  image_url: string
+  first_name: string
+  last_name: string
+  father_name: string
+  pakistan_city: string
+  gender: string
+  date_of_birth: string
+  birth_country: string
+  birth_city: string
+  profession: string
+  pakistan_address: string
+  response_status: string
+  api_response_date: string
+  raw_response: any
+}
+
+export interface PassportVolumeTrackingResponse {
+  id: number
+  createdAt: string
+  updatedAt: string
+  citizen_id: string
+  volume_tracking_id: string
   image_url: string
   first_name: string
   last_name: string
@@ -77,6 +101,21 @@ export const passportAPI = {
     }
   },
 
+  // Get passport response by volume tracking ID
+  getPassportResponseByVolumeTracking: async (volumeTrackingId: string): Promise<PassportVolumeTrackingResponse | null> => {
+    try {
+      console.log('Fetching passport response for volume tracking ID:', volumeTrackingId)
+      
+      const response = await apiClient.get(`/applications/passport-responses/volume-tracking/${volumeTrackingId}`)
+      console.log('Passport volume tracking response:', response.data)
+      
+      return response.data
+    } catch (error) {
+      console.error('Error fetching passport response by volume tracking ID:', error)
+      return null
+    }
+  },
+
   // Store passport response data in the database
   storePassportResponse: async (data: PassportResponseData): Promise<any> => {
     try {
@@ -90,5 +129,7 @@ export const passportAPI = {
       console.error('Error storing passport response:', error)
       throw error
     }
-  }
+  },
+
+
 }

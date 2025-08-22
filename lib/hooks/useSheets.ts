@@ -16,7 +16,7 @@ export function useSheets(filters?: SheetFilters) {
         sheetsAPI.getSheetStats(),
         sheetsAPI.getAvailableSheets()
       ])
-      setSheets(sheetsData)
+      setSheets(sheetsData.data)
       setStats(statsData)
       setAvailableSheets(availableData)
     } catch (error) {
@@ -30,7 +30,6 @@ export function useSheets(filters?: SheetFilters) {
     try {
       const response = await sheetsAPI.assignSheets({
         operator_id: operatorId,
-        location_id: locationId,
         sheet_numbers: sheetNumbers
       })
       showNotification.success("Sheets assigned successfully")

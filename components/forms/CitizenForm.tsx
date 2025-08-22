@@ -27,6 +27,7 @@ export function CitizenForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingData, setIsFetchingData] = useState(false)
   const [passportPhoto, setPassportPhoto] = useState<string | null>(null)
+  const [manualPhoto, setManualPhoto] = useState<string | null>(null)
   const [imageBase64, setImageBase64] = useState<string>("")
   const [showFullForm, setShowFullForm] = useState(false)
   const [initialCitizenId, setInitialCitizenId] = useState("")
@@ -76,8 +77,8 @@ export function CitizenForm() {
       setImageBase64(base64)
       form.setValue("image", base64)
 
-      // Set passport photo for display
-      setPassportPhoto(`data:${file.type};base64,${base64}`)
+      // // Set passport photo for display
+      setManualPhoto(`data:${file.type};base64,${base64}`)
 
       showNotification.success("Image uploaded successfully")
     } catch {
@@ -87,37 +88,37 @@ export function CitizenForm() {
 
   const form = useForm<CitizenFormData>({
     resolver: zodResolver(citizenSchema),
-    defaultValues: {
-      citizen_id: initialCitizenId,
-      first_name: "",
-      last_name: "",
-      image: initialImageBase64,
-      father_name: "",
-      mother_name: "",
-      gender: "",
-      date_of_birth: "",
-      profession: "",
-      pakistan_city: "",
-      pakistan_address: "",
-      birth_country: "",
-      birth_city: "",
-      height: "",
-      color_of_eyes: "",
-      color_of_hair: "",
-      departure_date: "",
-      transport_mode: "",
-      investor: "",
-      requested_by: "",
-      reason_for_deport: "",
-      securityDeposit: "",
-      amount: 0,
-      currency: "",
-      is_fia_blacklist: false,
-      status: "DRAFT",
-      passport_api_data: undefined,
-      nadra_api_data: undefined,
-      passport_response_id: undefined,
-    },
+         defaultValues: {
+       citizen_id: initialCitizenId,
+       first_name: "",
+       last_name: "",
+       image: "",
+       father_name: "",
+       mother_name: "",
+       gender: "",
+       date_of_birth: "",
+       profession: "",
+       pakistan_city: "",
+       pakistan_address: "",
+       birth_country: "",
+       birth_city: "",
+       height: "",
+       color_of_eyes: "",
+       color_of_hair: "",
+       departure_date: "",
+       transport_mode: "",
+       investor: "",
+       requested_by: "",
+       reason_for_deport: "",
+       securityDeposit: "",
+       amount: 0,
+       currency: "",
+       is_fia_blacklist: false,
+       status: "DRAFT",
+       passport_api_data: undefined,
+       nadra_api_data: undefined,
+       passport_response_id: "",
+     },
   })
 
   // Function to map passport API response to form data
@@ -184,7 +185,7 @@ export function CitizenForm() {
     
     // Set photo for display if available
     if (imageBase64) {
-      setPassportPhoto(`data:image/jpeg;base64,${imageBase64}`)
+      setManualPhoto(`data:image/jpeg;base64,${imageBase64}`)
       setImageBase64(imageBase64)
     }
 
@@ -195,7 +196,7 @@ export function CitizenForm() {
     handlePhotoCardGetData(citizenId, imageBase64)
   }
 
-  // Handler for photo card "Get Data" button (background API calls)
+    // Handler for photo card "Get Data" button (background API calls)
   const handlePhotoCardGetData = async (citizenId: string, imageBase64: string | null) => {
     console.log("handlePhotoCardGetData called with:", { citizenId, hasImage: !!imageBase64 })
     
@@ -249,38 +250,8 @@ export function CitizenForm() {
        // Clear NADRA detail data
        setNadraDetailData(null)
 
-      // Store passport response data in the database
-      try {
-        const passportResponseData = {
-          citizen_id: citizenId,
-          image_url: passportData.photograph ? `data:image/jpeg;base64,${passportData.photograph}` : "",
-          first_name: mappedData.first_name || "",
-          last_name: mappedData.last_name || "",
-          father_name: mappedData.father_name || "",
-          pakistan_city: mappedData.pakistan_city || "",
-          gender: mappedData.gender || "",
-          date_of_birth: mappedData.date_of_birth || "",
-          birth_country: mappedData.birth_country || "",
-          birth_city: mappedData.birth_city || "",
-          profession: mappedData.profession || "",
-          pakistan_address: mappedData.pakistan_address || "",
-          response_status: "SUCCESS",
-          api_response_date: new Date().toISOString(),
-          raw_response: passportData
-        }
-        
-        const passportResponse = await passportAPI.storePassportResponse(passportResponseData)
-        console.log('Passport response data stored successfully:', passportResponse)
-        
-        // Store the passport response ID for later use in application creation
-        if (passportResponse && passportResponse.id) {
-          form.setValue("passport_response_id", passportResponse.id)
-          console.log('Passport response ID stored:', passportResponse.id)
-        }
-      } catch (storeError) {
-        console.error('Failed to store passport response data:', storeError)
-        // Don't show error to user as this is a background operation
-      }
+      // Store passport API data for later use in application creation
+      form.setValue("passport_api_data", passportData)
 
       showNotification.success("Data fetched successfully from Passport API")
     } catch (passportError) {
@@ -316,8 +287,56 @@ export function CitizenForm() {
       // Don't show full form here - it's already shown by navigation
     }
   }
+   const handleBackBtn = () => {
+   // Clear form values
+   form.reset({
+     citizen_id: "",
+     first_name: "",
+     last_name: "",
+     image: "",
+     father_name: "",
+     mother_name: "",
+     gender: "",
+     date_of_birth: "",
+     profession: "",
+     pakistan_city: "",
+     pakistan_address: "",
+     birth_country: "",
+     birth_city: "",
+     height: "",
+     color_of_eyes: "",
+     color_of_hair: "",
+     departure_date: "",
+     transport_mode: "",
+     investor: "",
+     requested_by: "",
+     reason_for_deport: "",
+     securityDeposit: "",
+     amount: 0,
+     currency: "",
+     is_fia_blacklist: false,
+     status: "DRAFT",
+     passport_api_data: undefined,
+     nadra_api_data: undefined,
+     passport_response_id: "",
+   })
 
-  // Handler for form "Get Data" button (for re-fetching data)
+       // Clear image states
+    setPassportPhoto(null)
+    setImageBase64("")
+    setInitialCitizenId("")
+    setInitialImageBase64("")
+    setManualPhoto(null)
+   // Clear detail data states
+   setPassportDetailData(null)
+   setNadraDetailData(null)
+   setIsPassportDataFetched(false)
+
+   // Reset to photo card view
+   setShowFullForm(false)
+ }
+
+    // Handler for form "Get Data" button (for re-fetching data)
   const handleGetData = async () => {
     const citizenId = form.getValues("citizen_id")
     if (!/^\d{13}$/.test(citizenId)) {
@@ -368,38 +387,8 @@ export function CitizenForm() {
        // Clear NADRA detail data
        setNadraDetailData(null)
 
-      // Store passport response data in the database
-      try {
-        const passportResponseData = {
-          citizen_id: citizenId,
-          image_url: passportData.photograph ? `data:image/jpeg;base64,${passportData.photograph}` : "",
-          first_name: mappedData.first_name || "",
-          last_name: mappedData.last_name || "",
-          father_name: mappedData.father_name || "",
-          pakistan_city: mappedData.pakistan_city || "",
-          gender: mappedData.gender || "",
-          date_of_birth: mappedData.date_of_birth || "",
-          birth_country: mappedData.birth_country || "",
-          birth_city: mappedData.birth_city || "",
-          profession: mappedData.profession || "",
-          pakistan_address: mappedData.pakistan_address || "",
-          response_status: "SUCCESS",
-          api_response_date: new Date().toISOString(),
-          raw_response: passportData
-        }
-        
-        const passportResponse = await passportAPI.storePassportResponse(passportResponseData)
-        console.log('Passport response data stored successfully:', passportResponse)
-        
-        // Store the passport response ID for later use in application creation
-        if (passportResponse && passportResponse.id) {
-          form.setValue("passport_response_id", passportResponse.id)
-          console.log('Passport response ID stored:', passportResponse.id)
-        }
-      } catch (storeError) {
-        console.error('Failed to store passport response data:', storeError)
-        // Don't show error to user as this is a background operation
-      }
+                     // Store passport API data for later use in application creation
+       form.setValue("passport_api_data", passportData)
 
       showNotification.success("Data fetched successfully from Passport API")
     } catch (passportError) {
@@ -431,6 +420,34 @@ export function CitizenForm() {
     setIsLoading(true)
     
     try {
+      // Validate required fields
+      const requiredFields = [
+        { field: 'citizen_id', value: data.citizen_id, label: 'Citizen ID' },
+        { field: 'first_name', value: data.first_name, label: 'First Name' },
+        { field: 'last_name', value: data.last_name, label: 'Last Name' },
+        { field: 'image', value: data.image, label: 'Image' },
+        { field: 'father_name', value: data.father_name, label: "Father's Name" },
+        { field: 'mother_name', value: data.mother_name, label: "Mother's Name" },
+        { field: 'gender', value: data.gender, label: 'Gender' },
+        { field: 'date_of_birth', value: data.date_of_birth, label: 'Date of Birth' },
+        { field: 'profession', value: data.profession, label: 'Profession' },
+        { field: 'pakistan_city', value: data.pakistan_city, label: 'City' },
+        { field: 'pakistan_address', value: data.pakistan_address, label: 'Address' },
+        { field: 'birth_country', value: data.birth_country, label: 'Birth Country' },
+        { field: 'birth_city', value: data.birth_city, label: 'Birth City' },
+        { field: 'departure_date', value: data.departure_date, label: 'Departure Date' },
+        { field: 'requested_by', value: data.requested_by, label: 'Requested By' }
+      ]
+
+      const missingFields = requiredFields.filter(field => !field.value || field.value.trim() === '')
+      
+      if (missingFields.length > 0) {
+        const missingFieldNames = missingFields.map(field => field.label).join(', ')
+        showNotification.error(`Please fill in the following required fields: ${missingFieldNames}`)
+        setIsLoading(false)
+        return
+      }
+
       // Validate that image is provided
       if (!data.image || data.image.trim() === '') {
         showNotification.error("Please upload a photograph before submitting")
@@ -454,6 +471,10 @@ export function CitizenForm() {
 
        // Check if passport response was fetched using the boolean state
        const isPassportResponseFetched = isPassportDataFetched
+
+       // Log user data for debugging
+       console.log('User data from auth store:', user)
+       console.log('User locationId:', user?.locationId)
 
               // Format the application data according to the new API structure
         const applicationData = {
@@ -482,6 +503,7 @@ export function CitizenForm() {
          currency: data.currency || "",
          is_fia_blacklist: data.is_fia_blacklist || false,
          status: "DRAFT",
+         location_id: user?.locationId || "", 
          passport_photo_url: data.image ? `data:image/jpeg;base64,${data.image}` : undefined,
          other_documents_url: undefined, // Will be set when documents are uploaded
          passport_api_data: passportApiData,
@@ -493,11 +515,44 @@ export function CitizenForm() {
        }
 
       console.log('Sending application data to API:', applicationData)
-      console.log('API endpoint: /applications')
+       console.log('API endpoint: /applications')
 
-      const application = await applicationAPI.create(applicationData)
-      console.log('API response received:', application)
-      showNotification.success("Application created successfully")
+        const application = await applicationAPI.create(applicationData)
+        console.log('API response received:', application)
+        
+        // Create passport response with tracking ID and volume tracking ID if passport data exists
+        if (passportApiData && application.id) {
+          try {
+            const mappedData = mapPassportDataToForm(passportApiData)
+            const passportResponseData = {
+              citizen_id: data.citizen_id,
+              tracking_id: application.id,
+              volume_tracking_id: application.id, 
+              image_url: passportApiData.photograph ? `data:image/jpeg;base64,${passportApiData.photograph}` : "",
+              first_name: mappedData.first_name || "",
+              last_name: mappedData.last_name || "",
+              father_name: mappedData.father_name || "",
+              pakistan_city: mappedData.pakistan_city || "",
+              gender: mappedData.gender || "",
+              date_of_birth: mappedData.date_of_birth || "",
+              birth_country: mappedData.birth_country || "",
+              birth_city: mappedData.birth_city || "",
+              profession: mappedData.profession || "",
+              pakistan_address: mappedData.pakistan_address || "",
+              response_status: "SUCCESS",
+              api_response_date: new Date().toISOString(),
+              raw_response: passportApiData
+            }
+            
+           const passportResponse = await passportAPI.storePassportResponse(passportResponseData)
+          console.log('Passport response created with tracking ID and volume tracking ID:', application.id)
+          } catch (passportError) {
+            console.error('Failed to create passport response with tracking ID:', passportError)
+            // Don't show error to user as this is a background operation
+          }
+        }
+       
+       showNotification.success("Application created successfully")
 
       // Navigate based on user role
       console.log('Application created successfully, user role:', user?.role)
@@ -585,7 +640,7 @@ export function CitizenForm() {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => setShowFullForm(false)}
+                  onClick={() => handleBackBtn()} 
                   className="text-sm"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
@@ -596,7 +651,14 @@ export function CitizenForm() {
 
               <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
                 console.error('Form validation errors:', errors)
-                showNotification.error("Please fill all the required fields before submitting")
+                
+                // Get the first error message to show to the user
+                const firstError = Object.values(errors)[0]
+                if (firstError && firstError.message) {
+                  showNotification.error(firstError.message as string)
+                } else {
+                  showNotification.error("Please fill all the required fields before submitting")
+                }
               })} className="space-y-6">
                 {/* Citizen ID Section */}
                 <div className="flex items-center gap-4">
@@ -609,7 +671,11 @@ export function CitizenForm() {
                       pattern="\d{13}"
                       inputMode="numeric"
                       {...form.register("citizen_id")}
+                      className={form.formState.errors.citizen_id ? "border-red-500" : ""}
                     />
+                    {form.formState.errors.citizen_id && (
+                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.citizen_id.message}</p>
+                    )}
                   </div>
                   
                   <Button
@@ -650,11 +716,12 @@ export function CitizenForm() {
                   <Label className="text-lg font-semibold mb-4 block">Photograph *</Label>
 
                   {/* Image Display */}
-                  {passportPhoto && (
+                  { manualPhoto && (
                     <div className="flex justify-center mb-4">
-                      <div className="border-2 border-gray-300 rounded-lg p-2 bg-white">
+                      <div className=" bg-white">
+                    
                         <Image
-                          src={passportPhoto}
+                          src={manualPhoto || ''}
                           alt="Citizen Photo"
                           width={128}
                           height={160}
@@ -682,7 +749,7 @@ export function CitizenForm() {
                       </div>
                     </div>
 
-                    {!passportPhoto && !imageBase64 && (
+                    {!manualPhoto && !imageBase64 && (
                       <p className="text-sm text-gray-600">
                         No image available from passport API. Please upload a photo manually.
                       </p>
@@ -693,6 +760,10 @@ export function CitizenForm() {
                         ✓ Image ready for submission (Base64 format)
                       </p>
                     )}
+                    
+                    {form.formState.errors.image && (
+                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.image.message}</p>
+                    )}
                   </div>
                 </div>
 
@@ -702,57 +773,135 @@ export function CitizenForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="first_name" className="font-bold">First Name *</Label>
-                  <Input id="first_name" {...form.register("first_name")} />
+                  <Input 
+                    id="first_name" 
+                    {...form.register("first_name")} 
+                    className={form.formState.errors.first_name ? "border-red-500" : ""}
+                  />
+                  {form.formState.errors.first_name && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.first_name.message}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="last_name" className="font-bold">Last Name *</Label>
-                  <Input id="last_name" {...form.register("last_name")} />
+                  <Input 
+                    id="last_name" 
+                    {...form.register("last_name")} 
+                    className={form.formState.errors.last_name ? "border-red-500" : ""}
+                  />
+                  {form.formState.errors.last_name && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.last_name.message}</p>
+                  )}
                 </div>
-                <div>
-                  <Label htmlFor="father_name" className="font-bold">Father&apos;s Name *</Label>
-                  <Input id="father_name" {...form.register("father_name")} />
-                </div>
-                <div>
-                  <Label htmlFor="mother_name" className="font-bold">Mother&apos;s Name *</Label>
-                  <Input id="mother_name" {...form.register("mother_name")} />
-                </div>
-                <div>
-                  <Label htmlFor="gender" className="font-bold">Gender *</Label>
-                  <Input id="gender" {...form.register("gender")} />
-                </div>
-                <div>
-                  <Label htmlFor="date_of_birth" className="font-bold">Date of Birth *</Label>
-                  <Input id="date_of_birth" type="date" {...form.register("date_of_birth")} />
-                </div>
+                                 <div>
+                   <Label htmlFor="father_name" className="font-bold">Father&apos;s Name *</Label>
+                   <Input 
+                     id="father_name" 
+                     {...form.register("father_name")} 
+                     className={form.formState.errors.father_name ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.father_name && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.father_name.message}</p>
+                   )}
+                 </div>
+                 <div>
+                   <Label htmlFor="mother_name" className="font-bold">Mother&apos;s Name *</Label>
+                   <Input 
+                     id="mother_name" 
+                     {...form.register("mother_name")} 
+                     className={form.formState.errors.mother_name ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.mother_name && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.mother_name.message}</p>
+                   )}
+                 </div>
+                 <div>
+                   <Label htmlFor="gender" className="font-bold">Gender *</Label>
+                   <Input 
+                     id="gender" 
+                     {...form.register("gender")} 
+                     className={form.formState.errors.gender ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.gender && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.gender.message}</p>
+                   )}
+                 </div>
+                 <div>
+                   <Label htmlFor="date_of_birth" className="font-bold">Date of Birth *</Label>
+                   <Input 
+                     id="date_of_birth" 
+                     type="date" 
+                     {...form.register("date_of_birth")} 
+                     className={form.formState.errors.date_of_birth ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.date_of_birth && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.date_of_birth.message}</p>
+                   )}
+                 </div>
                 {/* <div>
                   <Label htmlFor="nationality">Nationality</Label>
                   <Input id="nationality" {...form.register("nationality")} />
                 </div> */}
               </div>
 
-              {/* Address & Birth Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="birth_country" className="font-bold">Birth Country *</Label>
-                  <Input id="birth_country" {...form.register("birth_country")} />
-                </div>
-                <div>
-                  <Label htmlFor="birth_city" className="font-bold">Birth City *</Label>
-                  <Input id="birth_city" {...form.register("birth_city")} />
-                </div>
-                <div>
-                  <Label htmlFor="pakistan_city" className="font-bold">City *</Label>
-                  <Input id="pakistan_city" {...form.register("pakistan_city")} />
-                </div>
-                <div>
-                  <Label htmlFor="profession" className="font-bold">Profession *</Label>
-                  <Input id="profession" {...form.register("profession")} />
-                </div>
-                <div className="md:col-span-2">
-                  <Label htmlFor="pakistan_address" className="font-bold">Address *</Label>
-                  <Input id="pakistan_address" {...form.register("pakistan_address")} />
-                </div>
-              </div>
+                             {/* Address & Birth Information */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <Label htmlFor="birth_country" className="font-bold">Birth Country *</Label>
+                   <Input 
+                     id="birth_country" 
+                     {...form.register("birth_country")} 
+                     className={form.formState.errors.birth_country ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.birth_country && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.birth_country.message}</p>
+                   )}
+                 </div>
+                 <div>
+                   <Label htmlFor="birth_city" className="font-bold">Birth City *</Label>
+                   <Input 
+                     id="birth_city" 
+                     {...form.register("birth_city")} 
+                     className={form.formState.errors.birth_city ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.birth_city && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.birth_city.message}</p>
+                   )}
+                 </div>
+                 <div>
+                   <Label htmlFor="pakistan_city" className="font-bold">City *</Label>
+                   <Input 
+                     id="pakistan_city" 
+                     {...form.register("pakistan_city")} 
+                     className={form.formState.errors.pakistan_city ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.pakistan_city && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.pakistan_city.message}</p>
+                   )}
+                 </div>
+                 <div>
+                   <Label htmlFor="profession" className="font-bold">Profession *</Label>
+                   <Input 
+                     id="profession" 
+                     {...form.register("profession")} 
+                     className={form.formState.errors.profession ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.profession && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.profession.message}</p>
+                   )}
+                 </div>
+                 <div className="md:col-span-2">
+                   <Label htmlFor="pakistan_address" className="font-bold">Address *</Label>
+                   <Input 
+                     id="pakistan_address" 
+                     {...form.register("pakistan_address")} 
+                     className={form.formState.errors.pakistan_address ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.pakistan_address && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.pakistan_address.message}</p>
+                   )}
+                 </div>
+               </div>
 
               {/* Physical Characteristics */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -770,24 +919,39 @@ export function CitizenForm() {
                 </div>
               </div>
 
-              {/* Travel & Request Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="departure_date" className="font-bold">Departure Date *</Label>
-                  <Input id="departure_date" type="date" {...form.register("departure_date")} />
-                </div>
-                <div>
-                  <Label htmlFor="transport_mode">Transport Mode</Label>
-                  <Input id="transport_mode" placeholder="e.g., Air, Road, Sea" {...form.register("transport_mode")} />
-                </div>
-                <div>
-                  <Label htmlFor="investor">Investor</Label>
-                  <Input id="investor" placeholder="Gov of Pakistan" {...form.register("investor")} />
-                </div>
-                <div>
-                  <Label htmlFor="requested_by" className="font-bold">Requested By *</Label>
-                  <Input id="requested_by" {...form.register("requested_by")} />
-                </div>
+                             {/* Travel & Request Information */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <Label htmlFor="departure_date" className="font-bold">Departure Date *</Label>
+                   <Input 
+                     id="departure_date" 
+                     type="date" 
+                     {...form.register("departure_date")} 
+                     className={form.formState.errors.departure_date ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.departure_date && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.departure_date.message}</p>
+                   )}
+                 </div>
+                 <div>
+                   <Label htmlFor="transport_mode">Transport Mode</Label>
+                   <Input id="transport_mode" placeholder="e.g., Air, Road, Sea" {...form.register("transport_mode")} />
+                 </div>
+                 <div>
+                   <Label htmlFor="investor">Investor</Label>
+                   <Input id="investor" placeholder="Gov of Pakistan" {...form.register("investor")} />
+                 </div>
+                 <div>
+                   <Label htmlFor="requested_by" className="font-bold">Requested By *</Label>
+                   <Input 
+                     id="requested_by" 
+                     {...form.register("requested_by")} 
+                     className={form.formState.errors.requested_by ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.requested_by && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.requested_by.message}</p>
+                   )}
+                 </div>
                 <div>
                   <Label htmlFor="reason_for_deport">Reason for Deport</Label>
                   <Input id="reason_for_deport" {...form.register("reason_for_deport")} />
@@ -796,10 +960,19 @@ export function CitizenForm() {
                   <Label htmlFor="securityDeposit">Security Deposit Description (if any)</Label>
                   <Input id="securityDeposit" placeholder="-" {...form.register("securityDeposit")} />
                 </div>
-                <div>
-                  <Label htmlFor="amount">Amount</Label>
-                  <Input id="amount" type="number" step="0.01" {...form.register("amount", { valueAsNumber: true })} />
-                </div>
+                                 <div>
+                   <Label htmlFor="amount">Amount</Label>
+                   <Input 
+                     id="amount" 
+                     type="number" 
+                     step="0.01" 
+                     {...form.register("amount", { valueAsNumber: true })} 
+                     className={form.formState.errors.amount ? "border-red-500" : ""}
+                   />
+                   {form.formState.errors.amount && (
+                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.amount.message}</p>
+                   )}
+                 </div>
                 <div>
                   <Label htmlFor="currency">Currency</Label>
                   <Input id="currency" {...form.register("currency")} />

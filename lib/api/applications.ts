@@ -115,6 +115,7 @@ export interface CreateApplicationData {
   currency: string
   is_fia_blacklist: boolean
   status: string
+  location_id?: string
   passport_photo_url?: string
   other_documents_url?: string
   passport_api_data?: {
@@ -270,6 +271,79 @@ export const applicationAPI = {
     return { data: transformedData }
   },
 
+  // Get applications by location ID
+  getApplicationsByLocation: async (locationId: string, filters: {
+    page?: number
+    limit?: number
+    search?: string
+    status?: string
+  } = {}): Promise<{
+    data: Application[]
+    meta: {
+      currentPage: number
+      itemCount: number
+      itemsPerPage: number
+      totalPages: number
+      totalItems: number
+    }
+    location?: {
+      location_id: string
+      name: string
+    }
+  }> => {
+    const params = new URLSearchParams()
+    
+    // Add all optional parameters
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.search) params.append('search', filters.search)
+    if (filters.status) params.append('status', filters.status)
+
+    const response = await apiClient.get(`/applications/location/${locationId}?${params.toString()}`)
+    
+    console.log('Raw location applications API response:', response.data)
+    
+    // Handle the API response structure
+    let applications = []
+    let meta = {
+      currentPage: 1,
+      itemCount: 0,
+      itemsPerPage: 10,
+      totalPages: 0,
+      totalItems: 0
+    }
+    let location = undefined
+    
+    if (response.data.data && response.data.meta) {
+      // API returns { data: [...], meta: {...}, location: {...} }
+      applications = response.data.data.map(transformApplicationData)
+      meta = {
+        currentPage: response.data.meta.currentPage || 1,
+        itemCount: response.data.meta.itemCount || 0,
+        itemsPerPage: response.data.meta.itemsPerPage || 10,
+        totalPages: response.data.meta.totalPages || 0,
+        totalItems: response.data.meta.totalItems || 0
+      }
+      location = response.data.location
+    } else {
+      // Fallback for different API structure
+      applications = []
+      meta = {
+        currentPage: 1,
+        itemCount: 0,
+        itemsPerPage: 10,
+        totalPages: 0,
+        totalItems: 0
+      }
+    }
+    
+    return {
+      data: applications,
+      meta,
+      location
+    }
+  },
+
   // Get application by ID
   getById: async (id: string): Promise<Application> => {
     const response = await apiClient.get(`/applications/${id}`)
@@ -335,7 +409,7 @@ export const applicationAPI = {
   // Ministry Review API methods using existing /review endpoint
   ministryReview: async (id: string, data: {
     approved: boolean,
-    black_list_check: boolean,
+    blacklist_check_pass: boolean,
     rejection_reason?: string
     etd_issue_date?: string
     etd_expiry_date?: string
@@ -345,7 +419,7 @@ export const applicationAPI = {
     // Create payload with only required fields based on approval status
     const payload: any = {
       approved: data.approved,
-      black_list_check: data.black_list_check,
+      blacklist_check_pass: data.blacklist_check_pass,
       etd_issue_date: data.etd_issue_date,
       etd_expiry_date: data.etd_expiry_date,
       rejection_reason: data.rejection_reason
@@ -518,7 +592,7 @@ export const applicationAPI = {
   updateStatus: async (id: string, data: {
     status: string,
     rejection_reason?: string,
-    black_list_check?: boolean
+    blacklist_check_pass?: boolean
   }): Promise<Application> => {
     console.log('Updating application status:', { id, data })
     console.log('API endpoint (PATCH):', `/applications/${id}/status`)
@@ -808,6 +882,74 @@ export const applicationAPI = {
     byReason: Record<string, number>
   }> => {
     const response = await apiClient.get(`/applications/rejected/stats`)
+    return response.data
+  },
+
+  // Get rejection reasons for dropdown
+  getRejectionReasons: async (filters: {
+    page?: number
+    limit?: number
+    search?: string
+    sort_by?: string
+    sort_order?: 'ASC' | 'DESC'
+  } = {}): Promise<{
+    data: Array<{
+      id: number
+      rejection_reason: string
+      created_at: string
+      updated_at: string
+    }>
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }> => {
+    const params = new URLSearchParams()
+    
+    // Add all optional parameters
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.search) params.append('search', filters.search)
+    if (filters.sort_by) params.append('sort_by', filters.sort_by)
+    if (filters.sort_order) params.append('sort_order', filters.sort_order)
+
+    const response = await apiClient.get(`/applications/remarks/rejected?${params.toString()}`)
+    return response.data
+  },
+
+  // Get acceptance remarks for dropdown
+  getAcceptanceRemarks: async (filters: {
+    page?: number
+    limit?: number
+    search?: string
+    sort_by?: string
+    sort_order?: 'ASC' | 'DESC'
+  } = {}): Promise<{
+    data: Array<{
+      id: number
+      acceptance_remarks: string
+      created_at: string
+      updated_at: string
+    }>
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }> => {
+    const params = new URLSearchParams()
+    
+    // Add all optional parameters
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.search) params.append('search', filters.search)
+    if (filters.sort_by) params.append('sort_by', filters.sort_by)
+    if (filters.sort_order) params.append('sort_order', filters.sort_order)
+
+    const response = await apiClient.get(`/applications/remarks/acceptance?${params.toString()}`)
     return response.data
   },
 }

@@ -78,9 +78,6 @@ export default function TestRejectedApplications() {
 
     setResults(testResults)
     showNotification.success("API tests completed. Check console for details.")
-  } catch (error) {
-    showNotification.error("Failed to run tests")
-  } finally {
     setIsLoading(false)
   }
 
