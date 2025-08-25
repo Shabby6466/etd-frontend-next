@@ -301,10 +301,10 @@ export function RejectedApplicationsTable() {
           </div>
           
           <div className="flex justify-end gap-2 mt-4">
-            <Button onClick={clearFilters} variant="outline" size="sm">
+            <Button onClick={clearFilters} variant="outline" size="sm" className="rounded-xl">
               Clear Filters
             </Button>
-            <Button onClick={applyFilters} size="sm">
+            <Button onClick={applyFilters} size="sm" className="rounded-xl">
               Apply Filters
             </Button>
           </div>
@@ -313,8 +313,7 @@ export function RejectedApplicationsTable() {
 
       {/* Applications Table */}
       <Card className="rounded-3xl">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="flex items-center justify-between">
             <CardTitle>Rejected Applications ({pagination.total})</CardTitle>
             <Button 
               onClick={fetchRejectedApplications} 
@@ -325,7 +324,6 @@ export function RejectedApplicationsTable() {
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

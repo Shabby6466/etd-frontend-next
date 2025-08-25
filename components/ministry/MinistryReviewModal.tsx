@@ -117,10 +117,10 @@ export function MinistryReviewModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <Card>
-          <CardHeader>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ">
+      {/* <div className="bg-white rounded-3xl p-6 w-full max-w-md mx-4"> */}
+        <Card className="rounded-3xl">
+          <CardHeader className="flex-col items-center">
             <CardTitle>Ministry Review</CardTitle>
             <CardDescription>
               {actionMode === "selection" && "Choose your action for this application"}
@@ -134,7 +134,7 @@ export function MinistryReviewModal({
             {actionMode === "selection" && (
               <div className="space-y-4">
                 <p className="text-sm text-gray-600">
-                  Please select whether you want to approve or reject this application.
+                  Please select whether you want to Approve or Reject
                 </p>
                 <div className="flex justify-center space-x-4 pt-4">
                   <Button
@@ -330,7 +330,7 @@ export function MinistryReviewModal({
 
           </CardContent>
         </Card>
-      </div>
+      {/* </div> */}
     </div>
   )
 }

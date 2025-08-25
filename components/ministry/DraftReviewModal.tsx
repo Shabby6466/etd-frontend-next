@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
+import { CheckCircle, XCircle, AlertTriangle, X } from "lucide-react"
 import { applicationAPI } from "@/lib/api/applications"
 
 interface DraftReviewModalProps {
@@ -150,9 +150,9 @@ export function DraftReviewModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+      <Card className="w-full max-w-md mx-4 rounded-3xl relative">
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle >
             <div>
               <div className="text-xl font-bold">Ministry Review</div>
               <div className="text-sm text-gray-500 mt-1">
@@ -161,15 +161,17 @@ export function DraftReviewModal({
                 {actionMode === 'reject' && 'Reject Application'}
               </div>
             </div>
-            <Button
+            
+          </CardTitle>
+          <Button
               variant="ghost"
               size="sm"
               onClick={handleClose}
               disabled={isLoading}
+              className="text-gray-500 text-sm absolute top-3 right-5"
             >
-              ×
-            </Button>
-          </CardTitle>
+              <X className="h-4 w-4 text-gray-500 text-sm" />
+              </Button>
         </CardHeader>
         <CardContent>
           {/* Action Selection Screen */}

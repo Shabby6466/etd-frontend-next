@@ -552,8 +552,7 @@ export function SheetManagementTable() {
 
       {/* Sheets Table */}
       <Card className="rounded-3xl">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="flex items-center justify-between">
                          <CardTitle>Sheets ({pagination.totalItems})</CardTitle>
             <Button 
               onClick={fetchData} 
@@ -564,7 +563,6 @@ export function SheetManagementTable() {
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

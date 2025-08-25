@@ -592,7 +592,7 @@ export default function ApplicationViewPage() {
   }
 
   return (
-    <div className="min-h-screen relative dashboardBackgroundColor">
+    <div className="min-h-screen relative dashboardBackgroundColor ">
       {/* <DGIPWatermarks  /> */}
       <div className="pt-12 ">
         <DGIPHeader />
@@ -600,7 +600,7 @@ export default function ApplicationViewPage() {
 
       <div className="max-w-6xl mx-auto p-6 pt-0 space-y-6 relative z-10">
         {/* <DGIPHeader /> */}
-        <Card>
+        <Card className="rounded-3xl">
           <div className="flex justify-between gap-2 p-6">
             <CardHeader>
               <CardTitle>Application #{application.id}</CardTitle>
@@ -768,7 +768,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                       : "lg:w-[119%]"
                   }`}
                 >
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full flex flex-col ">
+                  <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 h-full flex flex-col  ">
                     <h3 className="text-lg font-semibold mb-4 text-gray-800">
                       Data Sources & Verification
                     </h3>
@@ -839,7 +839,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                     </div>
 
                     {/* Quick Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-fr flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-fr flex-1 ">
                       <div className="rounded-xl border bg-gray-50 p-4 flex flex-col justify-between">
                         <div className="text-xl font-bold text-gray-900 leading-tight">
                           {application.firstName || "-"}
@@ -873,8 +873,8 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
             </div>
 
             {/* Personal & Address */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 auto-rows-fr items-stretch">
-              <Section title="Personal Information" className="h-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 auto-rows-fr items-stretch ">
+              <Section title="Personal Information" className="h-full ">
                 <GridItem label="First Name" value={application.firstName} />
                 <GridItem label="Last Name" value={application.lastName} />
                 <GridItem
@@ -994,7 +994,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
 
               {application.reviewedBy && (
                 <Section title="Security & Verification" className="h-full">
-                  <GridItem
+                  {/* <GridItem
                     label="FIA Blacklist Status"
                     value={
                       <div className="flex items-center gap-2">
@@ -1010,7 +1010,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                         </span>
                       </div>
                     }
-                  />
+                  /> */}
                   {application.blacklistCheckPassed !== undefined && (
                     <GridItem
                       label="Blacklist Check"
@@ -1148,14 +1148,14 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
 
         {/* Verification Document - For Agency Users */}
         {role === "AGENCY" && application.status === "PENDING_VERIFICATION" && (
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader>
               <CardTitle>Verification Document</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {/* Ministry Verification Document */}
-                <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-xl">
                   <div className="flex items-center gap-3">
                     <FileText className="h-8 w-8 text-blue-600" />
                     <div>
@@ -1204,7 +1204,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                     }}
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 rounded-xl"
                   >
                     <Download className="h-4 w-4" />
                     Download
@@ -1329,7 +1329,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
         {(role === "MINISTRY" || role === "ADMIN") &&
           application.agencyRemarks &&
           application.agencyRemarks.length > 0 && (
-            <Card>
+            <Card className="rounded-3xl">
               <CardHeader>
                 <CardTitle>Agency Verification Responses</CardTitle>
               </CardHeader>
@@ -1339,10 +1339,10 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                     (remark: any, index: number) => (
                       <div
                         key={index}
-                        className="bg-gray-50 border border-gray-200 rounded-lg p-4"
+                        className="bg-gray-50 border border-gray-200 rounded-3xl p-4"
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between mb-3 ">
+                          <div className="flex items-center gap-2 ">
                             {/* <div className="w-2 h-2 rounded-full bg-green-500"></div> */}
                             <span className="font-medium text-gray-800">
                               {remark.agency || "Unknown Agency"}
@@ -1359,7 +1359,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                           <div className="text-sm text-gray-600 mb-2">
                             Verification Remarks:
                           </div>
-                          <div className="bg-white rounded-lg p-3 text-gray-800 border border-gray-200">
+                          <div className="bg-white rounded-2xl p-3 text-gray-800 border border-gray-200 ">
                             {remark.remarks || "No remarks provided"}
                           </div>
                         </div>
@@ -1432,7 +1432,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
           )}
 
         {canPerformAction && (
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader>
               <CardTitle>Actions</CardTitle>
             </CardHeader>
@@ -1617,7 +1617,7 @@ function Section({
 }) {
   return (
     <div
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col h-full ${className}`}
+      className={`bg-white rounded-3xl shadow-sm border border-gray-200 p-6 flex flex-col h-full ${className}`}
     >
       <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b border-gray-200 pb-3">
         {title}
@@ -1643,7 +1643,7 @@ function GridItem({
   mono?: boolean;
 }) {
   return (
-    <div className="p-3 bg-gray-50 rounded-lg">
+    <div className="p-3 bg-gray-50 rounded-xl">
       <div className="text-sm font-medium text-gray-700 mb-1">{label}</div>
       <div className={`text-gray-900 ${mono ? "font-mono" : "font-medium"}`}>
         {value || "-"}

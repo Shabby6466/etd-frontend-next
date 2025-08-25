@@ -320,20 +320,18 @@ export function CompletedApplicationsTable() {
 
       {/* Applications Table */}
       <Card className="rounded-3xl">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="flex items-center justify-between">
             <CardTitle>Completed Applications ({pagination.total})</CardTitle>
             <Button 
               onClick={fetchCompletedApplications} 
               variant="outline" 
               size="sm"
               disabled={loading}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 rounded-xl"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4  ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

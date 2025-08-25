@@ -112,7 +112,7 @@ export default function ETDApplicationPhotoCard({
 
       <CardContent className="pt-6">
         {/* Photo */}
-        <div className="flex w-full justify-center">
+        {/* <div className="flex w-full justify-center">
           <div
             className="rounded-md border bg-white"
             style={{ width: imgWidth, height: imgHeight }}
@@ -126,10 +126,10 @@ export default function ETDApplicationPhotoCard({
               draggable={false}
             />
           </div>
-        </div>
+        </div> */}
 
         {/* Actions */}
-        <div className="mt-4 flex w-full justify-center gap-2">
+        {/* <div className="mt-4 flex w-full justify-center gap-2">
           <Button type="button" onClick={openPicker} disabled={loading}>
             <UploadCloud className="mr-2 h-4 w-4" />
             {loading ? "Uploading..." : "Upload New"}
@@ -150,7 +150,7 @@ export default function ETDApplicationPhotoCard({
             accept="image/*"
             onChange={(e) => handleFile(e.target.files)}
           />
-        </div>
+        </div> */}
 
         {/* Citizen Number */}
         <div className="mt-6">
@@ -166,7 +166,7 @@ export default function ETDApplicationPhotoCard({
             pattern="\d{13}"
             inputMode="numeric"
             className={cn(
-              "mt-1 h-11 rounded-lg",
+              "mt-1 h-11 rounded-xl",
               "bg-white" // matches screenshot
             )}
           />

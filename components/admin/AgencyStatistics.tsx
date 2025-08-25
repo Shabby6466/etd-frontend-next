@@ -373,17 +373,15 @@ export function AgencyStatistics() {
 
   return (
     <Card className="rounded-3xl">
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
             Agency Statistics
           </CardTitle>
-          <Button onClick={fetchData} variant="outline" size="sm">
+          <Button onClick={fetchData} variant="outline" size="sm" className="rounded-xl">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">

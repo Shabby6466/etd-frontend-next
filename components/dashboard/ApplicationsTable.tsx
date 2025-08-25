@@ -138,11 +138,12 @@ export function ApplicationsTable({
   return (
     <>
       <Card className="rounded-3xl">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="flex items-center justify-between gap-4" >
+          
             <CardTitle>Applications</CardTitle>
+            
             <div className="flex items-center gap-4">
-              <div className="relative">
+              {/* <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search applications..."
@@ -150,7 +151,7 @@ export function ApplicationsTable({
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-64 rounded-xl"
                 />
-              </div>
+              </div> */}
               <Button 
                 onClick={onRefresh} 
                 variant="outline" 
@@ -167,7 +168,8 @@ export function ApplicationsTable({
                 </Button>
               )}
             </div>
-          </div>
+          
+          
         </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">

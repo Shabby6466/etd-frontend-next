@@ -96,8 +96,7 @@ export function UserManagementTable() {
   return (
     <>
       <Card className="rounded-3xl">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="flex items-center justify-between">
             <CardTitle>All Users ({users.length})</CardTitle>
             <div className="flex items-center gap-2">
 
@@ -119,7 +118,6 @@ export function UserManagementTable() {
               Refresh
             </Button>
               </div>
-          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

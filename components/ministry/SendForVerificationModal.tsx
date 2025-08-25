@@ -123,19 +123,18 @@ export function SendForVerificationModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      <Card className="w-full max-w-md mx-4 rounded-3xl">
+        <CardHeader className="flex items-center justify-between relative">
             <CardTitle>Send for Verification</CardTitle>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleClose}
               disabled={isLoading}
+              className="absolute top-2 right-5"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4 text-gray-500 text-sm " />
             </Button>
-          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

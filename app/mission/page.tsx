@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Plus, Printer, Clock, CheckCircle } from "lucide-react"
+import { FileText, Plus, Printer, Clock, CheckCircle, Search, ChevronDown } from "lucide-react"
 import { ApplicationsTable } from "@/components/dashboard/ApplicationsTable"
 import { Application } from "@/lib/types"
 import { applicationAPI } from "@/lib/api/applications"
 import { showNotification } from "@/lib/utils/notifications"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { useRouter } from "next/navigation"
+import { Input } from "@/components/ui/input"
 
 export default function MissionOperatorDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
@@ -207,47 +208,32 @@ export default function MissionOperatorDashboard() {
         <Card className="rounded-3xl">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-            
               <div className="text-sm text-gray-500 font-normal">
                 Location: {locationInfo?.name || user?.state}
                 {locationInfo?.location_id && ` (ID: ${locationInfo.location_id})`}
               </div>
             </CardTitle>
             {/* Search Bar */}
-            <div className="flex items-center gap-4 mt-4">
-              <div className="flex-1 max-w-md">
-                <input
+          <div className="flex items-center justify-end gap-4">
+            <div className="flex items-center gap-4  justify-end">
+              <div className="flex-1 max-w-md relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
                   type="text"
-                  placeholder="Search by citizen ID, application ID, first name, or last name..."
+                  placeholder="Search applications"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10 w-64 rounded-xl"
                 />
               </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">All Statuses</option>
-                <option value="DRAFT">Draft</option>
-                <option value="SUBMITTED">Submitted</option>
-                <option value="UNDER_REVIEW">Under Review</option>
-                <option value="AGENCY_REVIEW">Agency Review</option>
-                <option value="MINISTRY_REVIEW">Ministry Review</option>
-                <option value="READY_FOR_PERSONALIZATION">Ready for Personalization</option>
-                <option value="READY_FOR_PRINT">Ready for Print</option>
-                <option value="APPROVED">Approved</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="REJECTED">Rejected</option>
-              </select>
-              <Button 
+              
+              {/* <Button 
                 onClick={() => fetchApplications(1, pagination.itemsPerPage)}
                 className="px-4 py-2"
                 disabled={isSearching}
               >
                 {isSearching ? "Searching..." : "Search"}
-              </Button>
+              </Button> */}
               {(searchTerm || statusFilter) && (
                 <Button 
                   variant="outline"
@@ -262,6 +248,27 @@ export default function MissionOperatorDashboard() {
                 </Button>
               )}
             </div>
+            <div className="relative w-[140px]">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className=" w-full h-[40px] appearance-none px-3 py-2 rounded-xl text-gray-500 text-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Statuses</option>
+                <option value="DRAFT">Draft</option>
+                {/* <option value="SUBMITTED">Submitted</option> */}
+                <option value="UNDER_REVIEW">Under Review</option>
+                {/* <option value="AGENCY_REVIEW">Agency Review</option> */}
+                {/* <option value="MINISTRY_REVIEW">Ministry Review</option> */}
+                <option value="READY_FOR_PERSONALIZATION">Ready for Personalization</option>
+                <option value="READY_FOR_PRINT">Ready for Print</option>
+                <option value="APPROVED">Approved</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            </div>
+          </div>
           </CardHeader>
           <CardContent>
             <ApplicationsTable
