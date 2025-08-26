@@ -1014,6 +1014,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                   {application.blacklistCheckPassed !== undefined && (
                     <GridItem
                       label="Blacklist Check"
+                      className="grid-col-2"
                       value={
                         <div className="flex items-center gap-2">
                           <div
@@ -1025,8 +1026,8 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                           ></div>
                           <span>
                             {!application.blacklistCheckPassed
-                              ? "Passed"
-                              : "Failed (Still Approved)"}
+                              ? "Not BlackListed"
+                              : "BlackListed (Still Approved)"}
                           </span>
                         </div>
                       }
@@ -1636,10 +1637,12 @@ function Section({
 function GridItem({
   label,
   value,
+  className,
   mono,
 }: {
   label: string;
   value?: string | React.ReactNode;
+  className?:string;
   mono?: boolean;
 }) {
   return (

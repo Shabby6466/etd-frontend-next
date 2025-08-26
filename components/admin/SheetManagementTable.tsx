@@ -139,7 +139,19 @@ export function SheetManagementTable() {
       
       setSheets(sheetsArray)
       setStats(statsData)
-      setUsers(usersData || [])
+      
+      // Handle the new users API response structure
+      let usersArray: User[] = []
+      if (usersData && typeof usersData === 'object') {
+        if (Array.isArray(usersData)) {
+          // API returned a simple array (old structure)
+          usersArray = usersData
+        } else if (usersData.data && Array.isArray(usersData.data)) {
+          // API returned paginated response (new structure)
+          usersArray = usersData.data
+        }
+      }
+      setUsers(usersArray)
       setPagination(paginationData)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -398,7 +410,7 @@ export function SheetManagementTable() {
                     <SelectValue placeholder="Select operator" />
                   </SelectTrigger>
                   <SelectContent>
-                    {users
+                    {Array.isArray(users) && users
                       .filter(user => user.role === 'MISSION_OPERATOR')
                       .map((user) => (
                         <SelectItem key={user.id} value={user.id}>
@@ -457,7 +469,7 @@ export function SheetManagementTable() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All operators</SelectItem>
-                  {users
+                  {Array.isArray(users) && users
                     .filter(user => user.role === 'MISSION_OPERATOR')
                     .map((user) => (
                       <SelectItem key={user.id} value={user.id}>

@@ -334,9 +334,7 @@ export function RejectedApplicationsTable() {
                   <th className="text-left p-4 font-medium">Citizen ID</th>
                   <th className="text-left p-4 font-medium">Name</th>
                   <th className="text-center p-4 font-medium">Status</th>
-                  <th className="text-left p-4 font-medium">Sheet No</th>
                   <th className="text-left p-4 font-medium">Created</th>
-                  <th className="text-left p-4 font-medium">Print Time</th>
                   <th className="text-left p-4 font-medium">Created By</th>
                 </tr>
               </thead>
@@ -374,16 +372,8 @@ export function RejectedApplicationsTable() {
                         </Badge>
                       </div>
                     </td>
-                    <td className="p-3">
-                      <span className="font-mono text-sm">
-                        {application.sheet_no || '-'}
-                      </span>
-                    </td>
                     <td className="p-3 text-sm text-gray-500">
                       {formatDate(application.createdAt)}
-                    </td>
-                    <td className="p-3 text-sm text-gray-500">
-                      {(application as any).print_time_stamp ? formatDate((application as any).print_time_stamp) : '-'}
                     </td>
                     <td className="p-3">
                       <span className="font-mono text-sm">

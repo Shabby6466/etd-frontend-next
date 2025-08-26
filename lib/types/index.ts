@@ -3,6 +3,7 @@ export interface User {
   email: string
   fullName: string
   role: UserRole
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
   locationId?: string
   agency?: string
   state?: string
