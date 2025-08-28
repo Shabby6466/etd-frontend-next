@@ -12,13 +12,14 @@ export default function DocumentPreview({ application }: DocumentPreviewProps) {
       <div className="bg-white shadow-lg rounded-lg overflow-hidden print:shadow-none print:rounded-none">
         <div className="max-w-[491.34px] mx-auto overflow-hidden bg-white print:p-0 print:m-0 print:max-w-none">
           {/* Document Container - Following exact dimensions from image */}
-          <div className="relative bottom-0 w-[500.34px] h-[1020px] print:border-0 print-document">
+          <div className="relative bottom-0 w-[500.34px] h-[1020px] print:border-0 print-document z-0">
             <img
               src="/etd-bg.JPEG"
               alt="Guideline"
-              className="absolute inset-0 w-full h-full opacity-30 pointer-events-none print:hidden z-0"
-            />
-            <div className="relative z-10">
+              className="absolute inset-0 w-full h-full opacity-100 pointer-events-none print:hidden z-0"
+            /> 
+            {/* Data Container - Following exact dimensions from image */}
+            <div >
               {" "}
               {/* TOP SECTION (1st half) - Blank header area */}
               <div className="absolute top-0 left-0 w-full h-[340px]">
@@ -29,16 +30,12 @@ export default function DocumentPreview({ application }: DocumentPreviewProps) {
               </div>{" "}
               {/* MID SECTION (2nd half) - Blank header area */}
               <div className="absolute top-[340px] left-0 w-full h-[340px]">
-                {/* Top border */}
-                <div className="absolute top-0 left-0 w-full h-[1px]"></div>
-                {/* Right border */}
-                <div className="absolute top-0 right-0 w-[1px] h-full"></div>
               </div>
               {/* BOTTOM SECTION (3rd half) - ETD document */}
               <div className="absolute bottom-0 left-0 w-full h-[340px]">
                 {/* Left side - Photograph */}
                 {application.image && (
-                  <div className="absolute left-[18px] bottom-[200px] w-[125px] h-[160px]">
+                  <div className="absolute left-[6mm] bottom-[23.3mm] right-[15mm]" style={{ width: "35mm", height: "45mm" }}>
                     <img
                       src={`data:image/jpeg;base64,${application.image}`}
                       alt="Citizen Photograph"
@@ -47,10 +44,10 @@ export default function DocumentPreview({ application }: DocumentPreviewProps) {
                   </div>
                 )}{" "}
                 {/* Right side - Document information */}{" "}
-                <div className="absolute left-[165px] bottom-[188px] right-[120px]">
+                <div className="absolute left-[50mm] bottom-[20mm] right-[120px]">
                   {" "}
                   {/* Top row - Type, Country Code, Document No */}{" "}
-                  <div className="flex justify-between items-center mb-5">
+                  <div className="flex justify-between items-center mb-1">
                     {" "}
                     <div className="flex items-center gap-2">
                       {" "}
@@ -306,7 +303,7 @@ export default function DocumentPreview({ application }: DocumentPreviewProps) {
                   </div>{" "}
                 </div>{" "}
                 {/* Bottom - Machine Readable Zone (MRZ) */}{" "}
-                <div className="absolute bottom-[135px] left-[45%] -translate-x-1/2 text-center">
+                <div className="absolute bottom-[4mm] left-[65mm] -translate-x-1/2 text-center">
                   {" "}
                   <div
                     className="text-[14px] leading-tight tracking-[0.13em]"
