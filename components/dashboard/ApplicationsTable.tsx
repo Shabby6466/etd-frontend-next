@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { 
   MoreHorizontal, 
   Search, 
@@ -31,6 +38,7 @@ import { Application, Region, UserRole } from "@/lib/types"
 import { formatDate, formatStatus, getStatusVariant } from "@/lib/utils/formatting"
 import { showNotification } from "@/lib/utils/notifications"
 import { applicationAPI } from "@/lib/api/applications"
+import { locationsAPI, Location } from "@/lib/api/locations"
 import QCModal from "./QCModal"
 
 interface ApplicationsTableProps {
@@ -54,6 +62,14 @@ interface ApplicationsTableProps {
     totalItems: number
   }
   onPageChange?: (page: number) => void
+  // Filter props
+  filters?: {
+    submittedBy: string
+    region: string
+    search: string
+  }
+  onFilterChange?: (filters: { submittedBy?: string; region?: string; search?: string }) => void
+  onClearFilters?: () => void
 }
 
 export function ApplicationsTable({ 
@@ -69,17 +85,45 @@ export function ApplicationsTable({
   onPrint,
   onSubmitVerification,
   pagination,
-  onPageChange
+  onPageChange,
+  filters,
+  onFilterChange,
+  onClearFilters
 }: ApplicationsTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
+  const [locations, setLocations] = useState<Location[]>([])
+  const [filteredLocations, setFilteredLocations] = useState<Location[]>([])
+  const [locationsLoading, setLocationsLoading] = useState(false)
+
+  // Use filters.search if available, otherwise use local searchTerm
+  const currentSearchTerm = filters?.search || searchTerm
   const [qcModalOpen, setQcModalOpen] = useState(false)
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const router = useRouter()
 
+  // Fetch locations for dropdown
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        setLocationsLoading(true)
+        const locationsData = await locationsAPI.getAllLocations()
+        setLocations(locationsData)
+        setFilteredLocations(locationsData)
+      } catch (error) {
+        console.error('Failed to fetch locations:', error)
+        showNotification.error('Failed to load locations')
+      } finally {
+        setLocationsLoading(false)
+      }
+    }
+
+    fetchLocations()
+  }, [])
+
   const filteredApplications = applications.filter((app) =>
-    `${app.firstName} ${app.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    app.citizenId.includes(searchTerm) ||
-    app.id.toLowerCase().includes(searchTerm.toLowerCase())
+    `${app.firstName} ${app.lastName}`.toLowerCase().includes(currentSearchTerm.toLowerCase()) ||
+    app.citizenId.includes(currentSearchTerm) ||
+    app.id.toLowerCase().includes(currentSearchTerm.toLowerCase())
   )
 
   const canPerformAction = (application: Application) => {
@@ -171,6 +215,76 @@ export function ApplicationsTable({
           
           
         </CardHeader>
+        
+        {/* Filter Section */}
+        {(filters || onFilterChange) && (
+          <div className="px-7 pb-4 border-b">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search applications..."
+                  value={currentSearchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value)
+                    onFilterChange?.({ search: e.target.value })
+                  }}
+                  className="pl-10 w-full rounded-xl"
+                />
+              </div>
+              
+                             {/* Region Filter */}
+               <Select
+                 value={filters?.region || 'all'}
+                 onValueChange={(value) => onFilterChange?.({ region: value === 'all' ? '' : value })}
+               >
+                 <SelectTrigger className="rounded-xl">
+                   <SelectValue placeholder={locationsLoading ? "Loading locations..." : "Select region"} />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <div className="p-2">
+                     <div className="relative">
+                       <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                       <Input
+                         placeholder="Search locations..."
+                         className="pl-8 h-8 text-sm"
+                         onChange={(e) => {
+                           const searchTerm = e.target.value.toLowerCase()
+                           if (searchTerm === '') {
+                             setFilteredLocations(locations)
+                           } else {
+                             const filtered = locations.filter(location =>
+                               location.name.toLowerCase().includes(searchTerm)
+                             )
+                             setFilteredLocations(filtered)
+                           }
+                         }}
+                       />
+                     </div>
+                   </div>
+                   <SelectItem value="all">All Regions</SelectItem>
+                   {filteredLocations.map((location) => (
+                     <SelectItem key={location.location_id} value={location.name}>
+                       {location.name}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+              
+              {/* Clear Filters Button */}
+              <Button
+                variant="outline"
+                onClick={onClearFilters}
+                className="rounded-xl"
+                disabled={!filters?.submittedBy && !filters?.region && !currentSearchTerm}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </div>
+        )}
+        
       <CardContent>
         <div className="overflow-x-auto">
           <table className="w-full">

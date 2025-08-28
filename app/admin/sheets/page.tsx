@@ -13,6 +13,7 @@ import { locationsAPI } from "@/lib/api/locations"
 import { showNotification } from "@/lib/utils/notifications"
 import { formatDate } from "@/lib/utils/formatting"
 import LocationSelector from "@/components/ui/location-selector"
+import { parseSheetNumbers, validateSheetNumbers } from "@/lib/utils/sheet-parser"
 
 interface User {
   id: string
@@ -35,6 +36,7 @@ export default function SheetManagementPage() {
   const [selectedLocation, setSelectedLocation] = useState("")
   const [sheetNumbers, setSheetNumbers] = useState("")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [sheetPreview, setSheetPreview] = useState("")
 
   // Filters and pagination
   const [filters, setFilters] = useState<SheetFilters>({
@@ -58,10 +60,22 @@ export default function SheetManagementPage() {
     totalItems: 0
   })
 
+
+
   // Handle hydration
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Update preview when sheet numbers change
+  useEffect(() => {
+    if (sheetNumbers.trim()) {
+      const parseResult = parseSheetNumbers(sheetNumbers)
+      setSheetPreview(parseResult.preview)
+    } else {
+      setSheetPreview("")
+    }
+  }, [sheetNumbers])
 
   useEffect(() => {
     fetchData()
@@ -176,15 +190,20 @@ export default function SheetManagementPage() {
   }
 
   const handleAssignSheets = async () => {
-    if (!selectedOperator  || !sheetNumbers.trim()) {
-      showNotification.error("Please fill in all required fields")
+    if (!selectedOperator) {
+      showNotification.error("Please select an operator")
       return
     }
 
-    const sheetNumbersArray = sheetNumbers
-      .split(/[,\n]/)
-      .map(num => num.trim())
-      .filter(num => num.length > 0)
+    // Validate sheet numbers input
+    const validationErrors = validateSheetNumbers(sheetNumbers)
+    if (validationErrors.length > 0) {
+      showNotification.error(validationErrors[0])
+      return
+    }
+
+    const parseResult = parseSheetNumbers(sheetNumbers)
+    const sheetNumbersArray = parseResult.numbers
 
     if (sheetNumbersArray.length === 0) {
       showNotification.error("Please enter at least one sheet number")
@@ -411,14 +430,22 @@ export default function SheetManagementPage() {
 
              <div className="space-y-2">
                <Label htmlFor="sheetNumbers">Sheet Numbers</Label>
+               <div className="text-xs text-gray-500 mb-2">
+                 Enter individual numbers (comma or newline separated) or use ranges like "100-104" to assign multiple sheets at once
+               </div>
                <textarea
                  id="sheetNumbers"
                  value={sheetNumbers}
                  onChange={(e) => setSheetNumbers(e.target.value)}
-                 placeholder="Enter sheet numbers (comma or newline separated)"
+                 placeholder="Enter sheet numbers (comma or newline separated, or use ranges like 100-104)"
                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                  rows={4}
                />
+               {sheetPreview && (
+                 <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded-md">
+                   <strong>Preview:</strong> {sheetPreview}
+                 </div>
+               )}
              </div>
 
              <Button 

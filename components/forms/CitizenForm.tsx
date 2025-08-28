@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -29,6 +29,7 @@ import SheetSelector from "@/components/operator/SheetSelector";
 import DGIPHeader from "@/components/ui/dgip_header";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import { Select, SelectTrigger } from "@radix-ui/react-select";
+import { ImageEditorModal } from "@/components/ui/ImageEditorModal";
 
 export function CitizenForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -44,6 +45,9 @@ export function CitizenForm() {
   const [nadraDetailData, setNadraDetailData] = useState<any>(null);
   const [isPassportDataFetched, setIsPassportDataFetched] =
     useState<boolean>(false);
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { user } = useAuthStore();
 
@@ -69,31 +73,51 @@ export function CitizenForm() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    try {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        showNotification.error("Please select a valid image file");
-        return;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        showNotification.error("Image size must be less than 5MB");
-        return;
-      }
-
-      // File uploaded successfully
-      const base64 = await convertFileToBase64(file);
-      setImageBase64(base64);
-      form.setValue("image", base64);
-
-      // // Set passport photo for display
-      setManualPhoto(`data:${file.type};base64,${base64}`);
-
-      showNotification.success("Image uploaded successfully");
-    } catch {
-      showNotification.error("Failed to process image");
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      showNotification.error("Please select a valid image file");
+      // Reset file input
+      event.target.value = "";
+      return;
     }
+
+    // Validate file size (max 10MB for initial upload)
+    if (file.size > 10 * 1024 * 1024) {
+      showNotification.error("Image size must be less than 10MB");
+      // Reset file input
+      event.target.value = "";
+      return;
+    }
+
+    // Open image editor
+    setSelectedFile(file);
+    setShowImageEditor(true);
+  };
+
+  // Function to handle image save from editor
+  const handleImageSave = (base64: string) => {
+    setImageBase64(base64);
+    form.setValue("image", base64);
+    setManualPhoto(`data:image/jpeg;base64,${base64}`);
+    setSelectedFile(null);
+    setShowImageEditor(false);
+    // Reset file input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    showNotification.success("Image processed and saved successfully");
+  };
+
+  // Function to handle image editor close without saving
+  const handleImageEditorClose = () => {
+    // Clear the selected file and close the editor
+    setSelectedFile(null);
+    setShowImageEditor(false);
+    // Reset file input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    // Don't clear existing image data - only clear if user was trying to upload a new one
   };
 
   const form = useForm<CitizenFormData>({
@@ -862,17 +886,18 @@ export function CitizenForm() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-4">
                       <div className="flex-1">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="block w-full text-sm text-gray-500
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-full file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-blue-50 file:text-blue-700
-                            hover:file:bg-blue-100"
-                        />
+                                                 <input
+                           ref={fileInputRef}
+                           type="file"
+                           accept="image/*"
+                           onChange={handleImageUpload}
+                           className="block w-full text-sm text-gray-500
+                             file:mr-4 file:py-2 file:px-4
+                             file:rounded-full file:border-0
+                             file:text-sm file:font-semibold
+                             file:bg-blue-50 file:text-blue-700
+                             hover:file:bg-blue-100"
+                         />
                       </div>
                     </div>
 
@@ -885,9 +910,15 @@ export function CitizenForm() {
 
                     {imageBase64 && (
                       <p className="text-sm text-green-600">
-                        ✓ Image ready for submission (Base64 format)
+                        ✓ Image ready for submission (540×420 pixels, ≤18KB)
                       </p>
                     )}
+
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-xs text-blue-800">
+                        <strong>Image Requirements:</strong> 540×420 pixels, maximum 18KB, JPEG format
+                      </p>
+                    </div>
 
                     {form.formState.errors.image && (
                       <p className="text-sm text-red-500 mt-1">
@@ -1276,6 +1307,14 @@ export function CitizenForm() {
 
         )}
       </div>
+
+      {/* Image Editor Modal */}
+      <ImageEditorModal
+        isOpen={showImageEditor}
+        onClose={handleImageEditorClose}
+        onSave={handleImageSave}
+        file={selectedFile}
+      />
     </div>
   );
 }

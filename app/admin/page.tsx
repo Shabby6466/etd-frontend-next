@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Users, FileText, CheckCircle, XCircle, Plus, UserPlus, ClipboardList, MapPin } from "lucide-react"
@@ -41,12 +41,22 @@ export default function AdminDashboard() {
     totalItems: 0
   })
 
+  // Filter state
+  const [filters, setFilters] = useState({
+    submittedBy: '',
+    region: '',
+    search: ''
+  })
+
   const fetchApplications = async (page: number = 1, limit: number = 10) => {
     try {
       setIsLoading(true)
       const response = await applicationAPI.getAll({
         page,
-        limit
+        limit,
+        search: filters.search,
+        submittedBy: filters.submittedBy || undefined,
+        region: filters.region || undefined
       })
       setApplications(response.data)
       setPagination(response.meta)
@@ -66,10 +76,33 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }))
+    // The useEffect will handle the API call with debouncing
+  }
+
+  const clearFilters = async () => {
+    setFilters({
+      submittedBy: '',
+      region: '',
+      search: ''
+    })
+    await fetchApplications(1, pagination.itemsPerPage)
+  }
+
   useEffect(() => {
     fetchApplications(1, 10)
     fetchStats()
   }, [])
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchApplications(1, pagination.itemsPerPage)
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timeoutId)
+  }, [filters.search, filters.submittedBy, filters.region])
 
   return (
     <div className="min-h-screen bg-background p-4 dashboardBackgroundColor">
@@ -176,6 +209,9 @@ export default function AdminDashboard() {
             onRefresh={() => fetchApplications(pagination.currentPage, pagination.itemsPerPage)}
             pagination={pagination}
             onPageChange={(page) => fetchApplications(page, pagination.itemsPerPage)}
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onClearFilters={clearFilters}
           />
         )}
 

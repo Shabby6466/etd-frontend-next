@@ -173,6 +173,8 @@ export const applicationAPI = {
     sort_by?: string
     sort_order?: 'ASC' | 'DESC'
     status?: string
+    submittedBy?: string
+    region?: string
   } = {}): Promise<{
     data: Application[]
     meta: {
@@ -197,6 +199,8 @@ export const applicationAPI = {
     if (filters.sort_by) params.append('sort_by', filters.sort_by)
     if (filters.sort_order) params.append('sort_order', filters.sort_order)
     if (filters.status) params.append('status', filters.status)
+    if (filters.submittedBy) params.append('submittedBy', filters.submittedBy)
+    if (filters.region) params.append('region', filters.region)
 
     const response = await apiClient.get(`/applications?${params.toString()}`)
     

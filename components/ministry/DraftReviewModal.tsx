@@ -45,6 +45,32 @@ export function DraftReviewModal({
   const [rejectionReason, setRejectionReason] = useState('')
   const [etdIssueDate, setEtdIssueDate] = useState('')
   const [etdExpiryDate, setEtdExpiryDate] = useState('')
+  const [showExpiryDateWarning, setShowExpiryDateWarning] = useState(false)
+
+  // Function to calculate the maximum expiry date (3 months from issue date)
+  const calculateMaxExpiryDate = (issueDate: string) => {
+    if (!issueDate) return ''
+    const issue = new Date(issueDate)
+    const maxExpiry = new Date(issue.getTime() + 90 * 24 * 60 * 60 * 1000) // 90 days
+    return maxExpiry.toISOString().split('T')[0]
+  }
+
+  // Function to handle issue date change and adjust expiry date if needed
+  const handleIssueDateChange = (newIssueDate: string) => {
+    setEtdIssueDate(newIssueDate)
+    
+    // If there's an existing expiry date, check if it's still valid
+    if (etdExpiryDate) {
+      const maxExpiryDate = calculateMaxExpiryDate(newIssueDate)
+      if (etdExpiryDate > maxExpiryDate) {
+        // If current expiry date is beyond the new 3-month limit, reset it
+        setEtdExpiryDate('')
+        setShowExpiryDateWarning(true)
+        // Hide warning after 3 seconds
+        setTimeout(() => setShowExpiryDateWarning(false), 3000)
+      }
+    }
+  }
   const [rejectionReasons, setRejectionReasons] = useState<Array<{
     id: number
     rejection_reason: string
@@ -225,11 +251,14 @@ export function DraftReviewModal({
                    id="etd-issue-date"
                    type="date"
                    value={etdIssueDate}
-                   onChange={(e) => setEtdIssueDate(e.target.value)}
+                   onChange={(e) => handleIssueDateChange(e.target.value)}
                    min={new Date().toISOString().split('T')[0]}
                    max={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                    className="w-full"
                  />
+                 <div className="text-xs text-gray-500">
+                   Issue date can be from today up to 3 months in the future
+                 </div>
                </div>
 
                {/* ETD Expiry Date */}
@@ -237,16 +266,24 @@ export function DraftReviewModal({
                  <Label htmlFor="etd-expiry-date">
                    ETD Expiry Date
                  </Label>
+                 <div className="text-xs text-gray-500">
+                   Expiry date must be within 3 months from the issue date
+                 </div>
                  <Input
                    id="etd-expiry-date"
                    type="date"
                    value={etdExpiryDate}
                    onChange={(e) => setEtdExpiryDate(e.target.value)}
                    min={etdIssueDate || new Date().toISOString().split('T')[0]}
-                   max={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                   max={calculateMaxExpiryDate(etdIssueDate) || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                    className="w-full"
                  />
-                              </div>
+                 {showExpiryDateWarning && (
+                   <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded-md border border-amber-200">
+                     ⚠️ Expiry date was cleared because it exceeded the 3-month limit from the new issue date. Please select a new expiry date.
+                   </div>
+                 )}
+               </div>
 
                {/* Acceptance Remarks */}
                <div className="space-y-2">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, Send, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react"
@@ -21,6 +21,13 @@ export default function MinistryDashboard() {
     totalPages: 0,
     totalItems: 0
   })
+
+  // Filter state
+  const [filters, setFilters] = useState({
+    submittedBy: '',
+    region: '',
+    search: ''
+  })
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -34,7 +41,10 @@ export default function MinistryDashboard() {
       // Fetch applications that are submitted by mission operators and ready for ministry review
       const response = await applicationAPI.getAll({
         page,
-        limit
+        limit,
+        search: filters.search,
+        submittedBy: filters.submittedBy || undefined,
+        region: filters.region || undefined
       })
       setApplications(response.data || [])
       setPagination(response.meta)
@@ -108,9 +118,32 @@ export default function MinistryDashboard() {
     }
   }
 
+  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }))
+    // The useEffect will handle the API call with debouncing
+  }
+
+  const clearFilters = async () => {
+    setFilters({
+      submittedBy: '',
+      region: '',
+      search: ''
+    })
+    await fetchApplications(1, pagination.itemsPerPage)
+  }
+
   useEffect(() => {
     fetchApplications(1, 10)
   }, [])
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchApplications(1, pagination.itemsPerPage)
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timeoutId)
+  }, [filters.search, filters.submittedBy, filters.region])
 
   return (
     <div className="min-h-screen bg-background dashboardBackgroundColor p-4">
@@ -215,6 +248,9 @@ export default function MinistryDashboard() {
               onSendToAgency={handleSendToAgency}
               pagination={pagination}
               onPageChange={(page) => fetchApplications(page, pagination.itemsPerPage)}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={clearFilters}
             />
           </CardContent>
         </Card>

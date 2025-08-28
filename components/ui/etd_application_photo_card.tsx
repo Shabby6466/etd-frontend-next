@@ -31,7 +31,6 @@ export default function ETDApplicationPhotoCard({
   maxFileSizeMB = 5,
   onGetData,
   onDelete,
-  onImageChange,
   onNavigate,
 }: Props) {
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -67,9 +66,6 @@ export default function ETDApplicationPhotoCard({
 
     try {
       setLoading(true)
-      const b64 = await toBase64(file)
-      setPhotoB64(b64)
-      onImageChange?.(b64)
     } catch {
       alert("Failed to load image.")
     } finally {
@@ -78,8 +74,6 @@ export default function ETDApplicationPhotoCard({
   }
 
   const clearImage = () => {
-    setPhotoB64(null)
-    onImageChange?.(null)
     onDelete?.()
   }
 
@@ -98,11 +92,6 @@ export default function ETDApplicationPhotoCard({
     // Also call the original onGetData for backward compatibility
     onGetData?.(citizen)
   }
-
-  const imgSrc =
-    photoB64 && photoB64.trim().length > 0
-      ? `data:image/jpeg;base64,${photoB64}`
-      : "/avatar.png" 
 
   return (
     <Card className="rounded-2xl shadow-sm">
