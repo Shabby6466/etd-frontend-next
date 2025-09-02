@@ -155,51 +155,7 @@ export default function ApplicationViewPage() {
     }
   }, [application?.id]);
 
-  // const handleUploadAttachment = async (file: File) => {
-  //   if (!application) return;
-  //   setIsActionLoading(true);
-  //   try {
-  //     await attachmentAPI.upload(application.id, file);
-  //     showNotification.success("Attachment uploaded");
-  //     await refresh();
-  //   } catch {
-  //     showNotification.error("Failed to upload attachment");
-  //   } finally {
-  //     setIsActionLoading(false);
-  //   }
-  // };
 
-  // const handleAgencyApprove = async () => {
-  //   if (!application) return;
-  //   setIsActionLoading(true);
-  //   try {
-  //     await applicationAPI.agencyApprove(application.id);
-  //     showNotification.success("Application approved and sent to Ministry");
-  //     await refresh();
-  //   } catch (err) {
-  //     const message = (err as { response?: { data?: { error?: string } } })
-  //       ?.response?.data?.error;
-  //     showNotification.error(message || "Failed to approve application");
-  //   } finally {
-  //     setIsActionLoading(false);
-  //   }
-  // };
-
-  // const handleAgencyReject = async () => {
-  //   if (!application) return;
-  //   const remarks = window.prompt("Enter rejection remarks:");
-  //   if (!remarks) return;
-  //   setIsActionLoading(true);
-  //   try {
-  //     await applicationAPI.agencyReject(application.id, remarks);
-  //     showNotification.success("Application rejected");
-  //     await refresh();
-  //   } catch {
-  //     showNotification.error("Failed to reject application");
-  //   } finally {
-  //     setIsActionLoading(false);
-  //   }
-  // };
 
   // New Ministry Review handlers
   const handleMinistryReviewApprove = async (data: {
@@ -1496,23 +1452,18 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                   application.status === "VERIFICATION_RECEIVED" && (
                     <>
                       <Button
-                        onClick={() => {
-                          console.log(
-                            "Current application status:",
-                            application.status
-                          );
-                          console.log("Application ID:", application.id);
-                          console.log(
-                            "Agency remarks:",
-                            application.agencyRemarks
-                          );
-                          setShowMinistryReviewModal(true);
-                        }}
+                        onClick={() => setShowDraftReviewModal(true)}
                         disabled={isActionLoading}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
                         <CheckCircle className="mr-2 h-4 w-4" /> Review
                         Application
+                      </Button>
+                      <Button
+                        onClick={() => setShowSendForVerificationModal(true)}
+                        disabled={isActionLoading}
+                      >
+                        <Send className="mr-2 h-4 w-4" /> Send for Verification
                       </Button>
                     </>
                   )}
@@ -1575,13 +1526,13 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
         applicationId={application?.id}
       />
 
-      <MinistryReviewModal
+      {/* <MinistryReviewModal
         isOpen={showMinistryReviewModal}
         onClose={() => setShowMinistryReviewModal(false)}
         onApprove={handleMinistryReviewApprove}
         onReject={handleMinistryReviewReject}
         isLoading={isActionLoading}
-      />
+      /> */}
 
       <DraftReviewModal
         isOpen={showDraftReviewModal}
