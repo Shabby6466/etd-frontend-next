@@ -1,24 +1,32 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { CheckCircle, XCircle, AlertTriangle } from "lucide-react"
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { CheckCircle, XCircle, AlertTriangle, X } from "lucide-react"
+import { applicationAPI } from "@/lib/api/applications"
 
 interface DraftReviewModalProps {
   isOpen: boolean
   onClose: () => void
   onApprove: (data: { 
-    black_list_check?: boolean;
+    blacklist_check_pass?: boolean;
     etd_issue_date?: string;
     etd_expiry_date?: string;
   }) => Promise<void>
   onReject: (data: { 
     rejection_reason: string;
-    black_list_check?: boolean;
+    blacklist_check_pass?: boolean;
     etd_issue_date?: string;
     etd_expiry_date?: string;
   }) => Promise<void>
@@ -37,10 +45,97 @@ export function DraftReviewModal({
   const [rejectionReason, setRejectionReason] = useState('')
   const [etdIssueDate, setEtdIssueDate] = useState('')
   const [etdExpiryDate, setEtdExpiryDate] = useState('')
+  const [showExpiryDateWarning, setShowExpiryDateWarning] = useState(false)
+
+  // Function to calculate the maximum expiry date (3 months from issue date)
+  const calculateMaxExpiryDate = (issueDate: string) => {
+    if (!issueDate) return ''
+    const issue = new Date(issueDate)
+    const maxExpiry = new Date(issue.getTime() + 90 * 24 * 60 * 60 * 1000) // 90 days
+    return maxExpiry.toISOString().split('T')[0]
+  }
+
+  // Function to handle issue date change and adjust expiry date if needed
+  const handleIssueDateChange = (newIssueDate: string) => {
+    setEtdIssueDate(newIssueDate)
+    
+    // If there's an existing expiry date, check if it's still valid
+    if (etdExpiryDate) {
+      const maxExpiryDate = calculateMaxExpiryDate(newIssueDate)
+      if (etdExpiryDate > maxExpiryDate) {
+        // If current expiry date is beyond the new 3-month limit, reset it
+        setEtdExpiryDate('')
+        setShowExpiryDateWarning(true)
+        // Hide warning after 3 seconds
+        setTimeout(() => setShowExpiryDateWarning(false), 3000)
+      }
+    }
+  }
+  const [rejectionReasons, setRejectionReasons] = useState<Array<{
+    id: number
+    rejection_reason: string
+    created_at: string
+    updated_at: string
+  }>>([])
+  const [acceptanceRemarks, setAcceptanceRemarks] = useState<Array<{
+    id: number
+    acceptance_remarks: string
+    created_at: string
+    updated_at: string
+  }>>([])
+  const [acceptanceRemark, setAcceptanceRemark] = useState('')
+  const [isLoadingReasons, setIsLoadingReasons] = useState(false)
+  const [isLoadingAcceptanceRemarks, setIsLoadingAcceptanceRemarks] = useState(false)
+  const hasFetchedReasons = useRef(false)
+  const hasFetchedAcceptanceRemarks = useRef(false)
+
+  // Fetch rejection reasons when modal opens
+  useEffect(() => {
+    if (isOpen && !hasFetchedReasons.current) {
+      fetchRejectionReasons()
+      hasFetchedReasons.current = true
+    }
+  }, [isOpen])
+
+  // Fetch acceptance remarks when modal opens
+  useEffect(() => {
+    if (isOpen && !hasFetchedAcceptanceRemarks.current) {
+      fetchAcceptanceRemarks()
+      hasFetchedAcceptanceRemarks.current = true
+    }
+  }, [isOpen])
+
+  const fetchRejectionReasons = async () => {
+    setIsLoadingReasons(true)
+    try {
+      const response = await applicationAPI.getRejectionReasons()
+      setRejectionReasons(response.data)
+      console.log('Fetched rejection reasons:', response.data)
+    } catch (error) {
+      console.error('Failed to fetch rejection reasons:', error)
+      // Keep existing reasons if available, don't clear them on error
+    } finally {
+      setIsLoadingReasons(false)
+    }
+  }
+
+  const fetchAcceptanceRemarks = async () => {
+    setIsLoadingAcceptanceRemarks(true)
+    try {
+      const response = await applicationAPI.getAcceptanceRemarks()
+      setAcceptanceRemarks(response.data)
+      console.log('Fetched acceptance remarks:', response.data)
+    } catch (error) {
+      console.error('Failed to fetch acceptance remarks:', error)
+      // Keep existing remarks if available, don't clear them on error
+    } finally {
+      setIsLoadingAcceptanceRemarks(false)
+    }
+  }
 
   const handleApprove = async () => {
     await onApprove({
-      black_list_check: blacklistCheck,
+      blacklist_check_pass: blacklistCheck,
       etd_issue_date: etdIssueDate || undefined,
       etd_expiry_date: etdExpiryDate || undefined
     })
@@ -49,12 +144,12 @@ export function DraftReviewModal({
 
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
-      alert('Please enter a rejection reason')
+      alert('Please select or enter a rejection reason')
       return
     }
     await onReject({
       rejection_reason: rejectionReason.trim(),
-      black_list_check: false,
+      blacklist_check_pass: false,
       etd_issue_date: undefined,
       etd_expiry_date: undefined
     })
@@ -65,12 +160,15 @@ export function DraftReviewModal({
     setActionMode('select')
     setBlacklistCheck(false)
     setRejectionReason('')
+    setAcceptanceRemark('')
     setEtdIssueDate('')
     setEtdExpiryDate('')
   }
 
   const handleClose = () => {
     resetForm()
+    hasFetchedReasons.current = false
+    hasFetchedAcceptanceRemarks.current = false
     onClose()
   }
 
@@ -78,9 +176,9 @@ export function DraftReviewModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+      <Card className="w-full max-w-md mx-4 rounded-3xl relative">
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle >
             <div>
               <div className="text-xl font-bold">Ministry Review</div>
               <div className="text-sm text-gray-500 mt-1">
@@ -89,15 +187,17 @@ export function DraftReviewModal({
                 {actionMode === 'reject' && 'Reject Application'}
               </div>
             </div>
-            <Button
+            
+          </CardTitle>
+          <Button
               variant="ghost"
               size="sm"
               onClick={handleClose}
               disabled={isLoading}
+              className="text-gray-500 text-sm absolute top-3 right-5"
             >
-              ×
-            </Button>
-          </CardTitle>
+              <X className="h-4 w-4 text-gray-500 text-sm" />
+              </Button>
         </CardHeader>
         <CardContent>
           {/* Action Selection Screen */}
@@ -142,46 +242,103 @@ export function DraftReviewModal({
                 </div>
               </div>
 
-              {/* ETD Issue Date */}
-              <div className="space-y-2">
-                <Label htmlFor="etd-issue-date">
-                  ETD Issue Date
-                </Label>
-                <Input
-                  id="etd-issue-date"
-                  type="date"
-                  value={etdIssueDate}
-                  onChange={(e) => setEtdIssueDate(e.target.value)}
-                  className="w-full"
-                />
-              </div>
+                             {/* ETD Issue Date */}
+               <div className="space-y-2">
+                 <Label htmlFor="etd-issue-date">
+                   ETD Issue Date
+                 </Label>
+                 <Input
+                   id="etd-issue-date"
+                   type="date"
+                   value={etdIssueDate}
+                   onChange={(e) => handleIssueDateChange(e.target.value)}
+                   min={new Date().toISOString().split('T')[0]}
+                   max={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                   className="w-full"
+                 />
+                 <div className="text-xs text-gray-500">
+                   Issue date can be from today up to 3 months in the future
+                 </div>
+               </div>
 
-              {/* ETD Expiry Date */}
-              <div className="space-y-2">
-                <Label htmlFor="etd-expiry-date">
-                  ETD Expiry Date
-                </Label>
-                <Input
-                  id="etd-expiry-date"
-                  type="date"
-                  value={etdExpiryDate}
-                  onChange={(e) => setEtdExpiryDate(e.target.value)}
-                  className="w-full"
-                />
-              </div>
+               {/* ETD Expiry Date */}
+               <div className="space-y-2">
+                 <Label htmlFor="etd-expiry-date">
+                   ETD Expiry Date
+                 </Label>
+                 <div className="text-xs text-gray-500">
+                   Expiry date must be within 3 months from the issue date
+                 </div>
+                 <Input
+                   id="etd-expiry-date"
+                   type="date"
+                   value={etdExpiryDate}
+                   onChange={(e) => setEtdExpiryDate(e.target.value)}
+                   min={etdIssueDate || new Date().toISOString().split('T')[0]}
+                   max={calculateMaxExpiryDate(etdIssueDate) || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                   className="w-full"
+                 />
+                 {showExpiryDateWarning && (
+                   <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded-md border border-amber-200">
+                     ⚠️ Expiry date was cleared because it exceeded the 3-month limit from the new issue date. Please select a new expiry date.
+                   </div>
+                 )}
+               </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  id="approve-blacklist"
-                  type="checkbox"
-                  checked={blacklistCheck}
-                  onChange={(e) => setBlacklistCheck(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <Label htmlFor="approve-blacklist" className="text-sm">
-                  Mark as blacklisted (will still be approved but flagged)
-                </Label>
-              </div>
+               {/* Acceptance Remarks */}
+               <div className="space-y-2">
+                 <div className="flex items-center justify-between">
+                   <Label htmlFor="acceptance-remarks">Acceptance Remarks</Label>
+                   <Button
+                     type="button"
+                     variant="outline"
+                     size="sm"
+                     onClick={fetchAcceptanceRemarks}
+                     disabled={isLoadingAcceptanceRemarks}
+                     className="text-xs"
+                   >
+                     {isLoadingAcceptanceRemarks ? "Loading..." : "Refresh"}
+                   </Button>
+                 </div>
+                 <div className="space-y-2">
+                   <Select
+                     value={acceptanceRemark}
+                     onValueChange={setAcceptanceRemark}
+                     disabled={isLoadingAcceptanceRemarks}
+                   >
+                     <SelectTrigger>
+                       <SelectValue placeholder={isLoadingAcceptanceRemarks ? "Loading remarks..." : "Select acceptance remarks"} />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {acceptanceRemarks.length > 0 ? (
+                         acceptanceRemarks.map((remark) => (
+                           <SelectItem key={remark.id} value={remark.acceptance_remarks}>
+                             {remark.acceptance_remarks}
+                           </SelectItem>
+                         ))
+                       ) : (
+                         <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                           No acceptance remarks available
+                         </div>
+                       )}
+                     </SelectContent>
+                   </Select>
+                  
+                 </div>
+               </div>
+
+               <div className="flex items-center space-x-2">
+                 <input
+                   id="approve-blacklist"
+                   type="checkbox"
+                   checked={blacklistCheck}
+                   onChange={(e) => setBlacklistCheck(e.target.checked)}
+                   className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                 />
+                 <Label htmlFor="approve-blacklist" className="text-sm">
+                   Mark as blacklisted (will still be approved but flagged)
+                 </Label>
+               </div>
 
               <div className="flex justify-end space-x-2 pt-4">
                 <Button
@@ -216,18 +373,64 @@ export function DraftReviewModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="rejection-reason">Rejection Reason *</Label>
-                <Textarea
-                  id="rejection-reason"
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Enter reason for rejection"
-                  rows={3}
-                  className={!rejectionReason.trim() && actionMode === 'reject' ? "border-red-500" : ""}
-                />
-                {!rejectionReason.trim() && actionMode === 'reject' && (
-                  <p className="text-sm text-red-500">Rejection reason is required</p>
-                )}
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="rejection-reason">Rejection Reason *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchRejectionReasons}
+                    disabled={isLoadingReasons}
+                    className="text-xs"
+                  >
+                    {isLoadingReasons ? "Loading..." : "Refresh"}
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <Select
+                    value={rejectionReason}
+                    onValueChange={setRejectionReason}
+                    disabled={isLoadingReasons}
+                  >
+                    <SelectTrigger 
+                      className={!rejectionReason.trim() && actionMode === 'reject' ? "border-red-500" : ""}
+                    >
+                      <SelectValue placeholder={isLoadingReasons ? "Loading reasons..." : "Select a rejection reason"} />
+                    </SelectTrigger>
+                                         <SelectContent>
+                       {rejectionReasons.length > 0 ? (
+                         rejectionReasons.map((reason) => (
+                           <SelectItem key={reason.id} value={reason.rejection_reason}>
+                             {reason.rejection_reason}
+                           </SelectItem>
+                         ))
+                       ) : (
+                         <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                           No rejection reasons available
+                         </div>
+                       )}
+                     </SelectContent>
+                  </Select>
+                  
+                  {/* Custom reason input */}
+                  <div className="space-y-2">
+                    <Label htmlFor="custom-rejection-reason" className="text-sm text-gray-600">
+                      Or enter custom reason:
+                    </Label>
+                    <Textarea
+                      id="custom-rejection-reason"
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Enter custom rejection reason"
+                      rows={2}
+                      className={!rejectionReason.trim() && actionMode === 'reject' ? "border-red-500" : ""}
+                    />
+                  </div>
+                  
+                  {!rejectionReason.trim() && actionMode === 'reject' && (
+                    <p className="text-sm text-red-500">Rejection reason is required</p>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end space-x-2 pt-4">

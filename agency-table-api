@@ -1,0 +1,304 @@
+# Agency Applications API Documentation
+
+## Overview
+This API endpoint allows fetching applications for a specific agency with statuses PENDING_VERIFICATION, VERIFICATION_RECEIVED, and UNDER_REVIEW, with optional filtering by assigned user.
+
+## Endpoint Details
+
+### GET /applications/agency/applications
+
+**Description:** Fetch applications for a specific agency with specified statuses and optional user filtering.
+
+**Access Control:** 
+- **Roles:** MINISTRY, AGENCY
+- **Authentication:** Required (JWT Bearer Token)
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description | Example |
+|-----------|------|----------|-------------|---------|
+| `agency` | enum | Yes | Agency to filter applications for | `INTELLIGENCE_BUREAU` |
+| `assigned_user_id` | number | No | User ID to filter applications sent to for verification | `123` |
+| `page` | number | No | Page number for pagination (default: 1) | `1` |
+| `limit` | number | No | Number of items per page (default: 10) | `10` |
+
+**Agency Enum Values:**
+- `INTELLIGENCE_BUREAU`
+- `SPECIAL_BRANCH_PUNJAB`
+- `SPECIAL_BRANCH_SINDH`
+- `SPECIAL_BRANCH_KPK`
+- `SPECIAL_BRANCH_BALOCHISTAN`
+- `SPECIAL_BRANCH_FEDERAL`
+
+## Request Examples
+
+### 1. Get all applications for INTELLIGENCE_BUREAU
+```bash
+GET /applications/agency/applications?agency=INTELLIGENCE_BUREAU
+```
+
+### 2. Get applications for specific agency and user
+```bash
+GET /applications/agency/applications?agency=SPECIAL_BRANCH_PUNJAB&assigned_user_id=123
+```
+
+### 3. With pagination
+```bash
+GET /applications/agency/applications?agency=INTELLIGENCE_BUREAU&page=2&limit=20
+```
+
+### 4. Complete example with all parameters
+```bash
+GET /applications/agency/applications?agency=SPECIAL_BRANCH_SINDH&assigned_user_id=456&page=1&limit=15
+```
+
+## Response Format
+
+### Success Response (200 OK)
+
+```json
+{
+  "applications": [
+    {
+      "application_id": "10000000001E",
+      "first_name": "John",
+      "last_name": "Doe",
+      "father_name": "Robert",
+      "mother_name": "Jane",
+      "citizen_id": "12345-1234567-1",
+      "pakistan_city": "Karachi",
+      "date_of_birth": "1990-01-01",
+      "birth_country": "Pakistan",
+      "birth_city": "Lahore",
+      "profession": "Software Engineer",
+      "pakistan_address": "123 Main St, Karachi",
+      "height": "5.9",
+      "color_of_hair": "Black",
+      "color_of_eyes": "Brown",
+      "departure_date": "2024-12-01",
+      "gender": "Male",
+      "transport_mode": "Air",
+      "investor": "Yes",
+      "requested_by": "Ministry of Interior",
+      "reason_for_deport": "Business visa",
+      "amount": 50000,
+      "currency": "USD",
+      "is_fia_blacklist": false,
+      "status": "PENDING_VERIFICATION",
+      "created_by_id": 1,
+      "reviewed_by_id": null,
+      "reviewed_at": null,
+      "rejection_reason": null,
+      "verification_sent_at": "2024-01-15T10:30:00.000Z",
+      "verification_completed_at": null,
+      "image": "https://example.com/photos/passport-photo.jpg",
+      "etd_issue_date": null,
+      "etd_expiry_date": null,
+      "blacklist_check_passed": false,
+      "verification_document_url": "https://example.com/verification-documents/document.pdf",
+      "pending_verification_agencies": ["INTELLIGENCE_BUREAU", "SPECIAL_BRANCH_PUNJAB"],
+      "verification_completed_agencies": [],
+      "agency_remarks": [],
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z",
+      "createdBy": {
+        "id": 1,
+        "email": "operator@example.com",
+        "first_name": "John",
+        "last_name": "Operator",
+        "role": "MISSION_OPERATOR"
+      },
+      "reviewedBy": null,
+      "nadraResponse": {
+        "id": 1,
+        "citizen_id": "12345-1234567-1",
+        "first_name": "John",
+        "last_name": "Doe",
+        "father_name": "Robert",
+        "mother_name": "Jane",
+        "pakistan_city": "Karachi",
+        "date_of_birth": "1990-01-01",
+        "birth_country": "Pakistan",
+        "birth_city": "Lahore",
+        "profession": "Software Engineer",
+        "pakistan_address": "123 Main St, Karachi",
+        "response_status": "SUCCESS",
+        "api_response_date": "2024-01-15T10:15:00.000Z"
+      },
+      "passportResponse": {
+        "id": 1,
+        "citizen_id": "12345-1234567-1",
+        "first_name": "John",
+        "last_name": "Doe",
+        "father_name": "Robert",
+        "pakistan_city": "Karachi",
+        "gender": "Male",
+        "date_of_birth": "1990-01-01",
+        "birth_country": "Pakistan",
+        "birth_city": "Lahore",
+        "profession": "Software Engineer",
+        "pakistan_address": "123 Main St, Karachi",
+        "response_status": "SUCCESS",
+        "api_response_date": "2024-01-15T10:20:00.000Z"
+      },
+      "agencyTracking": [
+        {
+          "id": 1,
+          "application_id": "10000000001E",
+          "agency_name": "INTELLIGENCE_BUREAU",
+          "status": "PENDING",
+          "remarks": null,
+          "attachment_url": null,
+          "submitted_at": "2024-01-15T10:30:00.000Z",
+          "submitted_by_user_id": 2,
+          "completed_at": null,
+          "completed_by_user_id": null,
+          "created_at": "2024-01-15T10:30:00.000Z",
+          "updated_at": "2024-01-15T10:30:00.000Z",
+          "submittedBy": {
+            "id": 2,
+            "email": "ministry@example.com",
+            "first_name": "Ministry",
+            "last_name": "User",
+            "role": "MINISTRY"
+          },
+          "completedBy": null
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "total_count": 25,
+    "total_pages": 3,
+    "current_page": 1,
+    "limit": 10,
+    "has_next": true,
+    "has_prev": false
+  }
+}
+```
+
+### Error Responses
+
+#### 400 Bad Request
+```json
+{
+  "statusCode": 400,
+  "message": "agency should not be empty",
+  "error": "Bad Request"
+}
+```
+
+#### 401 Unauthorized
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "error": "Unauthorized"
+}
+```
+
+#### 403 Forbidden
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
+}
+```
+
+#### 500 Internal Server Error
+```json
+{
+  "statusCode": 500,
+  "message": "Internal server error",
+  "error": "Internal Server Error"
+}
+```
+
+## Business Logic
+
+### Application Status Filtering
+The API only returns applications with the following statuses:
+- `PENDING_VERIFICATION`: Applications sent to agencies for verification
+- `VERIFICATION_RECEIVED`: Applications where all agency verifications are complete
+- `UNDER_REVIEW`: Applications currently being reviewed
+
+### Agency Filtering
+- Uses the `agencyTracking` relation to filter applications by specific agency
+- Only returns applications that have been assigned to the specified agency
+
+### User Filtering
+- Optional filter by `assigned_user_id` to show applications assigned to a specific user
+- Uses the `submitted_by_user_id` field in the `agencyTracking` table
+
+### Pagination
+- Default page size: 10 items
+- Maximum page size: No explicit limit (handled by database)
+- Page numbers start from 1
+- Returns pagination metadata including total count, total pages, and navigation flags
+
+### Data Relations
+The API includes the following related data:
+- `createdBy`: User who created the application
+- `reviewedBy`: User who reviewed the application (if applicable)
+- `nadraResponse`: NADRA verification data
+- `passportResponse`: Passport verification data
+- `agencyTracking`: Agency tracking records with user information
+
+## Implementation Details
+
+### Database Query
+The API uses TypeORM QueryBuilder to construct complex queries:
+
+```typescript
+const queryBuilder = this.applicationRepository
+  .createQueryBuilder('application')
+  .leftJoinAndSelect('application.createdBy', 'createdBy')
+  .leftJoinAndSelect('application.reviewedBy', 'reviewedBy')
+  .leftJoinAndSelect('application.nadraResponse', 'nadraResponse')
+  .leftJoinAndSelect('application.passportResponse', 'passportResponse')
+  .leftJoinAndSelect('application.agencyTracking', 'agencyTracking')
+  .where('application.status IN (:...statuses)', {
+    statuses: [
+      ApplicationStatus.PENDING_VERIFICATION,
+      ApplicationStatus.VERIFICATION_RECEIVED,
+      ApplicationStatus.UNDER_REVIEW
+    ]
+  })
+  .andWhere('agencyTracking.agency_name = :agency', { agency })
+  .orderBy('application.createdAt', 'DESC');
+```
+
+### Validation
+- Agency parameter must be a valid enum value
+- User ID must be a valid number (if provided)
+- Page and limit must be positive numbers
+- Automatic type conversion using `@Transform` decorator
+
+### Security
+- Role-based access control (MINISTRY, AGENCY roles only)
+- JWT authentication required
+- Input validation and sanitization
+
+## Usage Scenarios
+
+### 1. Agency Dashboard
+Agencies can use this API to view all applications assigned to them for verification.
+
+### 2. User-Specific Views
+Filter applications by specific users to see their assigned workload.
+
+### 3. Pagination for Large Datasets
+Handle large numbers of applications efficiently with pagination.
+
+### 4. Integration with Frontend
+Frontend applications can use this API to build agency-specific dashboards and workflows.
+
+## Notes
+
+- The API automatically handles the relationship between applications and agency tracking
+- Applications are ordered by creation date (newest first)
+- All timestamps are in ISO 8601 format
+- The API is designed to be efficient with proper indexing on status and agency fields
+- Error handling includes comprehensive logging for debugging purposes

@@ -88,3 +88,41 @@ export const useAgencyApplications = (filters?: any) => {
     staleTime: 2 * 60 * 1000 // 2 minutes
   })
 }
+
+// Rejected Applications Queries
+export const useRejectedApplications = (filters?: any) => {
+  return useQuery({
+    queryKey: ['rejected-applications', filters],
+    queryFn: () => applicationAPI.getRejectedApplications(filters),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1, // Only retry once
+    retryDelay: 1000, // Wait 1 second before retry
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: true, // Refetch when component mounts
+  })
+}
+
+export const useRejectedApplication = (id: string) => {
+  return useQuery({
+    queryKey: ['rejected-application', id],
+    queryFn: () => applicationAPI.getRejectedApplication(id),
+    enabled: !!id,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 1,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
+  })
+}
+
+export const useRejectedApplicationsStats = () => {
+  return useQuery({
+    queryKey: ['rejected-applications-stats'],
+    queryFn: () => applicationAPI.getRejectedApplicationsStats(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
+    refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes
+  })
+}

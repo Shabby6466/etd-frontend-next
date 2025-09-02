@@ -1,17 +1,44 @@
 export interface User {
   id: string
   email: string
-  firstName: string
-  lastName: string
-  name: string
+  fullName: string
   role: UserRole
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
+  locationId?: string
   agency?: string
-  region?: string
+  state?: string
   createdAt: string
   updatedAt: string
 }
 
 export type UserRole = 'ADMIN' | 'MINISTRY' | 'AGENCY' | 'MISSION_OPERATOR'
+
+export interface Processing {
+  tracking_id: string
+  type: string
+  country_code: string
+  nationality: string
+  mrz_line1: string | null
+  mrz_line2: string | null
+  document_no: string | null
+  status: string
+  sheet_no: string | null
+  print_time_stamp: string | null
+  print_user_id: string | null
+  qc_time_stamp: string | null
+  active: boolean
+}
+
+export interface QcFailure {
+  id: string
+  sheet_no: string
+  user_id: string
+  application_id: string
+  qc_timestamp: string
+  failure_reason: string
+  created_at: string
+  updated_at: string
+}
 
 export interface Application {
   id: string
@@ -36,6 +63,11 @@ export interface Application {
   securityDeposit: string
   investor: string
   requestedBy?: string
+  print_time_stamp?: string
+  print_user_id?: string
+  qc_time_stamp?: string
+  active?: boolean
+  created_by_id?: string
   reason_for_deport: string
   transportMode: string
   isFiaBlacklist?: boolean
@@ -46,6 +78,7 @@ export interface Application {
   remarks?: string
   region?: Region
   assignedAgency?: string
+  sheet_no?: string
   attachments?: ApplicationAttachment[]
   approvalHistory?: ApprovalHistory[]
   createdBy?: {
@@ -65,7 +98,7 @@ export interface Application {
   pendingVerificationAgencies?: string[]
   verificationCompletedAgencies?: string[]
   agencyRemarks?: any[]
-  verificationRemarks?: any[]
+  ministryRemarks?: any[]
   rejectionReason?: string
   verificationSentAt?: string
   verificationCompletedAt?: string
@@ -78,6 +111,19 @@ export interface Application {
   // API data fields
   nadra_api_data?: any
   passport_api_data?: any
+  // Processing fields
+  processing?: Processing
+  // Agency tracking fields
+  agency_tracking?: Array<{
+    id: number
+    agency_name: string
+    status: string
+    remarks?: string
+    attachment_url?: string
+    submitted_at?: string
+    completed_at?: string
+  }>
+  isPassportResponseFetched?:string
 }
 
 export interface ApplicationAttachment {
@@ -111,6 +157,7 @@ export type ApplicationStatus =
   | 'MINISTRY_REVIEW'
   | 'READY_FOR_PERSONALIZATION'
   | 'READY_FOR_PRINT'
+  | 'READY_FOR_QC'
   | 'APPROVED' 
   | 'REJECTED' 
   | 'COMPLETED'

@@ -7,7 +7,7 @@ export const dashboardAPI = {
   },
 
   async getAgencyApplications(filters?: any): Promise<any> {
-    const response = await apiClient.get('/dashboard/agency/applications', { params: filters })
+    const response = await apiClient.get('/applications/agency/applications', { params: filters })
     return response.data
   }
 }

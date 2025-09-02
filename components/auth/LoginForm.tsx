@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { showNotification } from "@/lib/utils/notifications"
 import { useAuthStore } from "@/lib/stores/auth-store"
+import DGIPWatermarks from "../ui/dgip_watermark"
+import Image from "next/image"
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -73,20 +75,38 @@ export function LoginForm() {
         }
       } else {
         console.error('Login failed:', result.error)
+        // Show the specific error message from the API
         showNotification.error(result.error || "Login failed")
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error)
-      showNotification.error("An error occurred during login")
+      // Enhanced error logging for debugging
+      console.log('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      })
+      
+      // Try to extract error message from response
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          "An error occurred during login"
+      showNotification.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+    <div className="min-h-screen flex items-center justify-center backgroundColor p-4 ">
+      <DGIPWatermarks/>
+      <Card className="w-full max-w-md rounded-2xl">
+        <CardHeader className="space-y-1 pb-4 flex flex-col items-center justify-center">
+          <div className="pb-2">
+            <Image src="/login-logo.png" alt="DGIP Logo" width={250} height={150} />
+          </div>
           <CardTitle className="text-2xl font-bold text-center">
             Emergency Travel Document
           </CardTitle>
@@ -96,14 +116,14 @@ export function LoginForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="Enter your email"
                 {...form.register("email")}
-                className={form.formState.errors.email ? "border-red-500" : ""}
+                className={form.formState.errors.email ? "border-red-500 rounded-xl" : "rounded-xl"}
               />
               {form.formState.errors.email && (
                 <p className="text-sm text-red-500">
@@ -111,14 +131,14 @@ export function LoginForm() {
                 </p>
               )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1 pb-8">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="Enter your password"
                 {...form.register("password")}
-                className={form.formState.errors.password ? "border-red-500" : ""}
+                className={form.formState.errors.password ? "border-red-500 rounded-xl" : "rounded-xl"}
               />
               {form.formState.errors.password && (
                 <p className="text-sm text-red-500">
@@ -128,7 +148,7 @@ export function LoginForm() {
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full rounded-3xl"
               disabled={isLoading}
             >
               {isLoading ? "Signing in..." : "Sign in"}

@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Send, Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
+import { FileText, Send, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react"
 import { ApplicationsTable } from "@/components/dashboard/ApplicationsTable"
 import { Application, Region } from "@/lib/types"
 import { applicationAPI } from "@/lib/api/applications"
@@ -14,6 +14,20 @@ export default function MinistryDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { logout } = useAuthStore()
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    itemCount: 0,
+    itemsPerPage: 10,
+    totalPages: 0,
+    totalItems: 0
+  })
+
+  // Filter state
+  const [filters, setFilters] = useState({
+    submittedBy: '',
+    region: '',
+    search: ''
+  })
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -22,18 +36,23 @@ export default function MinistryDashboard() {
     blacklisted: 0,
   })
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (page: number = 1, limit: number = 10) => {
     try {
       // Fetch applications that are submitted by mission operators and ready for ministry review
       const response = await applicationAPI.getAll({
-        status: ['SUBMITTED', 'MINISTRY_REVIEW', 'AGENCY_REVIEW']
+        page,
+        limit,
+        search: filters.search,
+        submittedBy: filters.submittedBy || undefined,
+        region: filters.region || undefined
       })
       setApplications(response.data || [])
+      setPagination(response.meta)
       
-      // Calculate stats
-      const totalApps = response.data?.length || 0
+      // Calculate stats from all applications (this might need to be adjusted based on your needs)
+      const totalApps = response.meta.totalItems || 0
       const pending = response.data?.filter(app => 
-        ['SUBMITTED', 'MINISTRY_REVIEW'].includes(app.status)
+        ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'MINISTRY_REVIEW', 'AGENCY_REVIEW', 'VERIFICATION_SUBMITTED', 'VERIFICATION_RECEIVED'].includes(app.status)
       ).length || 0
       const approved = response.data?.filter(app => 
         ['READY_FOR_PERSONALIZATION', 'READY_FOR_PRINT', 'APPROVED', 'COMPLETED'].includes(app.status)
@@ -99,12 +118,35 @@ export default function MinistryDashboard() {
     }
   }
 
+  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }))
+    // The useEffect will handle the API call with debouncing
+  }
+
+  const clearFilters = async () => {
+    setFilters({
+      submittedBy: '',
+      region: '',
+      search: ''
+    })
+    await fetchApplications(1, pagination.itemsPerPage)
+  }
+
   useEffect(() => {
-    fetchApplications()
+    fetchApplications(1, 10)
   }, [])
 
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchApplications(1, pagination.itemsPerPage)
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timeoutId)
+  }, [filters.search, filters.submittedBy, filters.region])
+
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background dashboardBackgroundColor p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -115,6 +157,15 @@ export default function MinistryDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-4">
+            <Button 
+              onClick={() => fetchApplications(pagination.currentPage, pagination.itemsPerPage)} 
+              variant="outline" 
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
             <Button 
               variant="outline" 
               onClick={async () => {
@@ -128,10 +179,10 @@ export default function MinistryDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 ">
+          <Card className="rounded-3xl" >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 rounded-3xl">
+              <CardTitle className="text-sm font-medium ">Total Applications</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -139,7 +190,7 @@ export default function MinistryDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
               <Clock className="h-4 w-4 text-yellow-600" />
@@ -149,7 +200,7 @@ export default function MinistryDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Approved</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-600" />
@@ -159,7 +210,7 @@ export default function MinistryDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl"> 
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Rejected</CardTitle>
               <XCircle className="h-4 w-4 text-red-600" />
@@ -169,7 +220,7 @@ export default function MinistryDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Blacklisted</CardTitle>
               <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -181,7 +232,7 @@ export default function MinistryDashboard() {
         </div>
 
         {/* Applications Table */}
-        <Card>
+        <Card className="rounded-3xl">
           <CardHeader>
             <CardTitle>Applications for Ministry Review</CardTitle>
           </CardHeader>
@@ -189,12 +240,17 @@ export default function MinistryDashboard() {
             <ApplicationsTable
               applications={applications}
               isLoading={isLoading}
-              onRefresh={fetchApplications}
+              onRefresh={() => fetchApplications(pagination.currentPage, pagination.itemsPerPage)}
               userRole="MINISTRY"
               onApprove={handleApproveApplication}
               onReject={handleRejectApplication}
               onBlacklist={handleBlacklistApplication}
               onSendToAgency={handleSendToAgency}
+              pagination={pagination}
+              onPageChange={(page) => fetchApplications(page, pagination.itemsPerPage)}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={clearFilters}
             />
           </CardContent>
         </Card>

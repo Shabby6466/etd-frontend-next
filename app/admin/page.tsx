@@ -1,21 +1,28 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, FileText, CheckCircle, XCircle, Plus, UserPlus } from "lucide-react"
+import { Users, FileText, CheckCircle, XCircle, Plus, UserPlus, ClipboardList, MapPin } from "lucide-react"
 import { ApplicationsTable } from "@/components/dashboard/ApplicationsTable"
 import { UserManagementTable } from "@/components/admin/UserManagementTable"
 import { CreateUserModal } from "@/components/admin/CreateUserModal"
+import { CompletedApplicationsTable } from "@/components/admin/CompletedApplicationsTable"
+import { LocationManagementTable } from "@/components/admin/LocationManagementTable"
+import { SheetManagementTable } from "@/components/admin/SheetManagementTable"
+import { AgencyStatistics } from "@/components/admin/AgencyStatistics"
+import { RejectedApplicationsStats } from "@/components/admin/RejectedApplicationsStats"
+import { RejectedApplicationsTable } from "@/components/admin/RejectedApplicationsTable"
 import { Application } from "@/lib/types"
 import { applicationAPI } from "@/lib/api/applications"
 import { showNotification } from "@/lib/utils/notifications"
 import { useAuthStore } from "@/lib/stores/auth-store"
 
+
 export default function AdminDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'applications' | 'users'>('applications')
+  const [activeTab, setActiveTab] = useState<'applications' | 'users' | 'sheets' | 'locations' | 'completed' | 'rejected' | 'agency-stats'>('applications')
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
   const { logout } = useAuthStore()
   const [stats, setStats] = useState({
@@ -25,10 +32,34 @@ export default function AdminDashboard() {
     pending: 0,
   })
 
-  const fetchApplications = async () => {
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    itemCount: 0,
+    itemsPerPage: 10,
+    totalPages: 0,
+    totalItems: 0
+  })
+
+  // Filter state
+  const [filters, setFilters] = useState({
+    submittedBy: '',
+    region: '',
+    search: ''
+  })
+
+  const fetchApplications = async (page: number = 1, limit: number = 10) => {
     try {
-      const response = await applicationAPI.getAll()
+      setIsLoading(true)
+      const response = await applicationAPI.getAll({
+        page,
+        limit,
+        search: filters.search,
+        submittedBy: filters.submittedBy || undefined,
+        region: filters.region || undefined
+      })
       setApplications(response.data)
+      setPagination(response.meta)
     } catch (error) {
       showNotification.error("Failed to fetch applications")
     } finally {
@@ -45,13 +76,36 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }))
+    // The useEffect will handle the API call with debouncing
+  }
+
+  const clearFilters = async () => {
+    setFilters({
+      submittedBy: '',
+      region: '',
+      search: ''
+    })
+    await fetchApplications(1, pagination.itemsPerPage)
+  }
+
   useEffect(() => {
-    fetchApplications()
+    fetchApplications(1, 10)
     fetchStats()
   }, [])
 
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchApplications(1, pagination.itemsPerPage)
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timeoutId)
+  }, [filters.search, filters.submittedBy, filters.region])
+
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4 dashboardBackgroundColor">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -73,7 +127,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-gray-200">
+        <div className="flex ">
           <button
             onClick={() => setActiveTab('applications')}
             className={`px-6 py-3 font-medium text-sm ${
@@ -94,64 +148,76 @@ export default function AdminDashboard() {
           >
             User Management
           </button>
+                     <button
+             onClick={() => setActiveTab('sheets')}
+             className={`px-6 py-3 font-medium text-sm ${
+               activeTab === 'sheets'
+                 ? 'border-b-2 border-blue-500 text-blue-600'
+                 : 'text-gray-500 hover:text-gray-700'
+             }`}
+           >
+             Sheet Management
+           </button>
+           <button
+             onClick={() => setActiveTab('locations')}
+             className={`px-6 py-3 font-medium text-sm ${
+               activeTab === 'locations'
+                 ? 'border-b-2 border-blue-500 text-blue-600'
+                 : 'text-gray-500 hover:text-gray-700'
+             }`}
+           >
+             Location Management
+           </button>
+           <button
+             onClick={() => setActiveTab('completed')}
+             className={`px-6 py-3 font-medium text-sm ${
+               activeTab === 'completed'
+                 ? 'border-b-2 border-blue-500 text-blue-600'
+                 : 'text-gray-500 hover:text-gray-700'
+             }`}
+           >
+             Completed Applications
+           </button>
+           <button
+             onClick={() => setActiveTab('rejected')}
+             className={`px-6 py-3 font-medium text-sm ${
+               activeTab === 'rejected'
+                 ? 'border-b-2 border-blue-500 text-blue-600'
+                 : 'text-gray-500 hover:text-gray-700'
+             }`}
+           >
+             Rejected Applications
+           </button>
+           <button
+             onClick={() => setActiveTab('agency-stats')}
+             className={`px-6 py-3 font-medium text-sm ${
+               activeTab === 'agency-stats'
+                 ? 'border-b-2 border-blue-500 text-blue-600'
+                 : 'text-gray-500 hover:text-gray-700'
+             }`}
+           >
+             Agency Statistics
+           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Approved</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-              <XCircle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
-              <Users className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Content based on active tab */}
         {activeTab === 'applications' && (
           <ApplicationsTable
             applications={applications}
             isLoading={isLoading}
-            onRefresh={fetchApplications}
+            onRefresh={() => fetchApplications(pagination.currentPage, pagination.itemsPerPage)}
+            pagination={pagination}
+            onPageChange={(page) => fetchApplications(page, pagination.itemsPerPage)}
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onClearFilters={clearFilters}
           />
         )}
 
         {activeTab === 'users' && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">User Management</h2>
+            {/* <div className="flex justify-between items-center">
               <Button
                 onClick={() => setIsCreateUserModalOpen(true)}
                 className="flex items-center gap-2"
@@ -159,16 +225,39 @@ export default function AdminDashboard() {
                 <UserPlus className="h-4 w-4" />
                 Create User
               </Button>
-            </div>
+            </div> */}
             <UserManagementTable />
           </div>
         )}
 
+                 {activeTab === 'sheets' && (
+           <SheetManagementTable />
+         )}
+
+         {activeTab === 'locations' && (
+           <LocationManagementTable />
+         )}
+
+         {activeTab === 'completed' && (
+           <CompletedApplicationsTable />
+         )}
+
+         {activeTab === 'rejected' && (
+           <div className="space-y-6">
+             <RejectedApplicationsStats />
+             <RejectedApplicationsTable />
+           </div>
+         )}
+
+         {activeTab === 'agency-stats' && (
+           <AgencyStatistics />
+         )}
+
         {/* Create User Modal */}
-        <CreateUserModal
+        {/* <CreateUserModal
           open={isCreateUserModalOpen}
           onOpenChange={setIsCreateUserModalOpen}
-        />
+        /> */}
       </div>
     </div>
   )

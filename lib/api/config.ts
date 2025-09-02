@@ -38,7 +38,7 @@ export const API_ENDPOINTS = {
   // Dashboard
   DASHBOARD: {
     ADMIN_STATS: '/dashboard/admin/stats',
-    AGENCY_APPLICATIONS: '/dashboard/agency/applications',
+    AGENCY_APPLICATIONS: '/applications/agency/applications',
     MINISTRY_APPLICATIONS: '/dashboard/ministry/applications',
     MISSION_OPERATOR_SUMMARY: '/dashboard/mission-operator/summary'
   },

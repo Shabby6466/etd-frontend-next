@@ -6,10 +6,11 @@ import { cookieUtils } from "../utils/cookies";
 export interface User {
   id: string;
   email: string;
-  name: string;
+  fullName: string;
   role: "ADMIN" | "MINISTRY" | "AGENCY" | "MISSION_OPERATOR";
   state?: string;
   agency?: string;
+  locationId?: string;
 }
 
 interface AuthState {
@@ -63,6 +64,12 @@ export const useAuthStore = create<AuthState>()(
           const message =
             (
               err as {
+                response?: { data?: { message?: string; error?: string } };
+                message?: string;
+              }
+            )?.response?.data?.message ||
+            (
+              err as {
                 response?: { data?: { error?: string } };
                 message?: string;
               }
@@ -91,6 +98,11 @@ export const useAuthStore = create<AuthState>()(
       },
       verifyToken: async () => {
         const { token, isVerifying, tokenExpiry } = get();
+        console.log('=== TOKEN VERIFICATION START ===')
+        console.log('Current token:', token ? 'exists' : 'missing')
+        console.log('Token expiry:', tokenExpiry)
+        console.log('Current time:', Date.now())
+        
         // Check expiry before verifying
         if (tokenExpiry && Date.now() > tokenExpiry) {
           console.log("Token expired, logging out");
@@ -122,7 +134,7 @@ export const useAuthStore = create<AuthState>()(
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(
               () => reject(new Error("Token verification timeout")),
-              10000
+              5000
             );
           });
 
@@ -162,7 +174,7 @@ export const useAuthStore = create<AuthState>()(
           persistent: true,
           expires: new Date(expiry),
         });
-        set({ token, tokenExpiry: expiry, isAuthenticated: true });
+        set({ token, tokenExpiry: expiry, isAuthenticated: true, isLoading: false });
         setAutoLogout(expiry);
       },
     }),
@@ -252,6 +264,9 @@ export const useAuthStore = create<AuthState>()(
             useAuthStore.setState({
               isLoading: false,
               isAuthenticated: false,
+              user: null,
+              token: null,
+              tokenExpiry: null,
             });
           }
         };

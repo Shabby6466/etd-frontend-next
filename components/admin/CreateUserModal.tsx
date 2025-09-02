@@ -11,7 +11,9 @@ import { Label } from "@/components/ui/label"
 import { showNotification } from "@/lib/utils/notifications"
 import { UserRole, Region } from "@/lib/types"
 import { userAPI } from "@/lib/api/users"
+import { locationsAPI } from "@/lib/api/locations"
 import { useAuthStore } from "@/lib/stores/auth-store"
+import LocationSelector from "@/components/ui/location-selector"
 
 const createUserSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -19,20 +21,15 @@ const createUserSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.enum(["ADMIN", "MINISTRY", "AGENCY", "MISSION_OPERATOR"]),
   agency: z.string().optional(),
-  state: z.string().optional(),
+  locationId: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]),
 }).refine((data) => {
   // Agency role must have agency field
   if (data.role === "AGENCY" && !data.agency) {
     return false;
   }
-  // Mission Operator must have state field (if available from API or manual entry)
-  if (data.role === "MISSION_OPERATOR" && !data.state) {
-    return false;
-  }
-  // Ministry users don't need state field anymore
-  // Special Branch agencies should have state (except Intelligence Bureau)
-  if (data.role === "AGENCY" && data.agency?.startsWith("SPECIAL_BRANCH") && !data.state) {
+  // Mission Operator must have locationId field
+  if (data.role === "MISSION_OPERATOR" && !data.locationId) {
     return false;
   }
   return true;
@@ -50,8 +47,6 @@ interface CreateUserModalProps {
 
 export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [foreignMissionOffices, setForeignMissionOffices] = useState<string[]>([])
-  const [isLoadingOffices, setIsLoadingOffices] = useState(false)
   const { user } = useAuthStore()
 
   const form = useForm<CreateUserFormData>({
@@ -62,51 +57,12 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
       password: "",
       role: "MISSION_OPERATOR",
       agency: "",
-      state: "",
+      locationId: "",
       status: "ACTIVE",
     },
   })
 
   const watchedRole = form.watch("role")
-  const watchedAgency = form.watch("agency")
-
-  // Fetch foreign mission offices when modal opens
-  useEffect(() => {
-    if (open) {
-      const fetchOffices = async () => {
-        setIsLoadingOffices(true)
-        try {
-          const offices = await userAPI.getForeignMissionOffices()
-          // Ensure we have an array of strings
-          if (Array.isArray(offices)) {
-            const validOffices = offices
-              .map(office => {
-                if (typeof office === 'string') {
-                  return office
-                }
-                // Handle object format like {value: "Jeddah", label: "Jeddah"}
-                if (office && typeof office === 'object') {
-                  return (office as any)?.value || (office as any)?.label || ''
-                }
-                return ''
-              })
-              .filter(office => office.length > 0)
-            setForeignMissionOffices(validOffices)
-          } else {
-            console.warn('Foreign mission offices API returned non-array:', offices)
-            setForeignMissionOffices([])
-          }
-        } catch (error) {
-          console.error('Failed to fetch foreign mission offices:', error)
-          // Don't show error notification, just fail silently
-          setForeignMissionOffices([])
-        } finally {
-          setIsLoadingOffices(false)
-        }
-      }
-      fetchOffices()
-    }
-  }, [open])
 
   const onSubmit = async (data: CreateUserFormData) => {
     setIsLoading(true)
@@ -122,12 +78,23 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
     
     // Add role-specific fields
     if (data.role === "AGENCY") {
-      payload.agency = data.agency
-      if (data.state) {
-        payload.state = data.state
-      }
+      payload.agencyType = data.agency // Use agencyType parameter
     } else if (data.role === "MISSION_OPERATOR") {
-      payload.state = data.state
+      // For Mission Operators, send both state name and locationId
+      if (data.locationId) {
+        // Find the location name from the locations list
+        const locations = await locationsAPI.getAllLocations()
+        const selectedLocation = locations.find((loc: any) => loc.location_id === data.locationId)
+        
+        if (selectedLocation) {
+          payload.state = selectedLocation.name // Location name (e.g., "Punjab")
+          payload.locationId = selectedLocation.location_id // Location ID (e.g., "2010")
+        } else {
+          // Fallback if location not found
+          payload.state = data.locationId
+          payload.locationId = data.locationId
+        }
+      }
     }
     // Ministry users don't need state field
     // ADMIN roles don't need additional fields
@@ -153,7 +120,7 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md rounded-3xl">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Create New User
@@ -162,7 +129,6 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
               size="sm"
               onClick={() => onOpenChange(false)}
             >
-              ×
             </Button>
           </CardTitle>
         </CardHeader>
@@ -230,43 +196,17 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
 
             {/* Ministry users don't need additional fields */}
 
-            {/* Mission Operator Foreign Mission Office */}
+            {/* Mission Operator Location */}
             {watchedRole === "MISSION_OPERATOR" && (
               <div className="space-y-2">
-                <Label htmlFor="state">Foreign Mission Office *</Label>
-                {isLoadingOffices ? (
-                  <div className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-500">
-                    Loading foreign mission offices...
-                  </div>
-                ) : foreignMissionOffices.length > 0 ? (
-                  <select
-                    id="state"
-                    {...form.register("state")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Foreign Mission Office</option>
-                    {foreignMissionOffices.map((office, index) => (
-                      <option key={`mission-${index}-${office}`} value={office}>
-                        {office}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="space-y-2">
-                    <Input
-                      id="state"
-                      type="text"
-                      placeholder="Enter foreign mission office name"
-                      {...form.register("state")}
-                      className={form.formState.errors.state ? "border-red-500" : ""}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Foreign mission offices list unavailable. Please enter manually.
-                    </p>
-                  </div>
-                )}
-                {form.formState.errors.state && watchedRole === "MISSION_OPERATOR" && (
-                  <p className="text-sm text-red-500">Foreign Mission Office is required</p>
+                <Label htmlFor="locationId">Location *</Label>
+                <LocationSelector
+                  value={form.watch("locationId")}
+                  onValueChange={(value) => form.setValue("locationId", value)}
+                  placeholder="Select location"
+                />
+                {form.formState.errors.locationId && watchedRole === "MISSION_OPERATOR" && (
+                  <p className="text-sm text-red-500">Location is required</p>
                 )}
               </div>
             )}
@@ -289,26 +229,7 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
                     <option value="SPECIAL_BRANCH_FEDERAL">Special Branch Federal</option>
                   </select>
                 </div>
-                {/* State field - show for Special Branch agencies */}
-                {watchedAgency && watchedAgency.startsWith("SPECIAL_BRANCH") && (
-                  <div className="space-y-2">
-                    <Label htmlFor="state">State/Region *</Label>
-                    <select
-                      id="state"
-                      {...form.register("state")}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select State/Region</option>
-                      <option value="Punjab">Punjab</option>
-                      <option value="Sindh">Sindh</option>
-                      <option value="KPK">KPK</option>
-                      <option value="Balochistan">Balochistan</option>
-                      <option value="Gilgit_Baltistan">Gilgit Baltistan</option>
-                      <option value="AJK">AJK</option>
-                      <option value="Federal">Federal</option>
-                    </select>
-                  </div>
-                )}
+            
               </>
             )}
 

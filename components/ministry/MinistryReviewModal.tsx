@@ -5,19 +5,25 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreHorizontal } from "lucide-react"
 interface MinistryReviewModalProps {
   isOpen: boolean
   onClose: () => void
   onApprove: (data: { 
     approved: boolean; 
-    black_list_check: boolean;
+    blacklist_check_pass: boolean;
     etd_issue_date?: string;
     etd_expiry_date?: string;
   }) => Promise<void>
   onReject: (data: { 
     approved: boolean; 
-    black_list_check: boolean; 
+    blacklist_check_pass: boolean; 
     rejection_reason: string;
     etd_issue_date?: string;
     etd_expiry_date?: string;
@@ -46,7 +52,7 @@ export function MinistryReviewModal({
     try {
       await onApprove({
         approved: true,
-        black_list_check: blackListCheck,
+        blacklist_check_pass: blackListCheck,
         etd_issue_date: etdIssueDate || undefined,
         etd_expiry_date: etdExpiryDate || undefined
       })
@@ -69,7 +75,7 @@ export function MinistryReviewModal({
     try {
       await onReject({
         approved: false,
-        black_list_check: false,
+        blacklist_check_pass: false,
         rejection_reason: rejectionReason.trim(),
         etd_issue_date: undefined,
         etd_expiry_date: undefined
@@ -111,10 +117,10 @@ export function MinistryReviewModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <Card>
-          <CardHeader>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ">
+      {/* <div className="bg-white rounded-3xl p-6 w-full max-w-md mx-4"> */}
+        <Card className="rounded-3xl">
+          <CardHeader className="flex-col items-center">
             <CardTitle>Ministry Review</CardTitle>
             <CardDescription>
               {actionMode === "selection" && "Choose your action for this application"}
@@ -128,7 +134,7 @@ export function MinistryReviewModal({
             {actionMode === "selection" && (
               <div className="space-y-4">
                 <p className="text-sm text-gray-600">
-                  Please select whether you want to approve or reject this application.
+                  Please select whether you want to Approve or Reject
                 </p>
                 <div className="flex justify-center space-x-4 pt-4">
                   <Button
@@ -268,17 +274,37 @@ export function MinistryReviewModal({
                   <Label htmlFor="rejection-reason">
                     Rejection Reason *
                   </Label>
-                  <Input
+                  <DropdownMenu  >
+                  <DropdownMenuTrigger asChild>
+                          <p className="w-full flex w-[256px] p-2 rounded-3xl border-2 border-gray-100">Select Status</p>
+                      
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-full flex-col w-[256px] p-2 rounded-3xl   ">
+                        <DropdownMenuItem
+                          // onClick={() => router.push(`/applications/${application.id}`)}
+                          className="bg-transparent hover:bg-transparent focus:bg-transparent p-2"
+                        >
+                          Very Very Bad Boy
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          // onClick={() => router.push(`/applications/${application.id}`)}
+                          className="bg-transparent hover:bg-transparent focus:bg-transparent p-2"
+                        >
+                          Very Very VERY VERY Bad Boy
+                        </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu >
+                  {/* <Input
                     id="rejection-reason"
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
                     placeholder="Enter reason for rejection"
                     className="w-full"
                     required
-                  />
-                  {!rejectionReason.trim() && (
+                  /> */
+                  /* {!rejectionReason.trim() && (
                     <p className="text-xs text-red-600">Rejection reason is required</p>
-                  )}
+                  )} */}
                 </div>
 
                 {/* Action Buttons for Rejection */}
@@ -304,7 +330,7 @@ export function MinistryReviewModal({
 
           </CardContent>
         </Card>
-      </div>
+      {/* </div> */}
     </div>
   )
 }

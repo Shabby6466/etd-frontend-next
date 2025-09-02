@@ -5,6 +5,7 @@ import React from "react";
 interface DGIPHeaderWithWatermarksProps {
   leftLogoSrc?: string;
   rightLogoSrc?: string;
+  bannerSrc?: string;
   opacityRight?: number;
   zIndex?: number;
 }
@@ -12,6 +13,7 @@ interface DGIPHeaderWithWatermarksProps {
 export const DGIPHeaderWithWatermarks: React.FC<DGIPHeaderWithWatermarksProps> = ({
   leftLogoSrc = "/govt-of-pakistan-logo.png",
   rightLogoSrc = "/cmyk-dgip-logo.png",
+  bannerSrc = "/banner.png",
   opacityRight = 0.1,
   zIndex = "-1"
 }) => {
@@ -54,47 +56,15 @@ export const DGIPHeaderWithWatermarks: React.FC<DGIPHeaderWithWatermarksProps> =
       <div className="max-w-4xl mx-auto relative z-20">
         <div className="flex items-center justify-center mb-4 select-none">
           <div className="flex items-center gap-3">
-            <img src={rightLogoSrc} alt="DGIP Logo" className="w-20 h-20" />
-            <div className="text-left">
-              <p
-                className="text-[#1E7B45] mb-1"
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  lineHeight: "1",
-                }}
-              >
-                Government of Pakistan
-              </p>
-              <p
-                className="text-[#1B254B] font-semibold mb-1"
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  lineHeight: "1",
-                  margin: "0",
-                }}
-              >
-                Directorate General of
-              </p>
-              <p
-                className="text-[#1B254B] font-semibold"
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  lineHeight: "1.15",
-                  margin: "0",
-                }}
-              >
-                Immigration and Passport
-              </p>
-            </div>
+            <img 
+              src={bannerSrc} 
+              alt="DGIP Logo" 
+              className="w-full h-full" 
+            />
+           
           </div>
         </div>
       </div>
     </>
   );
-};
+};  
