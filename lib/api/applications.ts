@@ -482,25 +482,43 @@ export const applicationAPI = {
   sendForVerification: async (id: string, data: {
     agencies: string[]
     remarks: string
+    verification_document?: File
   }): Promise<Application> => {
     console.log('Sending for verification:', {
       id,
       agencies: data.agencies,
-      remarks: data.remarks
+      remarks: data.remarks,
+      hasVerificationDocument: !!data.verification_document
     })
 
-    // Create JSON request body for agencies and remarks
-    const requestBody = {
-      agencies: data.agencies, // ✅ CORRECT - Array format
-      remarks: data.remarks.trim()
+    // Create FormData for multipart/form-data request
+    const formData = new FormData()
+    
+    // Add agencies as individual form fields (as per API expectation)
+    data.agencies.forEach(agency => {
+      formData.append('agencies', agency)
+    })
+    
+    // Add remarks
+    if (data.remarks.trim()) {
+      formData.append('remarks', data.remarks.trim())
+    }
+    
+    // Add verification document if provided
+    if (data.verification_document) {
+      formData.append('verification_document', data.verification_document)
     }
 
-    console.log('Request body:', requestBody)
+    console.log('FormData contents:', {
+      agencies: data.agencies,
+      remarks: data.remarks.trim(),
+      hasVerificationDocument: !!data.verification_document
+    })
 
-    // Send JSON request
-    const response = await apiClient.post(`/applications/${id}/send-for-verification`, requestBody, {
+    // Send multipart/form-data request
+    const response = await apiClient.post(`/applications/${id}/send-for-verification`, formData, {
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'multipart/form-data',
       },
     })
     return transformApplicationData(response.data)

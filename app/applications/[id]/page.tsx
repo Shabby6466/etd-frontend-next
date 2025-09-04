@@ -450,6 +450,7 @@ export default function ApplicationViewPage() {
   const handleSendForVerification = async (data: {
     agencies: string[];
     remarks: string;
+    verification_document?: File;
   }) => {
     if (!application) return;
 
@@ -463,6 +464,7 @@ export default function ApplicationViewPage() {
         type: typeof agency,
         length: agency.length,
       })),
+      hasVerificationDocument: !!data.verification_document,
     });
 
     try {
