@@ -41,7 +41,8 @@ export const applicationSchema = z.object({
 
 export const sendForVerificationSchema = z.object({
   agencies: z.array(z.string()).min(1, 'At least one agency must be selected'),
-  remarks: z.string().optional()
+  remarks: z.string().optional(),
+  verification_document: z.instanceof(File).optional()
 })
 
 export const submitVerificationSchema = z.object({

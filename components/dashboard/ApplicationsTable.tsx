@@ -354,52 +354,32 @@ export function ApplicationsTable({
                   {userRole === 'AGENCY' && (
                     <td className="p-3">
                       {application.verificationDocumentUrl ? (
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-blue-600" />
-                          <button
-                            onClick={async () => {
-                              try {
-                                const blob = await applicationAPI.downloadVerificationDocument(application.id)
-                                const url = URL.createObjectURL(blob)
-                                window.open(url, '_blank')
-                                
-                                setTimeout(() => URL.revokeObjectURL(url), 1000)
-                              } catch (error) {
-                                console.error('View failed:', error)
-                                showNotification.error('Failed to view document')
-                              }
-                            }}
-                            className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
-                          >
-                            <FileText className="h-3 w-3" />
-                            View PDF
-                          </button>
-                          <span className="text-gray-400">|</span>
-                          <button
-                            onClick={async () => {
-                              try {
-                                const blob = await applicationAPI.downloadVerificationDocument(application.id)
-                                const url = URL.createObjectURL(blob)
-                                
-                                const link = document.createElement('a')
-                                link.href = url
-                                link.download = `verification-document-${application.id.substring(0, 8)}.pdf`
-                                document.body.appendChild(link)
-                                link.click()
-                                document.body.removeChild(link)
-                                
-                                setTimeout(() => URL.revokeObjectURL(url), 1000)
-                              } catch (error) {
-                                console.error('Download failed:', error)
-                                showNotification.error('Failed to download document')
-                              }
-                            }}
-                            className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
-                          >
-                            <Download className="h-3 w-3" />
-                            Download
-                          </button>
-                        </div>
+                        <button
+                          onClick={async () => {
+                            if (!application.verificationDocumentUrl) return
+                            
+                            try {
+                              const blob = await applicationAPI.downloadVerificationDocument(application.id)
+                              const url = window.URL.createObjectURL(blob)
+                              
+                              const link = document.createElement('a')
+                              link.href = url
+                              link.download = `verification-document-${application.id.substring(0, 8)}.pdf`
+                              document.body.appendChild(link)
+                              link.click()
+                              document.body.removeChild(link)
+                              
+                              setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+                            } catch (error) {
+                              console.error('Download failed:', error)
+                              showNotification.error('Failed to download document')
+                            }
+                          }}
+                          className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download PDF
+                        </button>
                       ) : (
                         <span className="text-gray-400 text-sm">No document</span>
                       )}

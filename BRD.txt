@@ -1,0 +1,309 @@
+# BUSINESS REQUIREMENTS DOCUMENT (BRD)
+# Emergency Travel Document (ETD) System
+
+## 1. EXECUTIVE SUMMARY
+
+The Emergency Travel Document (ETD) System is a comprehensive government application designed to process and manage emergency travel documents for Pakistani citizens. The system facilitates the entire lifecycle of ETD applications from initial submission to final approval and document generation, involving multiple government agencies and roles.
+
+## 2. SYSTEM OVERVIEW
+
+### 2.1 Purpose
+The ETD system serves as a centralized platform for processing emergency travel document applications, ensuring proper verification, approval workflows, and document generation while maintaining security and compliance with government regulations.
+
+### 2.2 Key Features
+- Multi-role user management with role-based access control
+- Application lifecycle management with status tracking
+- Integration with NADRA and Passport databases for verification
+- Agency verification workflow
+- Ministry review and approval process
+- Document generation and printing capabilities
+- Quality Control (QC) processes
+- Sheet management for document printing
+- Comprehensive audit trails
+
+## 3. USER ROLES AND RESPONSIBILITIES
+
+### 3.1 MISSION OPERATOR (MISSION_OPERATOR)
+**Primary Function**: Initial application creation and data entry
+
+**Responsibilities**:
+- Create new ETD applications
+- Enter citizen information manually or via API integration
+- Upload citizen photographs
+- Fetch data from NADRA and Passport databases
+- Select sheet numbers for document printing
+- Submit applications for review
+- View application status and history
+- Manage personal sheet inventory
+
+**Key Workflows**:
+1. **Application Creation**:
+   - Navigate to `/applications/new`
+   - Enter citizen ID to auto-fetch NADRA data
+   - Upload or capture citizen photograph
+   - Fill in additional required information
+   - Select available sheet number
+   - Submit application
+
+2. **Data Integration**:
+   - Automatic NADRA data fetching via API
+   - Passport data verification
+   - Photo comparison and validation
+
+3. **Sheet Management**:
+   - View available sheets
+   - Track sheet usage and status
+   - Monitor QC pass/fail rates
+
+### 3.2 AGENCY USER (AGENCY)
+**Primary Function**: Regional verification and validation
+
+**Responsibilities**:
+- Review applications assigned to their region
+- Verify citizen information and documents
+- Submit verification reports with remarks
+- Upload supporting documents/attachments
+- Mark applications as verified or failed
+
+**Key Workflows**:
+1. **Application Review**:
+   - Access agency dashboard at `/agency`
+   - View pending verification applications
+   - Review citizen details and photographs
+   - Compare with NADRA and Passport data
+
+2. **Verification Process**:
+   - Submit verification remarks
+   - Upload supporting documents
+   - Mark verification as completed or failed
+   - Track verification status
+
+3. **Data Sources**:
+   - View uploaded citizen photos
+   - Compare with NADRA database photos
+   - Review Passport database information
+   - Access verification documents from ministry
+
+### 3.3 MINISTRY USER (MINISTRY)
+**Primary Function**: Final review and approval authority
+
+**Responsibilities**:
+- Review applications after agency verification
+- Approve or reject applications
+- Send applications to agencies for verification
+- Blacklist applications if necessary
+- Provide final approval for document generation
+
+**Key Workflows**:
+1. **Application Review**:
+   - Access ministry dashboard at `/ministry`
+   - View applications ready for ministry review
+   - Review agency verification reports
+   - Check all supporting documents
+
+2. **Decision Making**:
+   - Approve applications for document generation
+   - Reject applications with remarks
+   - Blacklist applications if security concerns
+   - Send applications to specific agencies for verification
+
+3. **Status Management**:
+   - Track application statistics
+   - Monitor approval/rejection rates
+   - View blacklisted applications
+
+### 3.4 ADMIN USER (ADMIN)
+**Primary Function**: System administration and oversight
+
+**Responsibilities**:
+- User management (create, edit, deactivate users)
+- Location management
+- Sheet management and allocation
+- System statistics and reporting
+- Application monitoring across all stages
+- QC management
+
+**Key Workflows**:
+1. **User Management**:
+   - Create new users with appropriate roles
+   - Edit user information and permissions
+   - Deactivate/activate user accounts
+   - Assign users to specific locations/agencies
+
+2. **System Administration**:
+   - Manage locations and regions
+   - Allocate sheets to operators
+   - Monitor sheet usage and QC results
+   - View system-wide statistics
+
+3. **Application Oversight**:
+   - View all applications across all stages
+   - Monitor application flow and bottlenecks
+   - Generate reports and analytics
+   - Manage rejected applications
+
+## 4. APPLICATION LIFECYCLE
+
+### 4.1 Application Status Flow
+
+```
+DRAFT → SUBMITTED → UNDER_REVIEW → PENDING_VERIFICATION → 
+VERIFICATION_SUBMITTED → VERIFICATION_RECEIVED → 
+AGENCY_REVIEW → MINISTRY_REVIEW → READY_FOR_PERSONALIZATION → 
+READY_FOR_PRINT → READY_FOR_QC → APPROVED → COMPLETED
+```
+
+**Alternative Paths**:
+- Any stage → REJECTED (with remarks)
+- Any stage → BLACKLISTED (security concerns)
+
+### 4.2 Detailed Status Descriptions
+
+1. **DRAFT**: Initial application created by operator, not yet submitted
+2. **SUBMITTED**: Application submitted for review
+3. **UNDER_REVIEW**: Application under initial review
+4. **PENDING_VERIFICATION**: Sent to agency for verification
+5. **VERIFICATION_SUBMITTED**: Agency has submitted verification
+6. **VERIFICATION_RECEIVED**: Verification received and processed
+7. **AGENCY_REVIEW**: Under agency review
+8. **MINISTRY_REVIEW**: Under ministry review
+9. **READY_FOR_PERSONALIZATION**: Approved for document personalization
+10. **READY_FOR_PRINT**: Ready for printing
+11. **READY_FOR_QC**: Printed and ready for quality control
+12. **APPROVED**: QC passed, document approved
+13. **COMPLETED**: Final stage, document issued
+14. **REJECTED**: Application rejected with reason
+15. **BLACKLISTED**: Application blacklisted for security reasons
+
+## 5. TECHNICAL INTEGRATIONS
+
+### 5.1 NADRA Integration
+- **Purpose**: Verify citizen identity and fetch official data
+- **Data Retrieved**: Name, father's name, mother's name, date of birth, address, photo
+- **API Endpoint**: `/api/nadra/verify`
+- **Usage**: Automatic verification during application creation
+
+### 5.2 Passport Database Integration
+- **Purpose**: Verify passport information and fetch passport photo
+- **Data Retrieved**: Passport number, issue/expiry dates, photo
+- **API Endpoint**: `/api/passport/verify`
+- **Usage**: Additional verification layer
+
+### 5.3 FIA Blacklist Check
+- **Purpose**: Security verification against FIA blacklist
+- **Process**: Automatic check during application processing
+- **Result**: Blacklist status flag on application
+
+## 6. DOCUMENT GENERATION AND PRINTING
+
+### 6.1 Sheet Management System
+- **Purpose**: Manage physical document sheets for printing
+- **Process**: 
+  - Admin allocates sheets to operators
+  - Operators select sheets during application creation
+  - Sheets are tracked through printing and QC process
+  - QC results are recorded per sheet
+
+### 6.2 Printing Process
+1. Application approved for printing
+2. Sheet number assigned and locked
+3. Document generated with personalization data
+4. Physical printing occurs
+5. QC process initiated
+6. QC pass/fail recorded
+
+### 6.3 Quality Control (QC)
+- **Purpose**: Ensure printed documents meet quality standards
+- **Process**: 
+  - Visual inspection of printed documents
+  - Verification of personalization accuracy
+  - Pass/fail decision recorded
+  - Failed documents require reprinting
+
+## 7. SECURITY AND COMPLIANCE
+
+### 7.1 Authentication and Authorization
+- **JWT-based authentication**
+- **Role-based access control (RBAC)**
+- **Route protection middleware**
+- **Session management**
+
+### 7.2 Data Protection
+- **Encrypted data transmission**
+- **Secure file uploads**
+- **Audit trail maintenance**
+- **Access logging**
+
+### 7.3 Compliance Features
+- **Government data handling standards**
+- **Document retention policies**
+- **Audit trail for all actions**
+- **User activity monitoring**
+
+## 8. REPORTING AND ANALYTICS
+
+### 8.1 Dashboard Statistics
+- **Total applications by status**
+- **Processing times**
+- **Approval/rejection rates**
+- **Agency performance metrics**
+- **Sheet utilization statistics**
+
+### 8.2 Operational Reports
+- **Daily/weekly/monthly application volumes**
+- **Processing bottlenecks**
+- **User activity reports**
+- **QC performance metrics**
+
+## 9. SYSTEM REQUIREMENTS
+
+### 9.1 Technical Stack
+- **Frontend**: Next.js with TypeScript
+- **Backend**: Node.js/Express API
+- **Database**: PostgreSQL
+- **Authentication**: JWT tokens
+- **File Storage**: Cloud storage for attachments
+- **UI Framework**: Tailwind CSS with shadcn/ui components
+
+### 9.2 Integration Requirements
+- **NADRA API access**
+- **Passport database API**
+- **FIA blacklist API**
+- **Printing system integration**
+- **Email notification system**
+
+## 10. DEPLOYMENT AND MAINTENANCE
+
+### 10.1 Deployment
+- **Production environment setup**
+- **Database migration procedures**
+- **API endpoint configuration**
+- **SSL certificate management**
+
+### 10.2 Maintenance
+- **Regular security updates**
+- **Database backups**
+- **Performance monitoring**
+- **User training and support**
+
+## 11. FUTURE ENHANCEMENTS
+
+### 11.1 Planned Features
+- **Mobile application support**
+- **Advanced analytics dashboard**
+- **Automated QC processes**
+- **Integration with additional government databases**
+- **Multi-language support**
+
+### 11.2 Scalability Considerations
+- **Horizontal scaling capabilities**
+- **Load balancing**
+- **Database optimization**
+- **Caching strategies**
+
+---
+
+**Document Version**: 1.0
+**Last Updated**: [Current Date]
+**Prepared By**: System Analysis Team
+**Approved By**: [To be filled]
