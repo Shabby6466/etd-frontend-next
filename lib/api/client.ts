@@ -2,7 +2,7 @@ import axios from "axios"
 import { useAuthStore } from "@/lib/stores/auth-store"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://172.17.128.145:3836/v1/api"
-const PASSPORT_URL = "http://10.111.101.24:9009/api/passport"
+const PASSPORT_URL = process.env.PASSPORT_API_URL || "http://10.111.101.24:9009/api/passport"
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
