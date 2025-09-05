@@ -42,12 +42,12 @@ export const applicationSchema = z.object({
 export const sendForVerificationSchema = z.object({
   agencies: z.array(z.string()).min(1, 'At least one agency must be selected'),
   remarks: z.string().optional(),
-  verification_document: z.instanceof(File).optional()
+  verification_document: z.any().optional() // File validation handled in component
 })
 
 export const submitVerificationSchema = z.object({
   remarks: z.string().min(1, 'Remarks are required'),
-  attachment: z.instanceof(File).optional()
+  attachment: z.any().optional() // File validation handled in component
 })
 
 export const applicationFiltersSchema = z.object({
