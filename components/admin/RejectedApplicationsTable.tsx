@@ -6,9 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Search, Filter, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
-import { useRejectedApplications } from "@/lib/hooks/queries"
-import { useRouter } from "next/navigation"
-import { format } from "date-fns"
 import { Application } from "@/lib/types"
 import { applicationAPI } from "@/lib/api/applications"
 import { showNotification } from "@/lib/utils/notifications"
@@ -35,7 +32,6 @@ export function RejectedApplicationsTable() {
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
-  const [pageSize] = useState(10)
 
   // Filters and pagination
   const [filters, setFilters] = useState<RejectedApplicationFilters>({
@@ -121,7 +117,7 @@ export function RejectedApplicationsTable() {
       sort_by: filterInputs.sort_by,
       sort_order: filterInputs.sort_order as 'ASC' | 'DESC',
       limit: parseInt(filterInputs.limit),
-      page: 1 // Reset to first page when applying filters
+      page: 1
     }))
   }
 

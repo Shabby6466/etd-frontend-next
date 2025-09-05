@@ -1,12 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, FileText, CheckCircle, XCircle, Plus, UserPlus, ClipboardList, MapPin } from "lucide-react"
 import { ApplicationsTable } from "@/components/dashboard/ApplicationsTable"
-import { UserManagementTable } from "@/components/admin/UserManagementTable"
-import { CreateUserModal } from "@/components/admin/CreateUserModal"
+import { UserManagementTable } from "@/components/admin/UserManagementTable" 
 import { CompletedApplicationsTable } from "@/components/admin/CompletedApplicationsTable"
 import { LocationManagementTable } from "@/components/admin/LocationManagementTable"
 import { SheetManagementTable } from "@/components/admin/SheetManagementTable"
@@ -23,7 +20,6 @@ export default function AdminDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'applications' | 'users' | 'sheets' | 'locations' | 'completed' | 'rejected' | 'agency-stats'>('applications')
-  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
   const { logout } = useAuthStore()
   const [stats, setStats] = useState({
     total: 0,
@@ -252,12 +248,6 @@ export default function AdminDashboard() {
          {activeTab === 'agency-stats' && (
            <AgencyStatistics />
          )}
-
-        {/* Create User Modal */}
-        {/* <CreateUserModal
-          open={isCreateUserModalOpen}
-          onOpenChange={setIsCreateUserModalOpen}
-        /> */}
       </div>
     </div>
   )

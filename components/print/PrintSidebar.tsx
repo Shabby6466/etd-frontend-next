@@ -1,7 +1,6 @@
 "use client"
 
 import { Application } from "@/lib/types"
-import { showNotification } from "@/lib/utils/notifications"
 import { formatDate } from "@/lib/utils/formatting"
 import SheetSelector from "@/components/operator/SheetSelector"
 import { Button } from "@/components/ui/button"
@@ -128,12 +127,17 @@ export default function PrintSidebar({
           </CardHeader>
           <CardContent>
             <div className="text-sm text-gray-500">
-              <p>Last printed: {application.etdIssueDate ? formatDate(application.etdIssueDate) : 'Never'}</p>
-              <p>Document type: {application.processing?.type || 'ETD'}</p>
+              <p>
+                Last printed:{" "}
+                {application.etdIssueDate
+                  ? formatDate(application.etdIssueDate)
+                  : "Never"}
+              </p>
+              <p>Document type: {application.processing?.type || "ETD"}</p>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 } 

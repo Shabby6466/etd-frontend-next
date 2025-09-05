@@ -23,23 +23,23 @@ export function AgencyVerificationForm({
   onSuccess,
   onCancel
 }: AgencyVerificationFormProps) {
-  const [remarks, setRemarks] = useState('')
+  const [remarks, setRemarks] = useState("")
   const [attachment, setAttachment] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0]  
     if (file) {
       // Check file type
       if (file.type !== 'application/pdf') {
-        setError('Please select a PDF file')
+        setError("Please select a PDF file")
         return
       }
       
       // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        setError('File size must be less than 5MB')
+        setError("File size must be less than 5MB")
         return
       }
       
@@ -52,7 +52,7 @@ export function AgencyVerificationForm({
     e.preventDefault()
     
     if (!remarks.trim()) {
-      setError('Remarks are required')
+      setError("Remarks are required")
       return
     }
 
@@ -69,7 +69,7 @@ export function AgencyVerificationForm({
       showNotification.success('Verification submitted successfully')
       
       // Reset form
-      setRemarks('')
+      setRemarks("")
       setAttachment(null)
       
       // Call success callback
@@ -77,7 +77,7 @@ export function AgencyVerificationForm({
         onSuccess()
       }
     } catch (err: any) {
-      console.error('Failed to submit verification:', err)
+      console.error("Failed to submit verification:", err)
       
       // Handle different error types
       if (err.response?.data?.message) {
@@ -85,10 +85,10 @@ export function AgencyVerificationForm({
       } else if (err.message) {
         setError(err.message)
       } else {
-        setError('Failed to submit verification')
+        setError("Failed to submit verification")
       }
       
-      showNotification.error('Failed to submit verification')
+      showNotification.error("Failed to submit verification")
     } finally {
       setLoading(false)
     }
@@ -96,7 +96,7 @@ export function AgencyVerificationForm({
 
   const handleCancel = () => {
     if (onCancel) {
-      onCancel()
+      onCancel();
     }
   }
 
@@ -160,7 +160,7 @@ export function AgencyVerificationForm({
             {attachment && (
               <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
                 <FileText className="h-4 w-4" />
-                <span>{attachment.name}</span>
+                  <span>{attachment.name}</span>
                 <span>({(attachment.size / 1024 / 1024).toFixed(2)} MB)</span>
               </div>
             )}
@@ -179,7 +179,7 @@ export function AgencyVerificationForm({
               disabled={loading || !remarks.trim()}
               className="flex-1"
             >
-              {loading ? 'Submitting...' : 'Submit Verification'}
+              {loading ? "Submitting..." : "Submit Verification"}
             </Button>
             
             {onCancel && (
@@ -196,5 +196,5 @@ export function AgencyVerificationForm({
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

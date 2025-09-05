@@ -1,4 +1,3 @@
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Application } from "@/lib/types";
 import { formatDate } from "@/lib/utils/formatting";
 

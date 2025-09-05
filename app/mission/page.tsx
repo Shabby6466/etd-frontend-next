@@ -226,14 +226,6 @@ export default function MissionOperatorDashboard() {
                   className="pl-10 w-64 rounded-xl"
                 />
               </div>
-              
-              {/* <Button 
-                onClick={() => fetchApplications(1, pagination.itemsPerPage)}
-                className="px-4 py-2"
-                disabled={isSearching}
-              >
-                {isSearching ? "Searching..." : "Search"}
-              </Button> */}
               {(searchTerm || statusFilter) && (
                 <Button 
                   variant="outline"
@@ -256,10 +248,7 @@ export default function MissionOperatorDashboard() {
               >
                 <option value="">All Statuses</option>
                 <option value="DRAFT">Draft</option>
-                {/* <option value="SUBMITTED">Submitted</option> */}
                 <option value="UNDER_REVIEW">Under Review</option>
-                {/* <option value="AGENCY_REVIEW">Agency Review</option> */}
-                {/* <option value="MINISTRY_REVIEW">Ministry Review</option> */}
                 <option value="READY_FOR_PERSONALIZATION">Ready for Personalization</option>
                 <option value="READY_FOR_PRINT">Ready for Print</option>
                 <option value="APPROVED">Approved</option>
