@@ -1018,9 +1018,9 @@ export function CitizenForm() {
                         }`}
                       >
                         <option value="">Select Gender</option>
-                        <option value="MALE">M</option>
-                        <option value="FEMALE">F</option>
-                        <option value="TRANSGENDER">X</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                        <option value="X">Transgender</option>
                       </select>
 
                       {form.formState.errors.gender && (
