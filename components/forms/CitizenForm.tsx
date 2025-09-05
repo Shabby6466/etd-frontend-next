@@ -16,7 +16,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { showNotification } from "@/lib/utils/notifications";
-// import { formatCNIC, validateCNIC } from "@/lib/utils/formatting"
 import { citizenSchema, type CitizenFormData } from "@/lib/validations/citizen";
 import { applicationAPI } from "@/lib/api/applications";
 import { nadraAPI } from "@/lib/api/nadra";
@@ -25,10 +24,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { DGIPHeaderWithWatermarks } from "@/components/ui/dgip_header_watermarks";
 import ETDApplicationPhotoCard from "@/components/ui/etd_application_photo_card";
 import { DetailForm } from "@/components/forms/DetailForm";
-import SheetSelector from "@/components/operator/SheetSelector";
-import DGIPHeader from "@/components/ui/dgip_header";
 import { ArrowLeft, ChevronDown } from "lucide-react";
-import { Select, SelectTrigger } from "@radix-ui/react-select";
 import { ImageEditorModal } from "@/components/ui/ImageEditorModal";
 
 export function CitizenForm() {
@@ -200,9 +196,6 @@ export function CitizenForm() {
       last_name: lastName,
       image: passportData.photograph || "", // Base64 image from passport API
       father_name: fatherFullName,
-      // Note: mother_name is not available in passport API - user will need to fill manually
-      // Don't include mother_name in mapping to avoid clearing existing value
-      // Map gender (m/f to Male/Female)
       gender:
         passportData.gender === "m"
           ? "Male"
@@ -1025,9 +1018,9 @@ export function CitizenForm() {
                         }`}
                       >
                         <option value="">Select Gender</option>
-                        <option value="MALE">M</option>
-                        <option value="FEMALE">F</option>
-                        <option value="TRANSGENDER">X</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                        <option value="X">Transgender</option>
                       </select>
 
                       {form.formState.errors.gender && (

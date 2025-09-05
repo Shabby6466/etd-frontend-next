@@ -1,7 +1,7 @@
 export const env = {
   // API Configuration
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3837/v1/api",
-  BACKEND_URL: process.env.BACKEND_URL || "http://localhost:3837/v1/api",
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3836/v1/api",
+  BACKEND_URL: process.env.BACKEND_URL || "http://localhost:3836/v1/api",
   
   // JWT Configuration
   JWT_SECRET: process.env.JWT_SECRET || "your-jwt-secret-key-here",

@@ -1,12 +1,11 @@
 "use client"
 
 import { useRef, useState } from "react"
-import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { UploadCloud, Trash2, ChevronRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils" // optional; remove if you don't use cn()
 
 type Props = {
@@ -174,5 +173,5 @@ export default function ETDApplicationPhotoCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -385,27 +385,7 @@ export function AgencyStatistics() {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {/* Debug Info */}
-          {/* <Card>
-            <CardHeader>
-              <CardTitle>Debug Info</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm">
-                <p>Total Applications: {applications.length}</p>
-                <p>Applications with Agency Tracking: {applications.filter(app => app.agency_tracking && app.agency_tracking.length > 0).length}</p>
-                <p>Statistics: {JSON.stringify(statistics, null, 2)}</p>
-                <details className="mt-2">
-                  <summary>Raw Applications Data</summary>
-                  <pre className="text-xs bg-gray-100 p-2 mt-2 overflow-auto max-h-40">
-                    {JSON.stringify(applications.slice(0, 3), null, 2)}
-                  </pre>
-                </details>
-              </div>
-            </CardContent>
-          </Card> */}
-
-          {/* Tab Buttons */}
+     
           <div className="flex gap-2">
             <Button
               variant={activeTab === 'pending' ? 'default' : 'outline'}

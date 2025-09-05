@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Application, Region, UserRole } from "@/lib/types";
 import { applicationAPI } from "@/lib/api/applications";
-import { attachmentAPI } from "@/lib/api/attachments";
 import { passportAPI } from "@/lib/api/passport";
 import {
   formatDate,
@@ -16,14 +15,11 @@ import { showNotification } from "@/lib/utils/notifications";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import {
   ArrowLeft,
   Printer,
   Upload,
   CheckCircle,
-  XCircle,
-  AlertTriangle,
   Send,
   FileText,
   Eye,
@@ -33,12 +29,10 @@ import {
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { SendForVerificationModal } from "@/components/ministry/SendForVerificationModal";
 import { SubmitVerificationModal } from "@/components/agency/SubmitVerificationModal";
-import { MinistryReviewModal } from "@/components/ministry/MinistryReviewModal";
 import { DraftReviewModal } from "@/components/ministry/DraftReviewModal";
 import { PDFLink } from "@/components/ui/PDFViewer";
 
 import DGIPHeader from "@/components/ui/dgip_header";
-import DGIPWatermarks from "@/components/ui/dgip_watermark";
 import QCModal from "@/components/dashboard/QCModal";
 
 export default function ApplicationViewPage() {
@@ -321,83 +315,6 @@ export default function ApplicationViewPage() {
       setIsActionLoading(false);
     }
   };
-
-  // const handleMinistryApprove = async (data: {
-  //   black_list_check?: boolean;
-  //   etd_issue_date?: string;
-  //   etd_expiry_date?: string;
-  // }) => {
-  //   if (!application) return;
-  //   setIsActionLoading(true);
-  //   try {
-  //     // Use status update API for all approvals
-  //     await applicationAPI.ministryReview(application.id, {
-  //       approved: true,
-  //       black_list_check: data.black_list_check || false,
-  //       etd_issue_date: data.etd_issue_date || "",
-  //       etd_expiry_date: data.etd_expiry_date || "",
-  //     });
-  //     showNotification.success("Application approved");
-  //     await refresh();
-  //   } catch (error: any) {
-  //     console.error("Failed to approve application:", error);
-  //     showNotification.error(
-  //       error.response?.data?.message || "Failed to approve application"
-  //     );
-  //   } finally {
-  //     setIsActionLoading(false);
-  //   }
-  // };
-  // const handleMinistryReject = async () => {
-  //   if (!application) return;
-  //   const rejectionReason = window.prompt("Enter rejection reason:");
-  //   if (!rejectionReason) return;
-  //   setIsActionLoading(true);
-  //   try {
-  //     // Use new status update API for VERIFICATION_RECEIVED status
-  //     if (application.status === "VERIFICATION_RECEIVED") {
-  //       await applicationAPI.ministryReview(application.id, {
-  //         approved: false,
-  //         black_list_check: true,
-  //         rejection_reason: rejectionReason,
-  //       });
-  //     } else {
-  //       // Use legacy API for other statuses
-  //       await applicationAPI.ministryReview(application.id, {
-  //         approved: false,
-  //         black_list_check: true,
-  //         rejection_reason: rejectionReason,
-  //       });
-  //     }
-  //     showNotification.success("Application rejected");
-  //     await refresh();
-  //   } catch {
-  //     showNotification.error("Failed to reject application");
-  //   } finally {
-  //     setIsActionLoading(false);
-  //   }
-  // };
-
-  // const handleBlacklist = async () => {
-  //   if (!application) return
-  //   const remarks = window.prompt("Enter blacklist reason:")
-  //   if (!remarks) return
-  //   setIsActionLoading(true)
-  //   try {
-  //     await applicationAPI.ministryReview(application.id, {
-  //       approved: false,
-  //       black_list_check: true,
-  //       rejection_reason: remarks
-  //     })
-  //     showNotification.success("Application blacklisted")
-  //     await refresh()
-  //   } catch {
-  //     showNotification.error("Failed to blacklist application")
-  //   } finally {
-  //     setIsActionLoading(false)
-  //   }
-  // }
-
   const handleSendToAgency = async () => {
     if (!application) return;
     const region = window.prompt(
@@ -503,28 +420,6 @@ export default function ApplicationViewPage() {
     }
   };
 
-  // const handleDirectReject = async () => {
-  //   if (!application) return;
-  //   const remarks = window.prompt("Enter rejection remarks:");
-  //   if (!remarks) return;
-
-  //   try {
-  //     setIsActionLoading(true);
-  //     await applicationAPI.updateStatus(application.id, {
-  //       status: "REJECTED",
-  //       rejection_reason: remarks,
-  //     });
-  //     showNotification.success("Application rejected");
-  //     await refresh();
-  //   } catch (error: any) {
-  //     showNotification.error(
-  //       error.response?.data?.message || "Failed to reject application"
-  //     );
-  //   } finally {
-  //     setIsActionLoading(false);
-  //   }
-  // };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -595,51 +490,7 @@ export default function ApplicationViewPage() {
                     <Printer className="mr-2 h-4 w-4" /> Print
                   </Button>
                 )}
-                {/* Debug button for role testing
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                console.log('=== DEBUG USER ROLE INFO ===')
-                console.log('Current user:', user)
-                console.log('Current role:', role)
-                console.log('User role type:', typeof role)
-                console.log('User object keys:', Object.keys(user || {}))
-                console.log('User state:', user?.state)
-                console.log('User agency:', user?.agency)
-                console.log('Application status:', application?.status)
-                console.log('Can perform action:', canPerformAction)
-                console.log('================================')
-
-                const debugInfo = `
-🔍 DEBUG USER ROLE INFORMATION:
-
-👤 Current User: ${JSON.stringify(user, null, 2)}
-
-🎭 Current Role: ${role} (${typeof role})
-
-📍 User State: ${user?.state || 'Not set'}
-🏢 User Agency: ${user?.agency || 'Not set'}
-
-📋 Application Status: ${application?.status || 'Not loaded'}
-
-✅ Can Perform Action: ${canPerformAction}
-
-🔧 Role Checks:
-- Role === "MINISTRY": ${role === "MINISTRY"}
-- Role === "AGENCY": ${role === "AGENCY"}
-- Role === "ADMIN": ${role === "ADMIN"}
-- Role === "MISSION_OPERATOR": ${role === "MISSION_OPERATOR"}
-
-📱 User Object Structure:
-${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`).join('\n')}
-                `.trim()
-
-                alert(debugInfo)
-              }}
-            >
-              Debug Role
-            </Button> */}
+              
               </div>
             </div>
           </div>
@@ -952,23 +803,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
 
               {application.reviewedBy && (
                 <Section title="Security & Verification" className="h-full">
-                  {/* <GridItem
-                    label="FIA Blacklist Status"
-                    value={
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-2 h-2 rounded-full ${
-                            application.isFiaBlacklist
-                              ? "bg-red-500"
-                              : "bg-green-500"
-                          }`}
-                        ></div>
-                        <span>
-                          {application.isFiaBlacklist ? "Blacklisted" : "Clear"}
-                        </span>
-                      </div>
-                    }
-                  /> */}
+                
                   {application.blacklistCheckPassed !== undefined && (
                     <GridItem
                       label="Blacklist Check"
@@ -1053,58 +888,6 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
           </CardContent>
         </Card>
 
-        {/* <Card>
-        <CardHeader>
-          <CardTitle>Attachments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {application.attachments && application.attachments.length > 0 ? (
-              <ul className="list-disc pl-5 space-y-2">
-                {application.attachments.map((att) => (
-                  <li key={att.id} className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{att.fileName}</div>
-                      <div className="text-sm text-gray-500">{att.fileType}</div>
-                    </div>
-                    <a
-                      href={att.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      View
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-gray-500">No attachments uploaded</div>
-            )}
-
-            {(role === "AGENCY" || role === "ADMIN") && (
-              <div>
-                <Label htmlFor="file">Upload attachment</Label>
-                <div className="mt-2 flex items-center gap-3">
-                  <input
-                    id="file"
-                    type="file"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleUploadAttachment(file)
-                    }}
-                    disabled={isActionLoading}
-                  />
-                  <Button type="button" variant="secondary" disabled>
-                    <Upload className="mr-2 h-4 w-4" /> Select File
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card> */}
-
         {/* Verification Document - For Agency Users */}
         {role === "AGENCY" && application.status === "PENDING_VERIFICATION" && (
           <Card className="rounded-3xl">
@@ -1118,8 +901,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
                   <div className="flex items-center gap-3">
                     <FileText className="h-8 w-8 text-blue-600" />
                     <div>
-                      {/* <h4 className="font-medium text-blue-900">Ministry Verification Document</h4> */}
-                      {/* <p className="text-sm text-blue-700">Official document issued by the Ministry</p> */}
+                  
                       <div className="bg-white border-l-4 border-blue-400 p-3 rounded-r-lg mt-2">
                         <div className="flex items-start gap-2">
                           {/* <div className="w-2 h-2 rounded-full bg-blue-400 mt-2 flex-shrink-0"></div> */}
@@ -1397,12 +1179,7 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
-                {/* Debug info */}
-                {/* <div className="w-full text-xs text-gray-500 mb-2">
-                  Debug: Role={role}, Status={application?.status}, CanPerformAction={canPerformAction}
-                </div> */}
-
-                {/* Agency Actions for Verification */}
+        
                 {role === "AGENCY" &&
                   application.status === "PENDING_VERIFICATION" && (
                     <Button
@@ -1527,14 +1304,6 @@ ${Object.keys(user || {}).map(key => `- ${key}: ${typeof (user as any)?.[key]}`)
         isLoading={isActionLoading}
         applicationId={application?.id}
       />
-
-      {/* <MinistryReviewModal
-        isOpen={showMinistryReviewModal}
-        onClose={() => setShowMinistryReviewModal(false)}
-        onApprove={handleMinistryReviewApprove}
-        onReject={handleMinistryReviewReject}
-        isLoading={isActionLoading}
-      /> */}
 
       <DraftReviewModal
         isOpen={showDraftReviewModal}

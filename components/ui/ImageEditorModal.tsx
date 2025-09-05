@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { processImage, validateImageFile, getImageDimensions } from "@/lib/utils/image-processing";
+import { validateImageFile, getImageDimensions } from "@/lib/utils/image-processing";
 import { showNotification } from "@/lib/utils/notifications";
-import { X, RotateCw, Download, Check, Move } from "lucide-react";
+import { X, Check, Move } from "lucide-react";
 
 interface ImageEditorModalProps {
   isOpen: boolean;
@@ -39,7 +39,6 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
   const [imageDisplaySize, setImageDisplaySize] = useState({ width: 0, height: 0 });
   
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -192,11 +191,11 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
     setIsProcessing(true);
     try {
       // Create a canvas to crop the image
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
       
       if (!ctx) {
-        throw new Error('Failed to get canvas context');
+        throw new Error("Failed to get canvas context");
       }
 
       const img = imageRef.current;
@@ -215,7 +214,7 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
       canvas.height = TARGET_HEIGHT;
 
       // Fill with white background first
-      ctx.fillStyle = '#FFFFFF';
+      ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
 
       // Draw the cropped portion to fill the entire canvas
@@ -227,10 +226,10 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
 
       // Convert to base64 with compression
       let quality = 0.8;
-      let base64 = canvas.toDataURL('image/jpeg', quality);
+      let base64 = canvas.toDataURL("image/jpeg", quality);
       
       // Remove data URL prefix to get pure base64
-      const base64Data = base64.split(',')[1];
+      const base64Data = base64.split(",")[1];
       
       // Calculate size in KB
       const sizeKB = Math.ceil((base64Data.length * 3) / 4) / 1024;
@@ -238,8 +237,8 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
       // If still too large, compress further
       if (sizeKB > MAX_SIZE_KB && quality > 0.1) {
         quality -= 0.1;
-        base64 = canvas.toDataURL('image/jpeg', quality);
-        const newBase64Data = base64.split(',')[1];
+        base64 = canvas.toDataURL("image/jpeg", quality);
+        const newBase64Data = base64.split(",")[1];
         const newSizeKB = Math.ceil((newBase64Data.length * 3) / 4) / 1024;
         
         setProcessedImage({

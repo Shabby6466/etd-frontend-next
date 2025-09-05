@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Application, QcFailure } from "@/lib/types"
+import { Application } from "@/lib/types"
 import { applicationAPI } from "@/lib/api/applications"
 import { showNotification } from "@/lib/utils/notifications"
 

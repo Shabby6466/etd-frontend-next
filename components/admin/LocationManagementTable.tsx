@@ -6,11 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { locationsAPI, Location } from "@/lib/api/locations"
 import { showNotification } from "@/lib/utils/notifications"
-import { formatDate } from "@/lib/utils/formatting"
-import { Search, Filter, ChevronLeft, ChevronRight, Plus, Edit, Trash2, RefreshCw } from "lucide-react"
+import { Search, Filter, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
 
 interface LocationFilters {
   page: number

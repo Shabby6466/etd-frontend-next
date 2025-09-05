@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { CheckCircle, XCircle, AlertTriangle, X } from "lucide-react"
+import { CheckCircle, XCircle, X } from "lucide-react"
 import { applicationAPI } from "@/lib/api/applications"
 
 interface DraftReviewModalProps {

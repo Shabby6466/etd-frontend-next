@@ -3,13 +3,11 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { sheetsAPI, Sheet, SheetStats, SheetFilters } from "@/lib/api/sheets"
 import { userAPI } from "@/lib/api/users"
-import { locationsAPI } from "@/lib/api/locations"
 import { showNotification } from "@/lib/utils/notifications"
 import { formatDate } from "@/lib/utils/formatting"
 import LocationSelector from "@/components/ui/location-selector"
@@ -171,7 +169,7 @@ export default function SheetManagementPage() {
       setSheets(sheetsArray)
       setPagination(paginationData)
       setStats(statsData)
-      setUsers(usersData.filter((user: any) => user.role === 'MISSION_OPERATOR'))
+      setUsers(usersData.data.filter((user: any) => user.role === 'MISSION_OPERATOR'))
     } catch (error) {
       console.error('Error fetching data:', error)
       showNotification.error("Failed to fetch data")

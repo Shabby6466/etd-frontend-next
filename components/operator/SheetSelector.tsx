@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +11,7 @@ interface SheetSelectorProps {
   onSheetSelect: (sheetNumber: string) => void
   selectedSheet?: string
   disabled?: boolean
-  compact?: boolean // New prop for compact mode
+  compact?: boolean
 }
 
 export default function SheetSelector({ onSheetSelect, selectedSheet, disabled, compact = false }: SheetSelectorProps) {

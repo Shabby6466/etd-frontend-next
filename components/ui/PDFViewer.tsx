@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Download, Eye, X, FileText } from "lucide-react"
+import { Download, X, FileText } from "lucide-react"
 import { applicationAPI } from "@/lib/api/applications"
 
 interface PDFViewerProps {
@@ -18,7 +18,7 @@ interface PDFViewerProps {
 export function PDFViewer({ url, fileName, isOpen, onClose, applicationId, agency }: PDFViewerProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState<string>('')
+  const [pdfUrl, setPdfUrl] = useState<string>("")
 
   useEffect(() => {
     if (isOpen && applicationId && agency) {
@@ -26,7 +26,10 @@ export function PDFViewer({ url, fileName, isOpen, onClose, applicationId, agenc
       setError(false)
       
       // Create authenticated URL for viewing
-      const viewUrl = applicationAPI.getVerificationAttachmentUrl(applicationId, agency)
+      const viewUrl = applicationAPI.getVerificationAttachmentUrl(
+        applicationId,
+        agency
+      );
       setPdfUrl(viewUrl)
       setIsLoading(false)
     } else if (isOpen && url) {
@@ -44,40 +47,43 @@ export function PDFViewer({ url, fileName, isOpen, onClose, applicationId, agenc
     try {
       if (applicationId && agency) {
         // Use the API download endpoint
-        const blob = await applicationAPI.downloadVerificationAttachment(applicationId, agency)
+        const blob = await applicationAPI.downloadVerificationAttachment(
+          applicationId,
+          agency
+        );
         const downloadUrl = URL.createObjectURL(blob)
         
-        const link = document.createElement('a')
+        const link = document.createElement("a")
         link.href = downloadUrl
-        link.download = fileName || 'document.pdf'
+        link.download = fileName || "document.pdf"
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
         
         // Clean up the blob URL
-        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
       } else {
         // Fallback to direct URL download
-        const link = document.createElement('a')
+        const link = document.createElement("a")
         link.href = url
-        link.download = fileName || 'document.pdf'
-        link.target = '_blank'
+          link.download = fileName || "document.pdf"
+        link.target = "_blank"
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
       }
     } catch (error) {
-      console.error('Download failed:', error)
+      console.error("Download failed:", error)
     }
   }
 
   const handleLoad = () => {
-    setIsLoading(false)
+    setIsLoading(false);
     setError(false)
   }
 
   const handleError = () => {
-    setIsLoading(false)
+    setIsLoading(false);
     setError(true)
   }
 

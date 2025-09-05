@@ -12,7 +12,6 @@ import { showNotification } from "@/lib/utils/notifications"
 import { User } from "@/lib/types"
 import { userAPI } from "@/lib/api/users"
 import { locationsAPI } from "@/lib/api/locations"
-import LocationSelector from "@/components/ui/location-selector"
 
 
 const editUserSchema = z.object({

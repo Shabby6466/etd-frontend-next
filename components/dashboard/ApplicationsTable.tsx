@@ -187,15 +187,7 @@ export function ApplicationsTable({
             <CardTitle>Applications</CardTitle>
             
             <div className="flex items-center gap-4">
-              {/* <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search applications..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64 rounded-xl"
-                />
-              </div> */}
+            
               <Button 
                 onClick={onRefresh} 
                 variant="outline" 
@@ -390,14 +382,7 @@ export function ApplicationsTable({
                           {/* <MoreHorizontal className="h-4 w-4" /> */}
                           View Details
                         </Button>
-                         {/* {canPerformQC(application) && (
-                          <Button
-                            onClick={() => handleQcClick(application)}
-                          >
-                            <Shield className="mr-2 h-4 w-4" />
-                            Quality Control
-                          </Button>
-                        )} */}
+                      
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         
@@ -408,61 +393,7 @@ export function ApplicationsTable({
                         >
                           
                         </DropdownMenuItem>
-                        
-                        {/* Mission Operator Actions */}
-                        {/* {userRole === 'MISSION_OPERATOR' && canPrint(application) && (
-                          <DropdownMenuItem
-                            onClick={() => onPrint?.(application.id)}
-                          >
-                            <Printer className="mr-2 h-4 w-4" />
-                            Print Document
-                          </DropdownMenuItem>
-                        )} */}
-
-                        {/* QC Actions - Available when status is READY_FOR_QC */}
-                       
-
-                        {/* Agency Actions - Verification Workflow */}
-                        {/* {userRole === 'AGENCY' && application.status === 'PENDING_VERIFICATION' && (
-                          <DropdownMenuItem
-                            onClick={() => {
-                              const remarks = prompt('Enter verification remarks:')
-                              if (remarks) onSubmitVerification?.(application.id, remarks)
-                            }}
-                          >
-                            <Upload className="mr-2 h-4 w-4" />
-                            Submit Verification
-                          </DropdownMenuItem>
-                        )} */}
-
-                        {/* Legacy Agency Actions (for backward compatibility) */}
-                        {/* {userRole === 'AGENCY' && ['SUBMITTED', 'AGENCY_REVIEW'].includes(application.status) && (
-                          <>
-                            <DropdownMenuItem
-                              onClick={() => onUploadAttachment?.(application.id)}
-                            >
-                              <Upload className="mr-2 h-4 w-4" />
-                              Upload Attachment
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => onApprove?.(application.id)}
-                            >
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Approve & Send to Ministry
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                const remarks = prompt('Enter rejection remarks:')
-                                if (remarks) onReject?.(application.id, remarks)
-                              }}
-                            >
-                              <XCircle className="mr-2 h-4 w-4" />
-                              Reject with Remarks
-                            </DropdownMenuItem>
-                          </>
-                        )} */}
-
-                        {/* Ministry Actions */}
+                      
                        
                       </DropdownMenuContent>
                     </DropdownMenu>
