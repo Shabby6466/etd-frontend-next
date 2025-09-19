@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AuthGuard } from "@/lib/auth/auth-guard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, Send, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react"
@@ -122,7 +123,8 @@ export default function AgencyDashboard() {
     }
 
   return (
-    <div className="min-h-screen bg-background p-4 dashboardBackgroundColor ">
+    <AuthGuard roles={['AGENCY']}>
+      <div className="min-h-screen bg-background p-4 dashboardBackgroundColor ">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -161,5 +163,6 @@ export default function AgencyDashboard() {
         </Card>
       </div>
     </div>
+    </AuthGuard>
   )
 }

@@ -51,27 +51,27 @@ export function LoginForm() {
           switch (user.role) {
             case "ADMIN":
               console.log('Redirecting to admin dashboard')
-              router.push("/admin")
+              router.replace("/admin")
               break
             case "AGENCY":
               console.log('Redirecting to agency dashboard')
-              router.push("/agency")
+              router.replace("/agency")
               break
             case "MINISTRY":
               console.log('Redirecting to ministry dashboard')
-              router.push("/ministry")
+              router.replace("/ministry")
               break
             case "MISSION_OPERATOR":
               console.log('Redirecting to mission dashboard')
-              router.push("/mission")
+              router.replace("/mission")
               break
             default:
               console.log('Unknown role, redirecting to admin')
-              router.push("/admin")
+              router.replace("/admin")
           }
         } else {
           console.log('No user found, redirecting to home')
-          router.push("/")
+          router.replace("/")
         }
       } else {
         console.error('Login failed:', result.error)
