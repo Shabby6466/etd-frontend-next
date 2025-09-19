@@ -195,6 +195,12 @@ export const useAuthStore = create<AuthState>()(
               rehydratedState ? "exists" : "null"
             );
 
+            // Use setTimeout to avoid calling during initialization
+            setTimeout(() => {
+              // Always set isLoading to false first to prevent loading screen
+              useAuthStore.setState({ isLoading: false });
+            }, 0);
+
             // If we got a proper state with a token, use it
             if (rehydratedState?.token) {
               const { token, tokenExpiry, user } = rehydratedState;
@@ -207,7 +213,16 @@ export const useAuthStore = create<AuthState>()(
               if (tokenExpiry && Date.now() > tokenExpiry) {
                 console.log("Auth rehydration - token expired, clearing state");
                 cookieUtils.remove("auth-token");
-                useAuthStore.getState().logout();
+                // Clear state using setTimeout to avoid circular dependency
+                setTimeout(() => {
+                  useAuthStore.setState({
+                    user: null,
+                    token: null,
+                    tokenExpiry: null,
+                    isAuthenticated: false,
+                    isLoading: false,
+                  });
+                }, 0);
               } else {
                 // Valid token in state, initialize with it
                 console.log("Auth rehydration - valid token from state");
@@ -217,13 +232,16 @@ export const useAuthStore = create<AuthState>()(
                   expires: tokenExpiry ? new Date(tokenExpiry) : undefined,
                 });
 
-                // Set initial state
-                const store = useAuthStore.getState();
-                store.setUser(user as User);
-                store.setToken(token, tokenExpiry || undefined);
-
-                // Set isLoading to false
-                useAuthStore.setState({ isLoading: false });
+                // Set initial state using setTimeout to avoid circular dependency
+                setTimeout(() => {
+                  useAuthStore.setState({
+                    user: user as User,
+                    token,
+                    tokenExpiry: tokenExpiry || null,
+                    isAuthenticated: true,
+                    isLoading: false
+                  });
+                }, 0);
               }
               return;
             }
@@ -239,17 +257,34 @@ export const useAuthStore = create<AuthState>()(
               // Set expiry to 24h from now
               const expiry = Date.now() + 24 * 60 * 60 * 1000;
 
-              // Initialize with token from cookie
-              const store = useAuthStore.getState();
-              store.setToken(cookieToken, expiry);
-
-              // Set isLoading to false
-              useAuthStore.setState({ isLoading: false });
+              // Initialize with token from cookie using setTimeout
+              setTimeout(() => {
+                useAuthStore.setState({
+                  token: cookieToken,
+                  tokenExpiry: expiry,
+                  isAuthenticated: true,
+                  isLoading: false
+                });
+              }, 0);
             } else {
               console.log(
                 "Auth rehydration - no token found anywhere, clearing state"
               );
-              // No token found anywhere, clear state
+              // No token found anywhere, clear state using setTimeout
+              setTimeout(() => {
+                useAuthStore.setState({
+                  isLoading: false,
+                  isAuthenticated: false,
+                  user: null,
+                  token: null,
+                  tokenExpiry: null,
+                });
+              }, 0);
+            }
+          } catch (error) {
+            console.error("Error during auth rehydration:", error);
+            // Ensure we don't get stuck in loading state if there's an error
+            setTimeout(() => {
               useAuthStore.setState({
                 isLoading: false,
                 isAuthenticated: false,
@@ -257,17 +292,7 @@ export const useAuthStore = create<AuthState>()(
                 token: null,
                 tokenExpiry: null,
               });
-            }
-          } catch (error) {
-            console.error("Error during auth rehydration:", error);
-            // Ensure we don't get stuck in loading state if there's an error
-            useAuthStore.setState({
-              isLoading: false,
-              isAuthenticated: false,
-              user: null,
-              token: null,
-              tokenExpiry: null,
-            });
+            }, 0);
           }
         };
       },
@@ -282,10 +307,21 @@ function setAutoLogout(expiry: number | null) {
   if (!expiry) return;
   const ms = expiry - Date.now();
   if (ms <= 0) {
-    useAuthStore.getState().logout();
+    // Use setTimeout to avoid calling during initialization
+    setTimeout(() => {
+      try {
+        useAuthStore.getState().logout();
+      } catch (error) {
+        console.error("Error during auto logout:", error);
+      }
+    }, 0);
     return;
   }
   logoutTimer = setTimeout(() => {
-    useAuthStore.getState().logout();
+    try {
+      useAuthStore.getState().logout();
+    } catch (error) {
+      console.error("Error during auto logout:", error);
+    }
   }, ms);
 }

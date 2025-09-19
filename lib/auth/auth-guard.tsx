@@ -16,12 +16,12 @@ export function AuthGuard({ children, roles, redirect = '/login' }: AuthGuardPro
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push(redirect)
+      router.replace(redirect)
       return
     }
 
     if (roles && user && !roles.includes(user.role)) {
-      router.push('/unauthorized')
+      router.replace('/not-found')
       return
     }
   }, [isAuthenticated, user, roles, redirect, router])

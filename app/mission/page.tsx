@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AuthGuard } from "@/lib/auth/auth-guard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, Plus, Printer, Clock, CheckCircle, Search, ChevronDown } from "lucide-react"
@@ -130,7 +131,8 @@ export default function MissionOperatorDashboard() {
   }, [user])
 
   return (
-    <div className="min-h-screen bg-background dashboardBackgroundColor  p-4">
+    <AuthGuard roles={['MISSION_OPERATOR']}>
+      <div className="min-h-screen bg-background dashboardBackgroundColor  p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -273,5 +275,6 @@ export default function MissionOperatorDashboard() {
         </Card>
       </div>
     </div>
+    </AuthGuard>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { AuthGuard } from "@/lib/auth/auth-guard"
 import { Button } from "@/components/ui/button"
 import { ApplicationsTable } from "@/components/dashboard/ApplicationsTable"
 import { UserManagementTable } from "@/components/admin/UserManagementTable" 
@@ -91,17 +92,20 @@ export default function AdminDashboard() {
     fetchStats()
   }, [])
 
-  // Debounced search effect
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchApplications(1, pagination.itemsPerPage)
-    }, 500) // 500ms delay
+  // // Debounced search effect
+  // useEffect(() => {
+  //   const timeoutId = setTimeout(() => {
+  //     fetchApplications(1, pagination.itemsPerPage)
+  //   }, 500) // 500ms delay
 
-    return () => clearTimeout(timeoutId)
-  }, [filters.search, filters.submittedBy, filters.region])
+  //   return () => clearTimeout(timeoutId)
+  // }, [filters.search, filters.submittedBy, filters.region])
+  
+  // TODO: CHECK THIS IF FETCHING APPLICATIONS AND STATS ARE NOTWORKING
 
   return (
-    <div className="min-h-screen bg-background p-4 dashboardBackgroundColor">
+    <AuthGuard roles={['ADMIN']}>
+      <div className="min-h-screen bg-background p-4 dashboardBackgroundColor">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -250,5 +254,6 @@ export default function AdminDashboard() {
          )}
       </div>
     </div>
+    </AuthGuard>
   )
 }

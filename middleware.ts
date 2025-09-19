@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!hasAccess(user.role, pathname)) {
-    return NextResponse.redirect(new URL("/unauthorized", request.url))
+    return NextResponse.redirect(new URL("/not-found", request.url))
   }
 
   return NextResponse.next()
