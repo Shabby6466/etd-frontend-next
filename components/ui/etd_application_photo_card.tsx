@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils" // optional; remove if you don't use cn()
+import BiometricCaptureModal from "@/components/ui/BiometricCaptureModal"
+import { useAuthStore } from "@/lib/stores/auth-store"
 
 type Props = {
   title?: string
@@ -36,6 +38,8 @@ export default function ETDApplicationPhotoCard({
   const [citizen, setCitizen] = useState(initialCitizenNumber)
   const [photoB64, setPhotoB64] = useState<string | null>(initialImageBase64)
   const [loading, setLoading] = useState(false)
+  const [showBiometricModal, setShowBiometricModal] = useState(false)
+  const { user } = useAuthStore()
 
   const openPicker = () => fileRef.current?.click()
 
@@ -44,7 +48,7 @@ export default function ETDApplicationPhotoCard({
       const reader = new FileReader()
       reader.onload = () => {
         const res = (reader.result as string) || ""
-        resolve(res.split(",")[1] ?? "") // strip data: prefix
+        resolve(res.split(",")[1] ?? "")
       }
       reader.onerror = reject
       reader.readAsDataURL(file)
@@ -78,18 +82,39 @@ export default function ETDApplicationPhotoCard({
 
   const handleGetData = () => {
     console.log("ETDApplicationPhotoCard handleGetData called with citizen:", citizen)
-    // Validate citizen ID format (13 digits)
     if (!/^\d{13}$/.test(citizen)) {
       alert("Please enter a valid 13-digit citizen ID")
       return
     }
-    console.log("Calling onNavigate with citizen:", citizen, "and image:", photoB64 ? "has image" : "no image")
-    
-    // Call navigation callback immediately with current data
+    setShowBiometricModal(true)
+  }
+
+  const proceedWithGetData = () => {
+    console.log("Proceeding with get data - citizen:", citizen, "image:", photoB64 ? "has image" : "no image")
+  
     onNavigate?.(citizen, photoB64)
-    
-    // Also call the original onGetData for backward compatibility
     onGetData?.(citizen)
+  }
+
+  const handleBiometricCaptured = (captureData: {
+    imageBase64: string
+    templateBase64?: string
+    imageDpi?: number
+    imageQuality?: number
+    wsqBase64?: string
+    wsqSize?: number
+    deviceModel?: string
+    serial?: string
+  }) => {
+    console.log("Biometric captured successfully, proceeding with get data")
+    setShowBiometricModal(false)
+    proceedWithGetData()
+  }
+
+  const handleBiometricClose = () => {
+    console.log("Biometric capture closed, proceeding with get data")
+    setShowBiometricModal(false)
+    proceedWithGetData()
   }
 
   return (
@@ -172,6 +197,13 @@ export default function ETDApplicationPhotoCard({
           </Button>
         </div>
       </CardContent>
+      
+      {/* Biometric Capture Modal */}
+      <BiometricCaptureModal
+        isOpen={showBiometricModal}
+        onClose={handleBiometricClose}
+        onCaptured={handleBiometricCaptured}
+      />
     </Card>
   );
 }
