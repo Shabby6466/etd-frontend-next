@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils" // optional; remove if you don't use cn()
-import BiometricCaptureModal from "@/components/ui/BiometricCaptureModal"
 import { useAuthStore } from "@/lib/stores/auth-store"
 
 type Props = {
@@ -38,7 +37,6 @@ export default function ETDApplicationPhotoCard({
   const [citizen, setCitizen] = useState(initialCitizenNumber)
   const [photoB64, setPhotoB64] = useState<string | null>(initialImageBase64)
   const [loading, setLoading] = useState(false)
-  const [showBiometricModal, setShowBiometricModal] = useState(false)
   const { user } = useAuthStore()
 
   const openPicker = () => fileRef.current?.click()
@@ -86,35 +84,10 @@ export default function ETDApplicationPhotoCard({
       alert("Please enter a valid 13-digit citizen ID")
       return
     }
-    setShowBiometricModal(true)
-  }
-
-  const proceedWithGetData = () => {
+    
     console.log("Proceeding with get data - citizen:", citizen, "image:", photoB64 ? "has image" : "no image")
-  
     onNavigate?.(citizen, photoB64)
     onGetData?.(citizen)
-  }
-
-  const handleBiometricCaptured = (captureData: {
-    imageBase64: string
-    templateBase64?: string
-    imageDpi?: number
-    imageQuality?: number
-    wsqBase64?: string
-    wsqSize?: number
-    deviceModel?: string
-    serial?: string
-  }) => {
-    console.log("Biometric captured successfully, proceeding with get data")
-    setShowBiometricModal(false)
-    proceedWithGetData()
-  }
-
-  const handleBiometricClose = () => {
-    console.log("Biometric capture closed, proceeding with get data")
-    setShowBiometricModal(false)
-    proceedWithGetData()
   }
 
   return (
@@ -155,13 +128,6 @@ export default function ETDApplicationPhotoCard({
           </Button>
         </div>
       </CardContent>
-      
-      {/* Biometric Capture Modal */}
-      <BiometricCaptureModal
-        isOpen={showBiometricModal}
-        onClose={handleBiometricClose}
-        onCaptured={handleBiometricCaptured}
-      />
     </Card>
   );
 }
