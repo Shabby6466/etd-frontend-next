@@ -124,48 +124,6 @@ export default function ETDApplicationPhotoCard({
       </CardHeader>
 
       <CardContent className="pt-6">
-        {/* Photo */}
-        {/* <div className="flex w-full justify-center">
-          <div
-            className="rounded-md border bg-white"
-            style={{ width: imgWidth, height: imgHeight }}
-          >
-            <Image
-              src={imgSrc}
-              alt="Applicant Photo"
-              width={imgWidth}
-              height={imgHeight}
-              className="h-full w-full object-cover select-none pointer-events-none"
-              draggable={false}
-            />
-          </div>
-        </div> */}
-
-        {/* Actions */}
-        {/* <div className="mt-4 flex w-full justify-center gap-2">
-          <Button type="button" onClick={openPicker} disabled={loading}>
-            <UploadCloud className="mr-2 h-4 w-4" />
-            {loading ? "Uploading..." : "Upload New"}
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={clearImage}
-            disabled={loading || !photoB64}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </Button>
-          <input
-            ref={fileRef}
-            className="hidden"
-            type="file"
-            accept="image/*"
-            onChange={(e) => handleFile(e.target.files)}
-          />
-        </div> */}
-
-        {/* Citizen Number */}
         <div className="mt-6">
           <Label htmlFor="citizen-number" className="text-sm">
             Citizen Number

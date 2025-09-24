@@ -36,10 +36,14 @@ The XML draft files in `C:\Users\Office\AppData\Local\xml_draft` should contain 
 
 ## Biometric Data Fields
 ```xml
-<fingerprint>base64_encoded_fingerprint_image</fingerprint>
-<fingerprint_template>base64_encoded_fingerprint_template</fingerprint_template>
-<biometric_image>base64_encoded_biometric_image</biometric_image>
+<biometric_data>
+    <image_base64>base64_encoded_citizen_photo</image_base64>
+    <fingerprint>base64_encoded_fingerprint_image</fingerprint>
+    <template>base64_encoded_fingerprint_template</template>
+</biometric_data>
 ```
+
+**Note**: The main citizen photo should be placed in `<biometric_data><image_base64>` for proper extraction.
 
 ## Example Complete XML Structure
 ```xml
@@ -69,9 +73,11 @@ The XML draft files in `C:\Users\Office\AppData\Local\xml_draft` should contain 
     <currency>USD</currency>
     <investor>Gov of Pakistan</investor>
     <security_deposit>Security deposit description</security_deposit>
-    <fingerprint>base64_encoded_fingerprint_data</fingerprint>
-    <fingerprint_template>base64_encoded_template_data</fingerprint_template>
-    <biometric_image>base64_encoded_biometric_image</biometric_image>
+    <biometric_data>
+        <image_base64>base64_encoded_citizen_photo</image_base64>
+        <fingerprint>base64_encoded_fingerprint_data</fingerprint>
+        <template>base64_encoded_template_data</template>
+    </biometric_data>
 </application>
 ```
 

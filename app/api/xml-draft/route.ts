@@ -74,12 +74,40 @@ export async function POST(request: NextRequest) {
         return match ? match[1].trim() : '';
       };
 
+      // Extract biometric data separately
+      const biometricDataMatch = xmlContent.match(/<biometric_data[^>]*>([\s\S]*?)<\/biometric_data>/i);
+      let biometricImageBase64 = '';
+      let biometricFingerprint = '';
+      let biometricTemplate = '';
+      
+      if (biometricDataMatch) {
+        const biometricContent = biometricDataMatch[1];
+        
+        // Extract image from biometric_data
+        const imageMatch = biometricContent.match(/<image_base64[^>]*>([^<]+)<\/image_base64>/i);
+        if (imageMatch) {
+          biometricImageBase64 = imageMatch[1].trim();
+        }
+        
+        // Extract fingerprint from biometric_data
+        const fingerprintMatch = biometricContent.match(/<fingerprint[^>]*>([^<]+)<\/fingerprint>/i);
+        if (fingerprintMatch) {
+          biometricFingerprint = fingerprintMatch[1].trim();
+        }
+        
+        // Extract template from biometric_data
+        const templateMatch = biometricContent.match(/<template[^>]*>([^<]+)<\/template>/i);
+        if (templateMatch) {
+          biometricTemplate = templateMatch[1].trim();
+        }
+      }
+
       const extractedData = {
         // Required fields
         citizenId: extractField('citizen_id'),
         firstName: extractField('first_name'),
         lastName: extractField('last_name'),
-        imageBase64: extractField('image'),
+        imageBase64: biometricImageBase64 || extractField('image'), // Use biometric image first, fallback to regular image
         fatherName: extractField('father_name'),
         motherName: extractField('mother_name'),
         gender: extractField('gender'),
@@ -103,14 +131,22 @@ export async function POST(request: NextRequest) {
         investor: extractOptionalField('investor'),
         securityDeposit: extractOptionalField('security_deposit'),
         
-        // Biometric data
-        fingerprint: extractOptionalField('fingerprint'),
-        fingerprintTemplate: extractOptionalField('fingerprint_template'),
-        biometricImage: extractOptionalField('biometric_image'),
+        // Biometric data (prioritize biometric_data section)
+        fingerprint: biometricFingerprint || extractOptionalField('fingerprint'),
+        fingerprintTemplate: biometricTemplate || extractOptionalField('fingerprint_template'),
+        biometricImage: biometricImageBase64 || extractOptionalField('biometric_image'),
         
         // Additional data
         xmlContent: xmlContent
       };
+
+      console.log("XML parsing result:", {
+        hasImage: !!extractedData.imageBase64,
+        imageLength: extractedData.imageBase64?.length || 0,
+        citizenId: extractedData.citizenId,
+        biometricImageFound: !!biometricImageBase64,
+        biometricFingerprintFound: !!biometricFingerprint
+      });
 
       return NextResponse.json({
         success: true,

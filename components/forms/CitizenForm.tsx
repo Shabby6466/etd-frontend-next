@@ -822,20 +822,15 @@ export function CitizenForm() {
                   <DGIPHeaderWithWatermarks/>
 
           {/* XML Draft Files Info */}
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mb-6 p-4 bg-white-50 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <FolderOpen className="h-5 w-5 text-blue-600" />
+                <FolderOpen className="h-5 w-5 text-white-600" />
                 <div>
                   <h3 className="font-semibold text-blue-900">XML Draft Files</h3>
-                  <p className="text-sm text-blue-700">
-                    {isXmlLoading ? "Loading..." : `${fileCount} files found in xml_draft folder`}
+                  <p className="text-sm text-black-700">
+                    {isXmlLoading ? "Loading..." : `${fileCount} files in Draft`}
                   </p>
-                  {biometricData && (
-                    <p className="text-xs text-green-600 mt-1">
-                      ✓ Biometric data available from last loaded file
-                    </p>
-                  )}
                   {xmlError && (
                     <p className="text-sm text-red-600 mt-1">{xmlError}</p>
                   )}
@@ -848,7 +843,6 @@ export function CitizenForm() {
                   size="sm"
                   onClick={refreshFileList}
                   disabled={isXmlLoading}
-                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
                 >
                   <FileText className="h-4 w-4 mr-1" />
                   Refresh
@@ -859,7 +853,6 @@ export function CitizenForm() {
                   size="sm"
                   onClick={handleResetXmlFiles}
                   disabled={isXmlLoading}
-                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
                 >
                   Reset
                 </Button>
@@ -867,7 +860,6 @@ export function CitizenForm() {
                   type="button"
                   onClick={handleLoadXmlFile}
                   disabled={isXmlLoading || fileCount === 0 || currentXmlFileIndex >= files.length}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Load Next File ({currentXmlFileIndex + 1}/{files.length})
                 </Button>
@@ -884,7 +876,6 @@ export function CitizenForm() {
             }}
             onImageChange={(base64) => {
               console.log("Image changed:", base64 ? "has image" : "no image");
-              // Handle image change from photo card
               if (base64) {
                 setImageBase64(base64);
                 form.setValue("image", base64);
@@ -897,7 +888,6 @@ export function CitizenForm() {
           />
         </div>
         ) : (
-          // Show full form after "Get Data" is pressed
           <div >             <DGIPHeaderWithWatermarks/>
           <Card>
             <CardHeader>
@@ -1038,12 +1028,6 @@ export function CitizenForm() {
                       <p className="text-sm text-gray-600">
                         No image available from passport API. Please upload a
                         photo manually.
-                      </p>
-                    )}
-
-                    {imageBase64 && (
-                      <p className="text-sm text-green-600">
-                        ✓ Image ready for submission (540×420 pixels, ≤18KB)
                       </p>
                     )}
 
