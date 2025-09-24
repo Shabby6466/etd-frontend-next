@@ -68,7 +68,7 @@ export function LoginForm() {
               router.replace("/agency")
               break
             case "MINISTRY":
-              console.log('Redirecting to ministry dashboard')
+              console.log('Redirecting to control center dashboard')
               router.replace("/ministry")
               break
             case "MISSION_OPERATOR":

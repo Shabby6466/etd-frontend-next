@@ -49,7 +49,7 @@ export function CitizenForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { user } = useAuthStore();
-  const { fileCount, files, isLoading: isXmlLoading, error: xmlError, loadFile, refreshFileList } = useXmlDraft();
+  const { fileCount, files, isLoading: isXmlLoading, error: xmlError, currentFileName, loadFile, refreshFileList, moveCurrentFile } = useXmlDraft();
 
   // Function to convert file to base64
   const convertFileToBase64 = (file: File): Promise<string> => {
@@ -758,6 +758,23 @@ export function CitizenForm() {
 
       showNotification.success("Application created successfully");
 
+      // Move the current XML file to xml_submit folder if it was loaded from XML draft
+      if (currentFileName) {
+        try {
+          const moveSuccess = await moveCurrentFile();
+          if (moveSuccess) {
+            console.log(`XML file ${currentFileName} moved to xml_submit folder`);
+            showNotification.success(`XML file ${currentFileName} moved to submitted folder`);
+          } else {
+            console.warn(`Failed to move XML file ${currentFileName}`);
+            showNotification.warning(`Application created but failed to move XML file`);
+          }
+        } catch (error) {
+          console.error("Error moving XML file:", error);
+          showNotification.warning(`Application created but failed to move XML file`);
+        }
+      }
+
       // Navigate based on user role
       console.log("Application created successfully, user role:", user?.role);
       if (user?.role === "MISSION_OPERATOR") {
@@ -831,6 +848,11 @@ export function CitizenForm() {
                   <p className="text-sm text-black-700">
                     {isXmlLoading ? "Loading..." : `${fileCount} files in Draft`}
                   </p>
+                  {currentFileName && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      📄 Currently processing: {currentFileName}
+                    </p>
+                  )}
                   {xmlError && (
                     <p className="text-sm text-red-600 mt-1">{xmlError}</p>
                   )}
@@ -1175,10 +1197,6 @@ export function CitizenForm() {
                       </p>
                     )}
                   </div>
-                  {/* <div>
-                  <Label htmlFor="nationality">Nationality</Label>
-                  <Input id="nationality" {...form.register("nationality")} />
-                </div> */}
                 </div>
 
                 {/* Address & Birth Information */}
@@ -1397,10 +1415,6 @@ export function CitizenForm() {
                     <Label htmlFor="currency">Currency</Label>
                     <Input id="currency" {...form.register("currency")} />
                   </div>
-                  {/* <div>
-                  <Label htmlFor="is_fia_blacklist">FIA Blacklist</Label>
-                  <Input id="is_fia_blacklist" type="checkbox" {...form.register("is_fia_blacklist")} />
-                </div> */}
                 </div>
 
                 {/* Submit Button */}

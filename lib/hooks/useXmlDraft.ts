@@ -43,8 +43,10 @@ interface XmlDraftHook {
   files: string[];
   isLoading: boolean;
   error: string | null;
+  currentFileName: string | null;
   loadFile: (fileName: string) => Promise<XmlDraftData | null>;
   refreshFileList: () => Promise<void>;
+  moveCurrentFile: () => Promise<boolean>;
 }
 
 export function useXmlDraft(): XmlDraftHook {
@@ -52,6 +54,7 @@ export function useXmlDraft(): XmlDraftHook {
   const [files, setFiles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentFileName, setCurrentFileName] = useState<string | null>(null);
 
   const refreshFileList = async () => {
     setIsLoading(true);
@@ -78,6 +81,7 @@ export function useXmlDraft(): XmlDraftHook {
   const loadFile = async (fileName: string): Promise<XmlDraftData | null> => {
     setIsLoading(true);
     setError(null);
+    setCurrentFileName(fileName); // Track the current file being processed
     
     try {
       const response = await fetch('/api/xml-draft', {
@@ -108,6 +112,46 @@ export function useXmlDraft(): XmlDraftHook {
     }
   };
 
+  const moveCurrentFile = async (): Promise<boolean> => {
+    if (!currentFileName) {
+      setError('No current file to move');
+      return false;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/xml-draft/move', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName: currentFileName
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Refresh the file list to reflect the moved file
+        await refreshFileList();
+        setCurrentFileName(null);
+        return true;
+      } else {
+        setError(data.message || 'Failed to move file');
+        return false;
+      }
+    } catch (err) {
+      setError('Network error while moving file');
+      console.error('Error moving XML file:', err);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Load file list on mount
   useEffect(() => {
     refreshFileList();
@@ -118,7 +162,9 @@ export function useXmlDraft(): XmlDraftHook {
     files,
     isLoading,
     error,
+    currentFileName,
     loadFile,
-    refreshFileList
+    refreshFileList,
+    moveCurrentFile
   };
 }

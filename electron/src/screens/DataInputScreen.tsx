@@ -414,11 +414,6 @@ const DataInputScreen: React.FC<DataInputScreenProps> = ({ user, onLogout, onBac
                   </button>
                 )}
               </div>
-              
-              <p className="text-sm text-gray-600 mt-2 text-center">
-                Upload a clear photo (max 10MB)
-              </p>
-              
               {form.formState.errors.image && (
                 <p className="text-sm text-red-500 mt-1 text-center">
                   {form.formState.errors.image.message}
@@ -508,7 +503,6 @@ const DataInputScreen: React.FC<DataInputScreenProps> = ({ user, onLogout, onBac
               </div>
               
               <div className="text-sm text-gray-600 mt-2 text-center space-y-1">
-                <p>Optional: Capture fingerprint for enhanced security</p>
                 {biometricData && (
                   <div className="text-xs bg-blue-50 p-2 rounded">
                     <p><strong>Capture Details:</strong></p>

@@ -153,7 +153,7 @@ export default function MinistryDashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Ministry Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Control Center Dashboard</h1>
             <p className="text-gray-600">
               Final review and approval of emergency travel documents
             </p>
@@ -236,7 +236,7 @@ export default function MinistryDashboard() {
         {/* Applications Table */}
         <Card className="rounded-3xl">
           <CardHeader>
-            <CardTitle>Applications for Ministry Review</CardTitle>
+            <CardTitle>Applications for Control Center Review</CardTitle>
           </CardHeader>
           <CardContent>
             <ApplicationsTable
