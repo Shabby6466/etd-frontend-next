@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETD Demo - Test Data</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .backgroundColor {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen backgroundColor p-4">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-3xl font-bold text-center mb-6">ETD Application Demo</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Demo Users -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h2 class="text-xl font-semibold mb-4">Demo Users</h2>
+                    <div class="space-y-2">
+                        <div class="bg-white p-3 rounded border">
+                            <strong>Admin:</strong><br>
+                            Email: admin@etd.gov.pk<br>
+                            Password: admin123
+                        </div>
+                        <div class="bg-white p-3 rounded border">
+                            <strong>Operator:</strong><br>
+                            Email: operator@etd.gov.pk<br>
+                            Password: operator123
+                        </div>
+                        <div class="bg-white p-3 rounded border">
+                            <strong>Agency:</strong><br>
+                            Email: agency@etd.gov.pk<br>
+                            Password: agency123
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Test Data -->
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h2 class="text-xl font-semibold mb-4">Sample Citizen Data</h2>
+                    <div class="space-y-2 text-sm">
+                        <div><strong>Citizen ID:</strong> 1234567890123</div>
+                        <div><strong>Name:</strong> Muhammad Ali Khan</div>
+                        <div><strong>Father:</strong> Abdul Rahman Khan</div>
+                        <div><strong>Mother:</strong> Fatima Begum</div>
+                        <div><strong>Gender:</strong> Male</div>
+                        <div><strong>DOB:</strong> 1990-01-15</div>
+                        <div><strong>Profession:</strong> Engineer</div>
+                        <div><strong>City:</strong> Karachi</div>
+                        <div><strong>Address:</strong> Block 6, PECHS, Karachi</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Features -->
+            <div class="mt-6 bg-gray-50 p-4 rounded-lg">
+                <h2 class="text-xl font-semibold mb-4">Application Features</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="font-semibold text-blue-600 mb-2">Core Features</h3>
+                        <ul class="text-sm space-y-1">
+                            <li>• User authentication</li>
+                            <li>• Citizen data collection</li>
+                            <li>• Photo upload with preview</li>
+                            <li>• Form validation</li>
+                            <li>• Responsive design</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-green-600 mb-2">Biometric Features</h3>
+                        <ul class="text-sm space-y-1">
+                            <li>• Fingerprint capture</li>
+                            <li>• WSQ encoding</li>
+                            <li>• Device integration</li>
+                            <li>• Quality assessment</li>
+                            <li>• Template generation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="mt-6 bg-yellow-50 p-4 rounded-lg">
+                <h2 class="text-xl font-semibold mb-4">How to Use</h2>
+                <ol class="list-decimal list-inside space-y-2 text-sm">
+                    <li>Click "Launch Application" to start</li>
+                    <li>Use any of the demo user credentials to login</li>
+                    <li>Fill in the citizen information form</li>
+                    <li>Upload a photo (any image file under 10MB)</li>
+                    <li>Optionally capture fingerprint (requires SecuGen device)</li>
+                    <li>Submit the form to create an application</li>
+                </ol>
+            </div>
+            
+            <!-- Launch Button -->
+            <div class="mt-6 text-center">
+                <a href="index.html" class="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 font-semibold">
+                    Launch Application
+                </a>
+            </div>
+            
+            <!-- Technical Info -->
+            <div class="mt-6 bg-gray-100 p-4 rounded-lg">
+                <h2 class="text-lg font-semibold mb-2">Technical Information</h2>
+                <div class="text-sm text-gray-600">
+                    <p><strong>Framework:</strong> Vanilla JavaScript, HTML5, CSS3</p>
+                    <p><strong>Styling:</strong> Tailwind CSS</p>
+                    <p><strong>Biometric:</strong> SecuGen WebAPI</p>
+                    <p><strong>Storage:</strong> Local browser storage</p>
+                    <p><strong>Compatibility:</strong> Modern browsers (Chrome, Firefox, Safari, Edge)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

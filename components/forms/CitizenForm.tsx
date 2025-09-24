@@ -24,8 +24,9 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { DGIPHeaderWithWatermarks } from "@/components/ui/dgip_header_watermarks";
 import ETDApplicationPhotoCard from "@/components/ui/etd_application_photo_card";
 import { DetailForm } from "@/components/forms/DetailForm";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, FolderOpen, FileText } from "lucide-react";
 import { ImageEditorModal } from "@/components/ui/ImageEditorModal";
+import { useXmlDraft } from "@/lib/hooks/useXmlDraft";
 
 export function CitizenForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -43,9 +44,12 @@ export function CitizenForm() {
     useState<boolean>(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [currentXmlFileIndex, setCurrentXmlFileIndex] = useState(0);
+  const [biometricData, setBiometricData] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { user } = useAuthStore();
+  const { fileCount, files, isLoading: isXmlLoading, error: xmlError, loadFile, refreshFileList } = useXmlDraft();
 
   // Function to convert file to base64
   const convertFileToBase64 = (file: File): Promise<string> => {
@@ -402,7 +406,89 @@ export function CitizenForm() {
     setShowFullForm(false);
   };
 
-  // Handler for form "Get Data" button (for re-fetching data)
+  // Function to handle loading XML draft files
+  const handleLoadXmlFile = async () => {
+    if (files.length === 0) {
+      showNotification.error("No XML files found in draft folder");
+      return;
+    }
+
+    if (currentXmlFileIndex >= files.length) {
+      showNotification.info("All XML files have been processed");
+      return;
+    }
+
+    const fileName = files[currentXmlFileIndex];
+    const xmlData = await loadFile(fileName);
+
+    if (xmlData) {
+      // Populate all form fields with XML data
+      form.setValue("citizen_id", xmlData.citizenId);
+      form.setValue("first_name", xmlData.firstName);
+      form.setValue("last_name", xmlData.lastName);
+      form.setValue("image", xmlData.imageBase64);
+      form.setValue("father_name", xmlData.fatherName);
+      form.setValue("mother_name", xmlData.motherName);
+      form.setValue("gender", xmlData.gender);
+      form.setValue("date_of_birth", xmlData.dateOfBirth);
+      form.setValue("profession", xmlData.profession);
+      form.setValue("pakistan_city", xmlData.pakistanCity);
+      form.setValue("pakistan_address", xmlData.pakistanAddress);
+      form.setValue("birth_country", xmlData.birthCountry);
+      form.setValue("birth_city", xmlData.birthCity);
+      form.setValue("departure_date", xmlData.departureDate);
+      form.setValue("requested_by", xmlData.requestedBy);
+      
+      // Optional fields
+      if (xmlData.height) form.setValue("height", xmlData.height);
+      if (xmlData.colorOfEyes) form.setValue("color_of_eyes", xmlData.colorOfEyes);
+      if (xmlData.colorOfHair) form.setValue("color_of_hair", xmlData.colorOfHair);
+      if (xmlData.transportMode) form.setValue("transport_mode", xmlData.transportMode);
+      if (xmlData.reasonForDeport) form.setValue("reason_for_deport", xmlData.reasonForDeport);
+      if (xmlData.amount) form.setValue("amount", parseFloat(xmlData.amount) || 0);
+      if (xmlData.currency) form.setValue("currency", xmlData.currency);
+      if (xmlData.investor) form.setValue("investor", xmlData.investor);
+      if (xmlData.securityDeposit) form.setValue("securityDeposit", xmlData.securityDeposit);
+      
+      // Set image states
+      setImageBase64(xmlData.imageBase64);
+      setInitialCitizenId(xmlData.citizenId);
+      setInitialImageBase64(xmlData.imageBase64);
+      setManualPhoto(`data:image/jpeg;base64,${xmlData.imageBase64}`);
+      
+      // Store biometric data if available
+      if (xmlData.fingerprint || xmlData.fingerprintTemplate || xmlData.biometricImage) {
+        setBiometricData({
+          fingerprint: xmlData.fingerprint,
+          fingerprintTemplate: xmlData.fingerprintTemplate,
+          biometricImage: xmlData.biometricImage
+        });
+        console.log("Biometric data loaded from XML:", {
+          hasFingerprint: !!xmlData.fingerprint,
+          hasTemplate: !!xmlData.fingerprintTemplate,
+          hasBiometricImage: !!xmlData.biometricImage
+        });
+      }
+      
+      // Move to next file for next time
+      setCurrentXmlFileIndex(prev => prev + 1);
+      
+      // Trigger GetData automatically
+      handlePhotoCardNavigate(xmlData.citizenId, xmlData.imageBase64);
+      
+      showNotification.success(`Loaded file ${currentXmlFileIndex + 1}/${files.length}: ${fileName} - All fields populated`);
+    } else {
+      showNotification.error(`Failed to load file: ${fileName}`);
+    }
+  };
+
+  // Function to reset XML file loading
+  const handleResetXmlFiles = () => {
+    setCurrentXmlFileIndex(0);
+    setBiometricData(null);
+    showNotification.info("XML file loading reset to beginning");
+  };
+
   const handleGetData = async () => {
     const citizenId = form.getValues("citizen_id");
     if (!/^\d{13}$/.test(citizenId)) {
@@ -734,6 +820,60 @@ export function CitizenForm() {
           // Show photo card first
           <div className="mt-48 ">
                   <DGIPHeaderWithWatermarks/>
+
+          {/* XML Draft Files Info */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FolderOpen className="h-5 w-5 text-blue-600" />
+                <div>
+                  <h3 className="font-semibold text-blue-900">XML Draft Files</h3>
+                  <p className="text-sm text-blue-700">
+                    {isXmlLoading ? "Loading..." : `${fileCount} files found in xml_draft folder`}
+                  </p>
+                  {biometricData && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✓ Biometric data available from last loaded file
+                    </p>
+                  )}
+                  {xmlError && (
+                    <p className="text-sm text-red-600 mt-1">{xmlError}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshFileList}
+                  disabled={isXmlLoading}
+                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  Refresh
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetXmlFiles}
+                  disabled={isXmlLoading}
+                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                >
+                  Reset
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleLoadXmlFile}
+                  disabled={isXmlLoading || fileCount === 0 || currentXmlFileIndex >= files.length}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Load Next File ({currentXmlFileIndex + 1}/{files.length})
+                </Button>
+              </div>
+            </div>
+          </div>
 
           <ETDApplicationPhotoCard
             title="Emergency Travel Document Application"
