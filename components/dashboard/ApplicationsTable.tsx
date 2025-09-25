@@ -94,12 +94,37 @@ export function ApplicationsTable({
   const [locations, setLocations] = useState<Location[]>([])
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([])
   const [locationsLoading, setLocationsLoading] = useState(false)
+  
+  // Internal pagination state (like UserManagementTable)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   // Use filters.search if available, otherwise use local searchTerm
   const currentSearchTerm = filters?.search || searchTerm
   const [qcModalOpen, setQcModalOpen] = useState(false)
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const router = useRouter()
+
+  // Sync internal pagination state with external props
+  useEffect(() => {
+    if (pagination) {
+      setCurrentPage(pagination.currentPage)
+      setTotalPages(pagination.totalPages)
+      setTotalItems(pagination.totalItems)
+      setItemsPerPage(pagination.itemsPerPage)
+    }
+  }, [pagination])
+
+  // Debug logging to see what's happening
+  useEffect(() => {
+    console.log('Pagination state:', {
+      internalCurrentPage: currentPage,
+      externalCurrentPage: pagination?.currentPage,
+      totalPages: pagination?.totalPages
+    })
+  }, [currentPage, pagination])
 
   // Fetch locations for dropdown
   useEffect(() => {
@@ -379,7 +404,6 @@ export function ApplicationsTable({
                   )}
                   <td className="p-3">
                   <Button onClick={() => router.push(`/applications/${application.id}`) } className='bg-white text-gray-800  hover:text-gray-100'>
-                          {/* <MoreHorizontal className="h-4 w-4" /> */}
                           View Details
                         </Button>
                       
@@ -410,41 +434,74 @@ export function ApplicationsTable({
         </div>
         
         {/* Pagination Controls */}
-        {pagination && pagination.totalPages > 1 && (
+        {(pagination?.totalPages || totalPages) > 1 && (
           <div className="flex items-center justify-between mt-6">
             <div className="text-sm text-gray-600">
-              Showing {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} to {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} applications
+              Showing {((pagination?.currentPage || currentPage) - 1) * (pagination?.itemsPerPage || itemsPerPage) + 1} to{" "}
+                {Math.min((pagination?.currentPage || currentPage) * (pagination?.itemsPerPage || itemsPerPage), pagination?.totalItems || totalItems)} of{" "}
+                {pagination?.totalItems || totalItems} applications
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onPageChange?.(pagination.currentPage - 1)}
-                disabled={pagination.currentPage <= 1}
+                onClick={() => {
+                  const newPage = (pagination?.currentPage || currentPage) - 1
+                  setCurrentPage(newPage)
+                  onPageChange?.(newPage)
+                }}
+                disabled={(pagination?.currentPage || currentPage) === 1 || isLoading}
               >
                 Previous
               </Button>
-              <div className="flex items-center space-x-1">
-                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                  const pageNum = i + 1
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={pagination.currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => onPageChange?.(pageNum)}
-                      className="w-8 h-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  )
-                })}
-              </div>
+             
+              <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, pagination?.totalPages || totalPages) }, (_, i) => {
+                    let pageNum;
+                    const currentPageNum = pagination?.currentPage || currentPage;
+                    const totalPagesNum = pagination?.totalPages || totalPages;
+                    
+                    if (totalPagesNum <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPageNum <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPageNum >= totalPagesNum - 2) {
+                      pageNum = totalPagesNum - 4 + i;
+                    } else {
+                      pageNum = currentPageNum - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCurrentPage(pageNum)
+                          onPageChange?.(pageNum)
+                        }}
+                        disabled={isLoading}
+                        className={`w-8 h-8 p-0 ${
+                          currentPage === pageNum
+                            ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700" 
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onPageChange?.(pagination.currentPage + 1)}
-                disabled={pagination.currentPage >= pagination.totalPages}
+                onClick={() => {
+                  const newPage = (pagination?.currentPage || currentPage) + 1
+                  setCurrentPage(newPage)
+                  onPageChange?.(newPage)
+                }}
+                disabled={(pagination?.currentPage || currentPage) === (pagination?.totalPages || totalPages) || isLoading}
               >
                 Next
               </Button>

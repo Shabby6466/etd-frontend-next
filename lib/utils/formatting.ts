@@ -21,7 +21,7 @@ export function validateEmail(email: string): boolean {
 export function formatDate(dateString: string): string {
   try {
     const date = parseISO(dateString)
-    return format(date, "dd/MM/yyyy")
+    return format(date, "dd MMM yyyy")
   } catch {
     return dateString
   }

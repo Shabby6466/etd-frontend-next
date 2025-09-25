@@ -24,8 +24,10 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { DGIPHeaderWithWatermarks } from "@/components/ui/dgip_header_watermarks";
 import ETDApplicationPhotoCard from "@/components/ui/etd_application_photo_card";
 import { DetailForm } from "@/components/forms/DetailForm";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, FolderOpen, FileText } from "lucide-react";
 import { ImageEditorModal } from "@/components/ui/ImageEditorModal";
+import BiometricCaptureModal from "@/components/ui/BiometricCaptureModal";
+import { useXmlDraft } from "@/lib/hooks/useXmlDraft";
 
 export function CitizenForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -43,9 +45,23 @@ export function CitizenForm() {
     useState<boolean>(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [currentXmlFileIndex, setCurrentXmlFileIndex] = useState(0);
+  const [biometricData, setBiometricData] = useState<any>(null);
+  const [showBiometricModal, setShowBiometricModal] = useState(false);
+  const [capturedFingerprint, setCapturedFingerprint] = useState<{
+    imageBase64: string;
+    templateBase64?: string;
+    imageDpi?: number;
+    imageQuality?: number;
+    wsqBase64?: string;
+    wsqSize?: number;
+    deviceModel?: string;
+    serial?: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { user } = useAuthStore();
+  const { fileCount, files, isLoading: isXmlLoading, error: xmlError, currentFileName, loadFile, refreshFileList, moveCurrentFile } = useXmlDraft();
 
   // Function to convert file to base64
   const convertFileToBase64 = (file: File): Promise<string> => {
@@ -114,6 +130,28 @@ export function CitizenForm() {
       fileInputRef.current.value = "";
     }
     // Don't clear existing image data - only clear if user was trying to upload a new one
+  };
+
+  // Function to handle biometric capture
+  const handleBiometricCapture = (data: {
+    imageBase64: string;
+    templateBase64?: string;
+    imageDpi?: number;
+    imageQuality?: number;
+    wsqBase64?: string;
+    wsqSize?: number;
+    deviceModel?: string;
+    serial?: string;
+  }) => {
+    setCapturedFingerprint(data);
+    setShowBiometricModal(false);
+    showNotification.success("Fingerprint captured successfully");
+  };
+
+  // Function to clear captured fingerprint
+  const handleClearFingerprint = () => {
+    setCapturedFingerprint(null);
+    showNotification.info("Fingerprint data cleared");
   };
 
   const form = useForm<CitizenFormData>({
@@ -397,12 +435,109 @@ export function CitizenForm() {
     setPassportDetailData(null);
     setNadraDetailData(null);
     setIsPassportDataFetched(false);
+    // Clear biometric data
+    setCapturedFingerprint(null);
+    setBiometricData(null);
 
     // Reset to photo card view
     setShowFullForm(false);
   };
 
-  // Handler for form "Get Data" button (for re-fetching data)
+  // Function to handle loading XML draft files
+  const handleLoadXmlFile = async () => {
+    if (files.length === 0) {
+      showNotification.error("No XML files found in draft folder");
+      return;
+    }
+
+    if (currentXmlFileIndex >= files.length) {
+      showNotification.info("All XML files have been processed");
+      return;
+    }
+
+    const fileName = files[currentXmlFileIndex];
+    const xmlData = await loadFile(fileName);
+
+    if (xmlData) {
+      // Populate all form fields with XML data
+      form.setValue("citizen_id", xmlData.citizenId);
+      form.setValue("first_name", xmlData.firstName);
+      form.setValue("last_name", xmlData.lastName);
+      form.setValue("image", xmlData.imageBase64);
+      form.setValue("father_name", xmlData.fatherName);
+      form.setValue("mother_name", xmlData.motherName);
+      form.setValue("gender", xmlData.gender);
+      form.setValue("date_of_birth", xmlData.dateOfBirth);
+      form.setValue("profession", xmlData.profession);
+      form.setValue("pakistan_city", xmlData.pakistanCity);
+      form.setValue("pakistan_address", xmlData.pakistanAddress);
+      form.setValue("birth_country", xmlData.birthCountry);
+      form.setValue("birth_city", xmlData.birthCity);
+      form.setValue("departure_date", xmlData.departureDate);
+      form.setValue("requested_by", xmlData.requestedBy);
+      
+      // Optional fields
+      if (xmlData.height) form.setValue("height", xmlData.height);
+      if (xmlData.colorOfEyes) form.setValue("color_of_eyes", xmlData.colorOfEyes);
+      if (xmlData.colorOfHair) form.setValue("color_of_hair", xmlData.colorOfHair);
+      if (xmlData.transportMode) form.setValue("transport_mode", xmlData.transportMode);
+      if (xmlData.reasonForDeport) form.setValue("reason_for_deport", xmlData.reasonForDeport);
+      if (xmlData.amount) form.setValue("amount", parseFloat(xmlData.amount) || 0);
+      if (xmlData.currency) form.setValue("currency", xmlData.currency);
+      if (xmlData.investor) form.setValue("investor", xmlData.investor);
+      if (xmlData.securityDeposit) form.setValue("securityDeposit", xmlData.securityDeposit);
+      
+      // Set image states
+      setImageBase64(xmlData.imageBase64);
+      setInitialCitizenId(xmlData.citizenId);
+      setInitialImageBase64(xmlData.imageBase64);
+      setManualPhoto(`data:image/jpeg;base64,${xmlData.imageBase64}`);
+      
+      // Store biometric data if available
+      if (xmlData.fingerprint || xmlData.fingerprintTemplate || xmlData.biometricImage) {
+        setBiometricData({
+          fingerprint: xmlData.fingerprint,
+          fingerprintTemplate: xmlData.fingerprintTemplate,
+          biometricImage: xmlData.biometricImage
+        });
+        
+        // Also set captured fingerprint data for display
+        if (xmlData.fingerprint) {
+          setCapturedFingerprint({
+            imageBase64: xmlData.fingerprint,
+            templateBase64: xmlData.fingerprintTemplate,
+            wsqBase64: xmlData.biometricImage,
+            deviceModel: 'XML Import',
+            serial: 'XML-Import'
+          });
+        }
+        
+        console.log("Biometric data loaded from XML:", {
+          hasFingerprint: !!xmlData.fingerprint,
+          hasTemplate: !!xmlData.fingerprintTemplate,
+          hasBiometricImage: !!xmlData.biometricImage
+        });
+      }
+      
+      // Move to next file for next time
+      setCurrentXmlFileIndex(prev => prev + 1);
+      
+      // Trigger GetData automatically
+      handlePhotoCardNavigate(xmlData.citizenId, xmlData.imageBase64);
+      
+      showNotification.success(`Loaded file ${currentXmlFileIndex + 1}/${files.length}: ${fileName} - All fields populated`);
+    } else {
+      showNotification.error(`Failed to load file: ${fileName}`);
+    }
+  };
+
+  // Function to reset XML file loading
+  const handleResetXmlFiles = () => {
+    setCurrentXmlFileIndex(0);
+    setBiometricData(null);
+    showNotification.info("XML file loading reset to beginning");
+  };
+
   const handleGetData = async () => {
     const citizenId = form.getValues("citizen_id");
     if (!/^\d{13}$/.test(citizenId)) {
@@ -620,6 +755,15 @@ export function CitizenForm() {
         nadra_response_id: nadraApiData?.id || undefined,
         passport_response_id: data.passport_response_id || undefined,
         isPassportResponseFetched: isPassportResponseFetched,
+        // Add biometric data if captured
+        fingerprint_image: capturedFingerprint?.imageBase64 || undefined,
+        fingerprint_template: capturedFingerprint?.templateBase64 || undefined,
+        fingerprint_wsq: capturedFingerprint?.wsqBase64 || undefined,
+        fingerprint_quality: capturedFingerprint?.imageQuality || undefined,
+        fingerprint_dpi: capturedFingerprint?.imageDpi || undefined,
+        fingerprint_device_model: capturedFingerprint?.deviceModel || undefined,
+        fingerprint_device_serial: capturedFingerprint?.serial || undefined,
+        fingerprint_wsq_size: capturedFingerprint?.wsqSize || undefined,
       };
 
       console.log("Sending application data to API:", applicationData);
@@ -671,6 +815,23 @@ export function CitizenForm() {
       }
 
       showNotification.success("Application created successfully");
+
+      // Move the current XML file to xml_submit folder if it was loaded from XML draft
+      if (currentFileName) {
+        try {
+          const moveSuccess = await moveCurrentFile();
+          if (moveSuccess) {
+            console.log(`XML file ${currentFileName} moved to xml_submit folder`);
+            showNotification.success(`XML file ${currentFileName} moved to submitted folder`);
+          } else {
+            console.warn(`Failed to move XML file ${currentFileName}`);
+            showNotification.warning(`Application created but failed to move XML file`);
+          }
+        } catch (error) {
+          console.error("Error moving XML file:", error);
+          showNotification.warning(`Application created but failed to move XML file`);
+        }
+      }
 
       // Navigate based on user role
       console.log("Application created successfully, user role:", user?.role);
@@ -732,8 +893,58 @@ export function CitizenForm() {
         {!showFullForm ? (
           
           // Show photo card first
-          <div className="mt-48 ">
-                  <DGIPHeaderWithWatermarks/>
+          <div className="mt-48 "><DGIPHeaderWithWatermarks/>
+
+          {/* XML Draft Files Info */}
+          <div className="mb-6 p-4 bg-white-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FolderOpen className="h-5 w-5 text-white-600" />
+                <div>
+                  <h3 className="font-semibold text-blue-900">XML Draft Files</h3>
+                  <p className="text-sm text-black-700">
+                    {isXmlLoading ? "Loading..." : `${fileCount} files in Draft`}
+                  </p>
+                  {currentFileName && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      📄 Currently processing: {currentFileName}
+                    </p>
+                  )}
+                  {xmlError && (
+                    <p className="text-sm text-red-600 mt-1">{xmlError}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshFileList}
+                  disabled={isXmlLoading}
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  Refresh
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetXmlFiles}
+                  disabled={isXmlLoading}
+                >
+                  Reset
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleLoadXmlFile}
+                  disabled={isXmlLoading || fileCount === 0 || currentXmlFileIndex >= files.length}
+                >
+                  Load Next File ({currentXmlFileIndex + 1}/{files.length})
+                </Button>
+              </div>
+            </div>
+          </div>
 
           <ETDApplicationPhotoCard
             title="Emergency Travel Document Application"
@@ -744,7 +955,6 @@ export function CitizenForm() {
             }}
             onImageChange={(base64) => {
               console.log("Image changed:", base64 ? "has image" : "no image");
-              // Handle image change from photo card
               if (base64) {
                 setImageBase64(base64);
                 form.setValue("image", base64);
@@ -757,7 +967,6 @@ export function CitizenForm() {
           />
         </div>
         ) : (
-          // Show full form after "Get Data" is pressed
           <div >             <DGIPHeaderWithWatermarks/>
           <Card>
             <CardHeader>
@@ -901,12 +1110,6 @@ export function CitizenForm() {
                       </p>
                     )}
 
-                    {imageBase64 && (
-                      <p className="text-sm text-green-600">
-                        ✓ Image ready for submission (540×420 pixels, ≤18KB)
-                      </p>
-                    )}
-
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <p className="text-xs text-blue-800">
                         <strong>Image Requirements:</strong> 540×420 pixels, maximum 18KB, JPEG format
@@ -916,6 +1119,67 @@ export function CitizenForm() {
                     {form.formState.errors.image && (
                       <p className="text-sm text-red-500 mt-1">
                         {form.formState.errors.image.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fingerprint Capture Section */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <Label className="text-lg font-semibold mb-4 block">
+                    Fingerprint Capture
+                  </Label>
+
+                  {/* Fingerprint Display */}
+                  {capturedFingerprint && (
+                    <div className="flex justify-center mb-4">
+                      <div className="bg-white p-2 rounded border">
+                        <img
+                          src={`data:image/bmp;base64,${capturedFingerprint.imageBase64}`}
+                          alt="Captured Fingerprint"
+                          width={128}
+                          height={160}
+                          className="object-contain rounded"
+                        />
+                        {/* <div className="text-xs text-gray-600 mt-2 text-center">
+                          <p>Device: {capturedFingerprint.deviceModel || 'Unknown'}</p>
+                          <p>Serial: {capturedFingerprint.serial || 'N/A'}</p>
+                          <p>Quality: {capturedFingerprint.imageQuality || 'N/A'}</p>
+                          {capturedFingerprint.wsqBase64 && (
+                            <p>WSQ Size: {capturedFingerprint.wsqSize || 'N/A'} bytes</p>
+                          )}
+                        </div> */}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fingerprint Controls */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4">
+                      <Button
+                        type="button"
+                        onClick={() => setShowBiometricModal(true)}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        {capturedFingerprint ? "Recapture Fingerprint" : "Capture Fingerprint"}
+                      </Button>
+                      
+                      {capturedFingerprint && (
+                        <Button
+                          type="button"
+                          onClick={handleClearFingerprint}
+                          variant="outline"
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Clear Fingerprint
+                        </Button>
+                      )}
+                    </div>
+
+                    {!capturedFingerprint && (
+                      <p className="text-sm text-gray-600">
+                        No fingerprint captured. Click "Capture Fingerprint" to add biometric data.
                       </p>
                     )}
                   </div>
@@ -1051,10 +1315,6 @@ export function CitizenForm() {
                       </p>
                     )}
                   </div>
-                  {/* <div>
-                  <Label htmlFor="nationality">Nationality</Label>
-                  <Input id="nationality" {...form.register("nationality")} />
-                </div> */}
                 </div>
 
                 {/* Address & Birth Information */}
@@ -1273,10 +1533,6 @@ export function CitizenForm() {
                     <Label htmlFor="currency">Currency</Label>
                     <Input id="currency" {...form.register("currency")} />
                   </div>
-                  {/* <div>
-                  <Label htmlFor="is_fia_blacklist">FIA Blacklist</Label>
-                  <Input id="is_fia_blacklist" type="checkbox" {...form.register("is_fia_blacklist")} />
-                </div> */}
                 </div>
 
                 {/* Submit Button */}
@@ -1307,6 +1563,14 @@ export function CitizenForm() {
         onClose={handleImageEditorClose}
         onSave={handleImageSave}
         file={selectedFile}
+      />
+
+      {/* Biometric Capture Modal */}
+      <BiometricCaptureModal
+        isOpen={showBiometricModal}
+        onClose={() => setShowBiometricModal(false)}
+        onCaptured={handleBiometricCapture}
+        endpoint="https://localhost:8443/SGIFPCapture"
       />
     </div>
   );

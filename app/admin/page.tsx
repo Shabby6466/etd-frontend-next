@@ -75,7 +75,6 @@ export default function AdminDashboard() {
 
   const handleFilterChange = (newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }))
-    // The useEffect will handle the API call with debouncing
   }
 
   const clearFilters = async () => {
@@ -91,17 +90,6 @@ export default function AdminDashboard() {
     fetchApplications(1, 10)
     fetchStats()
   }, [])
-
-  // // Debounced search effect
-  // useEffect(() => {
-  //   const timeoutId = setTimeout(() => {
-  //     fetchApplications(1, pagination.itemsPerPage)
-  //   }, 500) // 500ms delay
-
-  //   return () => clearTimeout(timeoutId)
-  // }, [filters.search, filters.submittedBy, filters.region])
-  
-  // TODO: CHECK THIS IF FETCHING APPLICATIONS AND STATS ARE NOTWORKING
 
   return (
     <AuthGuard roles={['ADMIN']}>
