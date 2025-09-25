@@ -4,8 +4,8 @@ export const isProduction = process.env.NODE_ENV === "production"
 
 export const env = {
   // API Configuration - Always use the backend server URL
-  NEXT_PUBLIC_API_URL: "http://172.17.128.145:3836/v1/api",
-  BACKEND_URL: "http://172.17.128.145:3836/v1/api",
+  NEXT_PUBLIC_API_URL: "http://172.17.128:3836/v1/api",
+  BACKEND_URL: "http://10.111.101.125:3836/v1/api",
   
   // JWT Configuration
   JWT_SECRET: process.env.JWT_SECRET || "your-jwt-secret-key-here",
