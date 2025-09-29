@@ -1,29 +1,54 @@
-# Step 1: Build the app
-FROM node:18-alpine AS builder
+# --------------------
+# 1. Build stage
+# --------------------
+FROM node:20.17-alpine AS builder
 
 WORKDIR /app
 
-# Copy dependencies
+# Install dependencies first (better layer caching)
 COPY package*.json ./
 COPY tsconfig.json ./
-RUN npm install --legacy-peer-deps
 
-# Copy source
+# Install deps without devDependencies
+RUN npm ci --legacy-peer-deps --only=production
+
+# Copy all project files
 COPY . .
 
-# Build Next.js for production
+# Build Next.js app
 RUN npm run build
 
-# Step 2: Run the app
-FROM node:18-alpine
+# --------------------
+# 2. Production stage
+# --------------------
+FROM node:20.17-alpine
 
 WORKDIR /app
-
 ENV NODE_ENV=production
 
-# Copy only the built app & node_modules
-COPY --from=builder /app ./
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+# Copy only the essentials from builder
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+
+# Change ownership to nextjs user
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+# Clean npm cache (reduce image size & CVE risk)
+RUN npm cache clean --force
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start:http"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+CMD ["npm", "start"]
+    

@@ -1,49 +1,47 @@
 services:
   etd-frontend:
-    build: ./etd-next     # path to your Next.js folder
+    build: .
     container_name: etd-frontend
     restart: always
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://etd-backend:3836/v1/api
+    networks:
+      - etd-network
     depends_on:
       - etd-backend
 
   etd-backend:
-    build: ./etd-backend
+    image: etd-backend:latest
     container_name: etd-backend
     restart: always
     ports:
       - "3836:3836"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - etd-network
     depends_on:
-      - etd-db
-      - etd-redis
+      - postgres
 
-  etd-db:
-    image: postgis/postgis
-    container_name: etd-db
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: etd-postgres
     restart: always
-    env_file:
-      - ./etd-backend/_database.env
-    ports:
-      - "5432:5432"
+    environment:
+      - POSTGRES_DB=etd_db
+      - POSTGRES_USER=etd_user
+      - POSTGRES_PASSWORD=etd_password
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - etd-network
 
-  etd-redis:
-    image: bitnami/redis:latest
-    container_name: etd-redis
-    restart: always
-    ports:
-      - "6379:6379"
-    networks:
-      - etd-network
-
 networks:
   etd-network:
+    driver: bridge
 
 volumes:
   postgres-data:
