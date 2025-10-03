@@ -10,7 +10,7 @@ COPY package*.json ./
 COPY tsconfig.json ./
 
 # Install deps without devDependencies
-RUN npm ci --legacy-peer-deps --only=production
+RUN npm ci --legacy-peer-deps
 
 # Copy all project files
 COPY . .
@@ -45,10 +45,6 @@ USER nextjs
 RUN npm cache clean --force
 
 EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
 
 CMD ["npm", "start"]
     

@@ -46,11 +46,7 @@ const nextConfig = {
       ]
     },
     
-    // Disable HTTPS redirects
-    experimental: {
-      serverComponentsExternalPackages: [],
-    },
-  }
-  
+  serverExternalPackages: [],
+}
   module.exports = nextConfig
   
