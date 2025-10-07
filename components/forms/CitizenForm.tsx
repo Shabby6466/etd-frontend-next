@@ -219,37 +219,27 @@ export function CitizenForm() {
       }
     };
 
-    // Combine first names and last name
-    const fullFirstName = passportData.first_names || "";
-    const lastName = passportData.last_name || "";
-
-    // Combine father's names
-    const fatherFullName = `${passportData.father_first_names || ""} ${
-      passportData.father_last_name || ""
-    }`.trim();
-
     return {
       citizen_id: passportData.citizen_no,
-      first_name: fullFirstName,
-      last_name: lastName,
-      image: passportData.photograph || "", // Base64 image from passport API
-      father_name: fatherFullName,
+      first_name: passportData.first_name || "",
+      last_name: passportData.last_name || "",
+      image: passportData.photograph || "",
+      father_name: passportData.father_name || "",
       gender:
         passportData.gender === "m"
           ? "Male"
           : passportData.gender === "f"
           ? "Female"
           : passportData.gender,
-      date_of_birth: formatDate(passportData.birthdate),
+      date_of_birth: formatDate(passportData.date_of_birth),
       profession: passportData.profession,
       birth_country:
-        passportData.birthcountry === "PK"
+        passportData.birth_country === "PK"
           ? "Pakistan"
-          : passportData.birthcountry,
-      birth_city: passportData.birthcity,
-      // Set pakistan_city to birth_city if birth_country is Pakistan
-      pakistan_city:
-        passportData.birthcountry === "PK" ? passportData.birthcity : "",
+          : passportData.birth_country,
+      birth_city: passportData.birth_city,
+      pakistan_city: passportData.pakistan_city,
+      pakistan_address: passportData.pakistan_address,
     };
   };
 
@@ -997,7 +987,7 @@ export function CitizenForm() {
 
                   // Get the first error message to show to the user
                   const firstError = Object.values(errors)[0];
-                  if (firstError && firstError.message) {
+                  if (firstError && typeof firstError === 'object' && 'message' in firstError) {
                     showNotification.error(firstError.message as string);
                   } else {
                     showNotification.error(
