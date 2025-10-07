@@ -12,8 +12,7 @@ export const env = {
   // Database Configuration
   DATABASE_URL: process.env.DATABASE_URL,
   
-  // External APIs
-  PASSPORT_API_URL: "http://10.111.101.24:9009/api/passport",
+  // External APIs - Now handled by backend
   
   // Application Settings
   NODE_ENV: process.env.NODE_ENV || "development",

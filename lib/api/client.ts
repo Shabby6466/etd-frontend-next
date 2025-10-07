@@ -3,17 +3,9 @@ import { useAuthStore } from "@/lib/stores/auth-store"
 import { env } from "@/lib/config/env"
 
 const API_BASE_URL = "http://10.11.1.122:3836/v1/api"
-const PASSPORT_URL = process.env.PASSPORT_API_URL || "http://10.111.101.24:9009/api/passport"
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 8000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-})
-export const passportApiClient = axios.create({
-  baseURL: PASSPORT_URL,
   timeout: 8000,
   headers: {
     "Content-Type": "application/json",
