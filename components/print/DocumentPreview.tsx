@@ -1,21 +1,29 @@
 import { Application } from "@/lib/types";
 import { formatDate } from "@/lib/utils/formatting";
+import DocumentPreviewNew from "./DocumentPreviewNew";
 
 interface DocumentPreviewProps {
   application: Application;
+  isNewDesign?: boolean;
 }
-export default function DocumentPreview({ application }: DocumentPreviewProps) {
+export default function DocumentPreview({ application, isNewDesign = false }: DocumentPreviewProps) {
+  if (isNewDesign) {
+    // New Design - Use separate component with different dimensions
+    return <DocumentPreviewNew application={application} />;
+  }
+
+  // Standard Design - Two pages (front and back)
   return (
     <div className="lg:col-span-2 justify-center items-center">
       {/* Document Container */}
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden print:shadow-none print:rounded-none">
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden print:shadow-none print:rounded-none transition-all duration-300 ease-in-out">
         <div className="max-w-[816px] h-[1024px] mx-auto overflow-hidden bg-white print:p-0 print:m-0 print:max-w-none">
           {/* Document Container - Following exact dimensions from image */}
           <div className="relative w-[816px] h-[1024px] print:border-0 print-document">
             <img
               src="/etd-front.jpg"
               alt="Guideline"
-              className="absolute inset-0 w-full h-full opacity-100 pointer-events-none print:hidden z-0"
+              className="absolute inset-0 w-full h-full opacity-100 pointer-events-none print:hidden z-0 transition-opacity duration-300 ease-in-out"
             /> 
             {/* Data Container - Positioned absolutely over the image */}
             <div className="absolute top-[375px] left-[180px] w-full z-10">
@@ -72,7 +80,7 @@ export default function DocumentPreview({ application }: DocumentPreviewProps) {
                   {'N/A'}
                 </div>
                 <div className="absolute text-black font-normal text-[15px]" style={{ top: '36px', left: '300px' }}>
-                  {formatDate(application.departureDate).toUpperCase()}
+                  {}
                 </div>
                 <div className="absolute text-black font-normal text-[15px]" style={{ top: '153px', left: '285px' }}>
                   {application.birthCity.toUpperCase()}

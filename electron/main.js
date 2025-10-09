@@ -476,7 +476,6 @@ function generateXMLContent(data) {
   </physical_characteristics>
   
   <travel_information>
-    <departure_date>${escapeXML(data.departure_date)}</departure_date>
     <requested_by>${escapeXML(data.requested_by)}</requested_by>
     <transport_mode>${escapeXML(data.transport_mode || '')}</transport_mode>
     <investor>${escapeXML(data.investor || '')}</investor>

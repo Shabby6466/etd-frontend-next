@@ -115,11 +115,9 @@
                 gender: '',
                 date_of_birth: '',
                 profession: '',
-                pakistan_city: '',
                 pakistan_address: '',
                 birth_country: '',
                 birth_city: '',
-                departure_date: '',
                 requested_by: ''
             });
 
@@ -268,28 +266,6 @@
                                             name="birth_city"
                                             className="form-input"
                                             value={formData.birth_city}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">City *</label>
-                                        <input
-                                            type="text"
-                                            name="pakistan_city"
-                                            className="form-input"
-                                            value={formData.pakistan_city}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Departure Date *</label>
-                                        <input
-                                            type="date"
-                                            name="departure_date"
-                                            className="form-input"
-                                            value={formData.departure_date}
                                             onChange={handleChange}
                                             required
                                         />

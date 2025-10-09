@@ -95,20 +95,6 @@ export function DetailForm({ data, title, onNext, onBack, passportPhoto }: Detai
             
             </div>
 
-            {/*6. PAK CITY */}
-            <div className="relative">
-              <Label
-                htmlFor="pakistanCity"
-                className="absolute left-3 top-3 text-xs text-gray-500"
-              >
-                Pakistan City
-              </Label>
-              <p className="mt-1 pt-6 pl-3 border-0 text-sm text-gray-800">
-                {data?.pakistan_city || "Not available"}
-              </p>
-              
-            </div>
-
             {/*7. DOB */}
             <div className="relative">
               <Label

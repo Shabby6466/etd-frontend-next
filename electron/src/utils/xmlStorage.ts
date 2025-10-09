@@ -9,11 +9,9 @@ export interface ApplicationData {
   gender: string;
   date_of_birth: string;
   profession: string;
-  pakistan_city: string;
   pakistan_address: string;
   birth_country: string;
   birth_city: string;
-  departure_date: string;
   requested_by: string;
   height?: string;
   color_of_eyes?: string;

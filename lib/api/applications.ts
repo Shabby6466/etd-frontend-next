@@ -23,7 +23,6 @@ const transformApplicationData = (apiData: any): Application => {
     height: apiData.height,
     colorOfEyes: apiData.color_of_eyes,
     colorOfHair: apiData.color_of_hair,
-    departureDate: apiData.departure_date,
     securityDeposit: apiData.amount ? `${apiData.amount} ${apiData.currency}` : '',
     investor: apiData.investor,
     requestedBy: apiData.requested_by,
@@ -97,7 +96,6 @@ export interface CreateApplicationData {
   mother_name: string
   citizen_id: string
   gender: string
-  pakistan_city: string
   date_of_birth: string
   birth_country: string
   birth_city: string
@@ -106,7 +104,6 @@ export interface CreateApplicationData {
   height: string
   color_of_hair: string
   color_of_eyes: string
-  departure_date: string
   transport_mode: string
   investor: string
   requested_by: string
@@ -126,7 +123,6 @@ export interface CreateApplicationData {
     first_name: string
     last_name: string
     father_name: string
-    pakistan_city: string
     gender: string
     date_of_birth: string
     birth_country: string
@@ -146,7 +142,6 @@ export interface CreateApplicationData {
     last_name: string
     father_name: string
     mother_name: string
-    pakistan_city: string
     date_of_birth: string
     birth_country: string
     birth_city: string

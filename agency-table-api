@@ -75,7 +75,6 @@ GET /applications/agency/applications?agency=SPECIAL_BRANCH_SINDH&assigned_user_
       "height": "5.9",
       "color_of_hair": "Black",
       "color_of_eyes": "Brown",
-      "departure_date": "2024-12-01",
       "gender": "Male",
       "transport_mode": "Air",
       "investor": "Yes",

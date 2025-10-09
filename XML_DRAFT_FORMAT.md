@@ -17,7 +17,6 @@ The XML draft files in `C:\Users\Office\AppData\Local\xml_draft` should contain 
 <pakistan_address>123 Main Street, Karachi</pakistan_address>
 <birth_country>Pakistan</birth_country>
 <birth_city>Karachi</birth_city>
-<departure_date>2024-12-31</departure_date>
 <requested_by>Government</requested_by>
 ```
 
