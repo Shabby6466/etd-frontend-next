@@ -77,8 +77,79 @@ export default function DocumentPreviewNew({ application }: DocumentPreviewNewPr
                 3. BOTTOM: MRZ (Machine Readable Zone)
                 Document dimensions: 124mm × 263mm (≈ 469px × 994px at 96 DPI)
               */}
+              {/* ===== REMARKS SECTION - Left Side Rotated ===== */}
+              <div 
+                className="absolute" 
+                style={{ 
+                  top: '250px', 
+                  left: '200px', 
+                  width: '400px',
+                  height: '1800px',
+                  transform: 'rotate(270deg)',
+                  transformOrigin: 'left top'
+                }}
+              >
+                {/* Departure Date */}
+                <div className="text-black font-bold text-[6px]" style={{ top: '0px', left: '0px', position: 'absolute' }}>Expected Date Of Travel</div>
+                <div className="text-black font-normal text-[12px]" style={{ top: '30px', left: '0px', position: 'absolute' }}>{ '______________________'}</div>
+                
+                {/* Reason of Deportation */}
+                <div className="text-black font-bold text-[6px]" style={{ top: '60px', left: '0px', position: 'absolute' }}>Reason of Deportation</div>
+                <div className="text-black font-normal text-[12px]" style={{ top: '65px', left: '0px', position: 'absolute' }}>{application.reason_for_deport || 'N/A'}</div>
+                
+                {/* Fare */}
+                <div className="text-black font-bold text-[6px]" style={{ top: '90px', left: '0px', position: 'absolute' }}>Fare</div>
+                <div className="text-black font-normal text-[12px]" style={{ top: '95px', left: '0px', position: 'absolute' }}>{application.securityDeposit || 'N/A'}</div>
+                
+
+
+                {/* Agency Paying Fare */}
+                <div className="text-black font-bold text-[6px]" style={{ top: '120px', left: '0px', position: 'absolute' }}>Agency Paying Fare</div>
+                <div className="text-black font-normal text-[12px]" style={{ top: '125px', left: '0px', position: 'absolute' }}>ABU DHABI</div>
+
+                <div className="text-black font-bold text-[6px]" style={{ top: '150px', left: '0px', position: 'absolute' }}>Security Deposit Decription</div>
+                <div className="text-black font-normal text-[12px]" style={{ top: '155px', left: '0px', position: 'absolute' }}>PAID</div>
               
+              </div>  
+                
               {/* ===== TOP SECTION - Observations and Physical Characteristics ===== */}
+              <div 
+                className="absolute" 
+                style={{ 
+                  bottom: '420px', 
+                  left: '200px', 
+                  width: '180px',
+                  height: '200px',
+                  transform: 'rotate(270deg)',
+                  transformOrigin: 'center'
+                }}
+              >
+                {/* Height */}
+                <div className="text-black font-bold text-[6px]" style={{ top: '0px', left: '0px', position: 'absolute' }}>Height</div>
+                <div className="text-black font-normal text-[12px]" style={{ top: '5px', left: '0px', position: 'absolute' }}>{application.height || 'N/A'}</div>
+                
+                {/* Color of Hair */}
+                <div className="text-black font-bold text-[6px]" style={{ top: '30px', left: '0px', position: 'absolute' }}>Color Of Hair</div>
+                <div className="text-black font-normal text-[12px]" style={{ top: '35px', left: '0px', position: 'absolute' }}>{application.colorOfHair || 'N/A'}</div>
+                
+                {/* Profession */}
+                <div className="text-black font-bold text-[6px]" style={{ top: '60px', left: '0px', position: 'absolute' }}>Profession</div>
+                <div className="text-black font-normal text-[12px]" style={{ top: '65px', left: '0px', position: 'absolute' }}>{application.profession || 'N/A'}</div>
+                
+                {/* Permanent Address */}
+                <div className="text-black font-bold text-[6px]" style={{ top: '90px', left: '0px', position: 'absolute' }}>Permanent Address</div>
+                <div className="text-black font-normal text-[12px] leading-tight" style={{ top: '95px', left: '0px', position: 'absolute' }}>{application.pakistanAddress || 'N/A'}</div>
+                
+                {/* Temporary Address */}
+                <div className="text-black font-bold text-[6px]" style={{ top: '120px', left: '0px', position: 'absolute' }}>Temporary Address</div>
+                <div className="text-black font-normal text-[12px] leading-tight" style={{ top: '125px', left: '0px', position: 'absolute' }}>{application.pakistanAddress || 'N/A'}</div>
+                
+                {/* Color of Eyes */}
+                <div className="text-black font-bold text-[6px]" style={{ top: '0px', left: '100px', position: 'absolute' }}>Color of Eyes</div>
+                <div className="text-black font-normal text-[12px]" style={{ top: '5px', left: '100px', position: 'absolute' }}>{application.colorOfEyes || 'N/A'}</div>
+              </div>
+              
+              
               
               
               {/* ===== MIDDLE SECTION - Main Personal Information (Left to Right) ===== */}
@@ -97,7 +168,7 @@ export default function DocumentPreviewNew({ application }: DocumentPreviewNewPr
                   <img
                     src={`data:image/jpeg;base64,${application.image}`}
                     alt="Citizen Photograph"
-                    className="w-full h-full object-cover border border-gray-300"
+                    className="w-full h-full object-cover"
                   />
                 </div>
               )}
@@ -111,25 +182,31 @@ export default function DocumentPreviewNew({ application }: DocumentPreviewNewPr
               <div className="absolute text-black font-normal text-[12px]" style={{ top: '722px', left: '150px' }}>
                 PT
               </div>
-              <div className="absolute text-black font-bold text-[6px]" style={{ top: '717px', left: '230px' }}>
+              <div className="absolute text-black font-bold text-[6px]" style={{ top: '717px', left: '202px' }}>
                 Country Code
               </div>
-              <div className="absolute text-black font-normal text-[12px]" style={{ top: '722px', left: '230px' }}>
+              <div className="absolute text-black font-normal text-[12px]" style={{ top: '722px', left: '202px' }}>
                 PAK
+              </div>
+              <div className="absolute text-black font-bold text-[6px]" style={{ top: '717px', left: '300px' }}>
+                Passport Number
+              </div>
+              <div className="absolute text-black font-normal text-[12px]" style={{ top: '722px', left: '300px' }}>
+                PT456985
               </div>
               
               <div className="absolute text-black font-bold text-[6px]" style={{ top: '735px', left: '150px' }}>
                 Sur Name
               </div>
               <div className="absolute text-black font-normal text-[12px]" style={{ top: '740px', left: '150px' }}>
-                {application.firstName.toUpperCase()}
+                {application.lastName.toUpperCase()}
               </div>
               
               <div className="absolute text-black font-bold text-[6px]" style={{ top: '754px', left: '150px' }}>
                 Given Name
               </div>
               <div className="absolute text-black font-normal text-[12px]" style={{ top: '759px', left: '150px' }}>
-                {application.lastName.toUpperCase()}
+                {application.firstName.toUpperCase()}
               </div>
               
               <div className="absolute text-black font-bold text-[6px]" style={{ top: '773px', left: '150px' }}>
@@ -153,10 +230,10 @@ export default function DocumentPreviewNew({ application }: DocumentPreviewNewPr
                 {formatDate(application.gender.slice(0, 1)).toUpperCase()}
               </div>
               
-              <div className="absolute text-black font-bold text-[6px]" style={{ top: '792px', left: '230px' }}>
+              <div className="absolute text-black font-bold text-[6px]" style={{ top: '810px', left: '202px' }}>
                 Place of Birth
               </div>
-              <div className="absolute text-black font-normal text-[12px]" style={{ top: '797px', left: '230px' }}>
+              <div className="absolute text-black font-normal text-[12px]" style={{ top: '815px', left: '202px' }}>
                 {application.birthCity?.toUpperCase() || 'N/A'}, PAK
               </div>
               <div className="absolute text-black font-bold text-[6px]" style={{ top: '828px', left: '150px' }}>
@@ -169,7 +246,7 @@ export default function DocumentPreviewNew({ application }: DocumentPreviewNewPr
                 Religion
               </div>
               <div className="absolute text-black font-normal text-[12px]" style={{ top: '851px', left: '150px' }}>
-                NA
+                ISLAM
               </div>
                 <div className="absolute text-black font-bold text-[6px]" style={{ top: '864px', left: '150px' }}>
                 Date of Issue
@@ -225,20 +302,32 @@ export default function DocumentPreviewNew({ application }: DocumentPreviewNewPr
               <div className="absolute text-black font-normal text-[12px]" style={{ top: '778px', left: '300px' }}>
                 {application.citizenId?.toUpperCase() || 'N/A'}
               </div>
-              <div className="absolute text-black font-bold text-[6px]" style={{ top: '864px', left: '230px'}}>
+              <div className="absolute text-black font-bold text-[6px]" style={{ top: '864px', left: '300px'}}>
                 Issuing Authority
               </div>
-              <div className="absolute text-black font-normal text-[12px]" style={{ top: '869px  ', left: '230px' }}>
-              Embassy of Pakistan, {application.createdBy.state.toUpperCase() || 'N/A'}
+              <div className="absolute text-black font-normal text-[12px]" style={{ top: '869px  ', left: '300px' }}>
+              PARP, ARE
+              </div>
+              <div className="absolute text-black font-bold text-[6px]" style={{ top: '882px', left: '300px'}}>
+                Old Passport Number, Status
+              </div>
+              <div className="absolute text-black font-normal text-[12px]" style={{ top: '887px  ', left: '300px' }}>
+              AT321432, Stolen
+              </div>
+              <div className="absolute text-black font-bold text-[6px]" style={{ top: '900px', left: '300px'}}>
+                Old Passport Expiry Date
+              </div>
+              <div className="absolute text-black font-normal text-[12px]" style={{ top: '905px  ', left: '300px' }}>
+              20 DEC 2026
               </div>
               
               {/* ===== BOTTOM SECTION - MRZ (Machine Readable Zone) ===== */}
               
               {/* MRZ Line 1 - Passport format */}
-               <div className="absolute text-black text-[18px]" style={{ top: '930px  ', left: '20px', fontFamily: 'monospace, "Courier New", Courier, monospace', letterSpacing: '' }}>
+               <div className="absolute text-black text-[11.5px]" style={{ top: '940px  ', left: '20px', fontFamily: '"OCR-B"' }}>
                 {application.processing.mrz_line1.toUpperCase() || 'N/A'}
              </div>
-             <div className="absolute text-black text-[18px]" style={{ top: '945px  ', left: '20px', fontFamily: 'monospace, "Courier New", Courier, monospace', letterSpacing: '' }}>
+             <div className="absolute text-black text-[11.5px]" style={{ top: '955px  ', left: '20px', fontFamily: '"OCR-B" ' }}>
                 {application.processing.mrz_line2.toUpperCase() || 'N/A'}
              </div>
             </div>

@@ -516,7 +516,7 @@ export default function ApplicationViewPage() {
                         {/* Main Citizen Photo */}
                         {application.image && (
                           <div className="flex flex-col items-start">
-                            <div className="border-2 border-gray-300 rounded-lg p-3 bg-white shadow-sm">
+                            <div className="border-2 border-gray-300 rounded-lg bg-white shadow-sm">
                               <img
                                 src={`data:image/jpeg;base64,${application.image}`}
                                 alt="Citizen Photograph"
@@ -531,7 +531,7 @@ export default function ApplicationViewPage() {
                         {/* Passport Photo */}
                         {(passportResponseData?.image_url) && (
                           <div className="flex flex-col items-start">
-                            <div className="border-2 border-green-300 rounded-lg p-3 bg-white shadow-sm">
+                            <div className="border-2 border-green-300 rounded-lg bg-white shadow-sm">
                               {isPassportLoading ? (
                                 <div className="w-32 h-40 bg-green-50 border-2 border-green-300 rounded flex items-center justify-center">
                                   <span className="text-green-600 text-sm text-center">
@@ -736,10 +736,6 @@ export default function ApplicationViewPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 auto-rows-fr items-stretch">
               <Section title="Travel Information" className="h-full">
                 <GridItem
-                  label="Departure Date"
-                  value={formatDate(application.departureDate)}
-                />
-                <GridItem
                   label="Transport Mode"
                   value={application.transportMode || "-"}
                 />
@@ -786,7 +782,7 @@ export default function ApplicationViewPage() {
                 {application.createdBy?.fullName && (
                   <GridItem
                     label="Created By"
-                    value={`${application.createdBy.fullName}${
+                    value={`${application.createdBy.fullName.toUpperCase()}${
                       application.createdBy.state
                         ? ` (${application.createdBy.state})`
                         : ` (${application.createdBy.role})`
@@ -796,7 +792,7 @@ export default function ApplicationViewPage() {
                 {application.reviewedByUser?.fullName && (
                   <GridItem
                     label="Reviewed By"
-                    value={`${application.reviewedByUser.fullName} (${application.reviewedByUser.role})`}
+                    value={`${application.reviewedByUser.fullName.toUpperCase()} (${application.reviewedByUser.role})`}
                   />
                 )}
               </Section>

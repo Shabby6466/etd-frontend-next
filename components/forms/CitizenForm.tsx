@@ -811,7 +811,7 @@ export function CitizenForm() {
         {!showFullForm ? (
           
           // Show photo card first
-          <div className="mt-48 "><DGIPHeaderWithWatermarks/>
+          <div className="mt-40 "><DGIPHeaderWithWatermarks/>
 
           {/* XML Draft Files Info */}
           <div className="mb-6 p-4 bg-white-50 rounded-lg">
