@@ -2,20 +2,23 @@ import { apiClient } from "./client"
 
 export interface PassportApiResponse {
   citizen_no: string
-  first_name: string
+  first_names: string
   last_name: string
-  father_name: string
+  father_first_names: string
+  father_last_name: string
   gender: string
-  date_of_birth: string
-  birth_country: string
-  birth_city: string
-  pakistan_city: string
+  birthdate: string
+  birthcountry: string
+  birthcity: string
   pakistan_address: string
   profession: string
   photograph: string
   religion: string
   response_status: string
   old_passport_no: string
+  issue_date: string
+  passport_no: string
+  expiry_date: string
   api_response_date: string
   raw_response: any
 }
@@ -28,7 +31,6 @@ export interface PassportResponseData {
   first_name: string
   last_name: string
   father_name: string
-  pakistan_city: string
   gender: string
   date_of_birth: string
   birth_country: string
@@ -50,7 +52,6 @@ export interface PassportVolumeTrackingResponse {
   first_name: string
   last_name: string
   father_name: string
-  pakistan_city: string
   gender: string
   date_of_birth: string
   birth_country: string

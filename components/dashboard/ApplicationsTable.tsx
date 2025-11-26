@@ -333,7 +333,7 @@ export function ApplicationsTable({
                           <img 
                             src={`data:image/jpeg;base64,${application.image}`}
                             alt="Citizen Photo" 
-                            className="w-10 h-12 object-cover rounded border border-gray-300"
+                            className="w-12 h-12 object-cover rounded border border-gray-300"
                           />
                         </div>
                       )}

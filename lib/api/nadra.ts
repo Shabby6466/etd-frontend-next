@@ -10,7 +10,6 @@ export interface NadraData {
   date_of_birth: string
   // nationality: string
   profession: string
-  pakistan_city: string
   pakistan_address: string
   // height: string
   // color_of_eyes: string

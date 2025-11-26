@@ -19,11 +19,9 @@ const citizenSchema = z.object({
   gender: z.string().min(1, "Gender is required"),
   date_of_birth: z.string().min(1, "Date of birth is required"),
   profession: z.string().min(1, "Profession is required"),
-  pakistan_city: z.string().min(1, "City is required"),
   pakistan_address: z.string().min(1, "Address is required"),
   birth_country: z.string().min(1, "Birth country is required"),
   birth_city: z.string().min(1, "Birth city is required"),
-  departure_date: z.string().min(1, "Departure date is required"),
   requested_by: z.string().min(1, "Requested by is required"),
   height: z.string().optional(),
   color_of_eyes: z.string().optional(),
@@ -76,11 +74,9 @@ const DataInputScreen: React.FC<DataInputScreenProps> = ({ user, onLogout, onBac
       gender: "",
       date_of_birth: "",
       profession: "",
-      pakistan_city: "",
       pakistan_address: "",
       birth_country: "",
       birth_city: "",
-      departure_date: "",
       requested_by: "",
       height: "",
       color_of_eyes: "",
@@ -266,11 +262,9 @@ const DataInputScreen: React.FC<DataInputScreenProps> = ({ user, onLogout, onBac
         gender: data.gender,
         date_of_birth: data.date_of_birth,
         profession: data.profession,
-        pakistan_city: data.pakistan_city,
         pakistan_address: data.pakistan_address,
         birth_country: data.birth_country,
         birth_city: data.birth_city,
-        departure_date: data.departure_date,
         requested_by: data.requested_by,
         height: data.height,
         color_of_eyes: data.color_of_eyes,
@@ -674,24 +668,6 @@ const DataInputScreen: React.FC<DataInputScreenProps> = ({ user, onLogout, onBac
               </div>
 
               <div>
-                <label htmlFor="pakistan_city" className="block text-sm font-medium text-gray-700 mb-1">
-                  City *
-                </label>
-                <input
-                  id="pakistan_city"
-                  {...form.register("pakistan_city")}
-                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    form.formState.errors.pakistan_city ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                {form.formState.errors.pakistan_city && (
-                  <p className="text-sm text-red-500 mt-1">
-                    {form.formState.errors.pakistan_city.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
                 <label htmlFor="profession" className="block text-sm font-medium text-gray-700 mb-1">
                   Profession *
                 </label>
@@ -765,24 +741,6 @@ const DataInputScreen: React.FC<DataInputScreenProps> = ({ user, onLogout, onBac
 
             {/* Travel & Request Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="departure_date" className="block text-sm font-medium text-gray-700 mb-1">
-                  Departure Date *
-                </label>
-                <input
-                  id="departure_date"
-                  type="date"
-                  {...form.register("departure_date")}
-                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    form.formState.errors.departure_date ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                {form.formState.errors.departure_date && (
-                  <p className="text-sm text-red-500 mt-1">
-                    {form.formState.errors.departure_date.message}
-                  </p>
-                )}
-              </div>
 
               <div>
                 <label htmlFor="requested_by" className="block text-sm font-medium text-gray-700 mb-1">

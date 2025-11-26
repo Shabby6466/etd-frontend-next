@@ -166,14 +166,12 @@ export function CitizenForm() {
       gender: "",
       date_of_birth: "",
       profession: "",
-      pakistan_city: "",
       pakistan_address: "",
       birth_country: "",
       birth_city: "",
       height: "",
       color_of_eyes: "",
       color_of_hair: "",
-      departure_date: "",
       transport_mode: "",
       investor: "",
       requested_by: "",
@@ -221,24 +219,23 @@ export function CitizenForm() {
 
     return {
       citizen_id: passportData.citizen_no,
-      first_name: passportData.first_name || "",
+      first_name: passportData.first_names || "",
       last_name: passportData.last_name || "",
       image: passportData.photograph || "",
-      father_name: passportData.father_name || "",
+      father_name: passportData.father_first_names  + passportData.father_last_name|| "",
       gender:
         passportData.gender === "m"
           ? "Male"
           : passportData.gender === "f"
           ? "Female"
           : passportData.gender,
-      date_of_birth: formatDate(passportData.date_of_birth),
+      date_of_birth: formatDate(passportData.birthdate),
       profession: passportData.profession,
       birth_country:
-        passportData.birth_country === "PK"
+        passportData.birthcountry === "PK"
           ? "Pakistan"
-          : passportData.birth_country,
-      birth_city: passportData.birth_city,
-      pakistan_city: passportData.pakistan_city,
+          : passportData.birthcountry,
+      birth_city: passportData.birthcity,
       pakistan_address: passportData.pakistan_address,
     };
   };
@@ -305,7 +302,7 @@ export function CitizenForm() {
       // Update form with mapped data (skip empty values)
       Object.entries(mappedData).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
-          form.setValue(key as keyof CitizenFormData, value);
+          form.setValue(key as keyof CitizenFormData, value, { shouldDirty: true, shouldValidate: true });
         }
       });
 
@@ -325,7 +322,6 @@ export function CitizenForm() {
         last_name: mappedData.last_name,
         father_name: mappedData.father_name,
         gender: mappedData.gender,
-        pakistan_city: mappedData.pakistan_city,
         date_of_birth: mappedData.date_of_birth,
         birth_country: mappedData.birth_country,
         birth_city: mappedData.birth_city,
@@ -342,40 +338,7 @@ export function CitizenForm() {
       // Store passport API data for later use in application creation
       form.setValue("passport_api_data", passportData);
 
-      showNotification.success("Data fetched successfully from Passport API");
-    } catch (passportError) {
-      console.warn("Passport API failed, trying NADRA API:", passportError);
-      try {
-        // Fallback to NADRA API
-        const data = await nadraAPI.getCitizenData(citizenId);
-        form.reset(data);
-        // Keep the uploaded photo if no passport photo available
-        if (imageBase64) {
-          form.setValue("image", imageBase64);
-          setPassportPhoto(`data:image/jpeg;base64,${imageBase64}`);
-          setImageBase64(imageBase64);
-        } else {
-          setPassportPhoto(null);
-          setImageBase64("");
-        }
-
-        // Store NADRA API data for submission
-        form.setValue("nadra_api_data", data);
-
-        showNotification.success(
-          "Data fetched successfully from NADRA API (no photo available - please upload manually)"
-        );
-      } catch (nadraError: unknown) {
-        const errorMessage =
-          nadraError instanceof Error
-            ? nadraError.message
-            : "Failed to fetch data from both Passport and NADRA APIs";
-        showNotification.error(errorMessage);
-        // Still show the form even if API fails - user can fill manually
-        showNotification.info(
-          "You can now fill in the remaining information manually"
-        );
-      }
+      // showNotification.success("Data fetched successfully from Passport API");
     } finally {
       setIsFetchingData(false);
       // Don't show full form here - it's already shown by navigation
@@ -393,14 +356,12 @@ export function CitizenForm() {
       gender: "",
       date_of_birth: "",
       profession: "",
-      pakistan_city: "",
       pakistan_address: "",
       birth_country: "",
       birth_city: "",
       height: "",
       color_of_eyes: "",
       color_of_hair: "",
-      departure_date: "",
       transport_mode: "",
       investor: "",
       requested_by: "",
@@ -456,14 +417,12 @@ export function CitizenForm() {
       form.setValue("image", xmlData.imageBase64);
       form.setValue("father_name", xmlData.fatherName);
       form.setValue("mother_name", xmlData.motherName);
-      form.setValue("gender", xmlData.gender);
+      form.setValue("gender", xmlData.gender, { shouldDirty: true, shouldValidate: true });
       form.setValue("date_of_birth", xmlData.dateOfBirth);
       form.setValue("profession", xmlData.profession);
-      form.setValue("pakistan_city", xmlData.pakistanCity);
       form.setValue("pakistan_address", xmlData.pakistanAddress);
       form.setValue("birth_country", xmlData.birthCountry);
       form.setValue("birth_city", xmlData.birthCity);
-      form.setValue("departure_date", xmlData.departureDate);
       form.setValue("requested_by", xmlData.requestedBy);
       
       // Optional fields
@@ -544,7 +503,7 @@ export function CitizenForm() {
       // Update form with mapped data (skip empty values)
       Object.entries(mappedData).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
-          form.setValue(key as keyof CitizenFormData, value);
+          form.setValue(key as keyof CitizenFormData, value, { shouldDirty: true, shouldValidate: true });
         }
       });
 
@@ -558,13 +517,13 @@ export function CitizenForm() {
       form.setValue("passport_api_data", passportData);
 
       // Set passport detail data for display
+      console.log('gender to map -> ', mappedData.gender)
       setPassportDetailData({
         first_name: mappedData.first_name,
         last_name: mappedData.last_name,
         father_name: mappedData.father_name,
         mother_name: "Not available",
         gender: mappedData.gender,
-        pakistan_city: mappedData.pakistan_city,
         date_of_birth: mappedData.date_of_birth,
         birth_country: mappedData.birth_country,
         birth_city: mappedData.birth_city,
@@ -581,29 +540,7 @@ export function CitizenForm() {
       // Store passport API data for later use in application creation
       form.setValue("passport_api_data", passportData);
 
-      showNotification.success("Data fetched successfully from Passport API");
-    } catch (passportError) {
-      console.warn("Passport API failed, trying NADRA API:", passportError);
-      try {
-        // Fallback to NADRA API
-        const data = await nadraAPI.getCitizenData(citizenId);
-        form.reset(data);
-        setPassportPhoto(null); // Clear any previous photo
-        setImageBase64(""); // Clear base64 image
-
-        // Store NADRA API data for submission
-        form.setValue("nadra_api_data", data);
-
-        showNotification.success(
-          "Data fetched successfully from NADRA API (no photo available - please upload manually)"
-        );
-      } catch (nadraError: unknown) {
-        const errorMessage =
-          nadraError instanceof Error
-            ? nadraError.message
-            : "Failed to fetch data from both Passport and NADRA APIs";
-        showNotification.error(errorMessage);
-      }
+      // showNotification.success("Data fetched successfully from Passport API");
     } finally {
       setIsFetchingData(false);
     }
@@ -637,7 +574,6 @@ export function CitizenForm() {
           label: "Date of Birth",
         },
         { field: "profession", value: data.profession, label: "Profession" },
-        { field: "pakistan_city", value: data.pakistan_city, label: "City" },
         {
           field: "pakistan_address",
           value: data.pakistan_address,
@@ -649,11 +585,6 @@ export function CitizenForm() {
           label: "Birth Country",
         },
         { field: "birth_city", value: data.birth_city, label: "Birth City" },
-        {
-          field: "departure_date",
-          value: data.departure_date,
-          label: "Departure Date",
-        },
         {
           field: "requested_by",
           value: data.requested_by,
@@ -716,7 +647,6 @@ export function CitizenForm() {
         mother_name: data.mother_name,
         citizen_id: data.citizen_id,
         gender: data.gender,
-        pakistan_city: data.pakistan_city,
         date_of_birth: data.date_of_birth,
         birth_country: data.birth_country,
         birth_city: data.birth_city,
@@ -725,7 +655,6 @@ export function CitizenForm() {
         height: data.height || "",
         color_of_hair: data.color_of_hair || "",
         color_of_eyes: data.color_of_eyes || "",
-        departure_date: data.departure_date,
         transport_mode: data.transport_mode || "",
         investor: data.investor || "",
         requested_by: data.requested_by,
@@ -776,7 +705,6 @@ export function CitizenForm() {
             first_name: mappedData.first_name || "",
             last_name: mappedData.last_name || "",
             father_name: mappedData.father_name || "",
-            pakistan_city: mappedData.pakistan_city || "",
             gender: mappedData.gender || "",
             date_of_birth: mappedData.date_of_birth || "",
             birth_country: mappedData.birth_country || "",
@@ -883,58 +811,7 @@ export function CitizenForm() {
         {!showFullForm ? (
           
           // Show photo card first
-          <div className="mt-48 "><DGIPHeaderWithWatermarks/>
-
-          {/* XML Draft Files Info */}
-          <div className="mb-6 p-4 bg-white-50 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FolderOpen className="h-5 w-5 text-white-600" />
-                <div>
-                  <h3 className="font-semibold text-blue-900">XML Draft Files</h3>
-                  <p className="text-sm text-black-700">
-                    {isXmlLoading ? "Loading..." : `${fileCount} files in Draft`}
-                  </p>
-                  {currentFileName && (
-                    <p className="text-xs text-orange-600 mt-1">
-                      📄 Currently processing: {currentFileName}
-                    </p>
-                  )}
-                  {xmlError && (
-                    <p className="text-sm text-red-600 mt-1">{xmlError}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={refreshFileList}
-                  disabled={isXmlLoading}
-                >
-                  <FileText className="h-4 w-4 mr-1" />
-                  Refresh
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResetXmlFiles}
-                  disabled={isXmlLoading}
-                >
-                  Reset
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleLoadXmlFile}
-                  disabled={isXmlLoading || fileCount === 0 || currentXmlFileIndex >= files.length}
-                >
-                  Load Next File ({currentXmlFileIndex + 1}/{files.length})
-                </Button>
-              </div>
-            </div>
-          </div>
+          <div className="mt-40 "><DGIPHeaderWithWatermarks/>
 
           <ETDApplicationPhotoCard
             title="Emergency Travel Document Application"
@@ -1272,9 +1149,9 @@ export function CitizenForm() {
                         }`}
                       >
                         <option value="">Select Gender</option>
-                        <option value="M">Male</option>
-                        <option value="F">Female</option>
-                        <option value="X">Transgender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Transgender">Transgender</option>
                       </select>
 
                       {form.formState.errors.gender && (
@@ -1346,25 +1223,6 @@ export function CitizenForm() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="pakistan_city" className="font-bold">
-                      City *
-                    </Label>
-                    <Input
-                      id="pakistan_city"
-                      {...form.register("pakistan_city")}
-                      className={
-                        form.formState.errors.pakistan_city
-                          ? "border-red-500"
-                          : ""
-                      }
-                    />
-                    {form.formState.errors.pakistan_city && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.pakistan_city.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
                     <Label htmlFor="profession" className="font-bold">
                       Profession *
                     </Label>
@@ -1430,26 +1288,6 @@ export function CitizenForm() {
 
                 {/* Travel & Request Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="departure_date" className="font-bold">
-                      Departure Date *
-                    </Label>
-                    <Input
-                      id="departure_date"
-                      type="date"
-                      {...form.register("departure_date")}
-                      className={`text-gray-500 ${
-                        form.formState.errors.departure_date
-                          ? "border-red-500"
-                          : ""
-                      }`}
-                    />
-                    {form.formState.errors.departure_date && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.departure_date.message}
-                      </p>
-                    )}
-                  </div>
                   <div>
                     <Label htmlFor="transport_mode">Transport Mode</Label>
                     <Input

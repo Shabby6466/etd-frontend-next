@@ -1,5 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* MRZ Font Face Declaration */
+@font-face {
+  font-family: 'OCR-B';
+  src: url('/fonts/OCR-B.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+/* Test class to verify font loading */
+.font-test {
+  font-family: 'OCR-B', 'Courier New', monospace;
+  font-size: 24px;
+  color: red;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -131,7 +148,7 @@
     
     /* Ensure OCR font is available for printing */
     .ocr-text {
-      font-family: 'OCR-B 10 BT', 'Courier New', monospace;
+      font-family: 'OCR-B', 'Courier New', monospace;
       letter-spacing: 0.1em;
     }
   }

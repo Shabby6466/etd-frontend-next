@@ -60,8 +60,7 @@ Authorization: Bearer <jwt_token>
   pakistan_address: string;         // Address in Pakistan
   height: string;                   // Height (e.g., "5.9")
   color_of_hair: string;            // Hair color (e.g., "Black")
-  color_of_eyes: string;            // Eye color (e.g., "Brown")
-  departure_date: Date;             // Departure date
+  color_of_eyes: string;            // Departure date
   gender: string;                   // Gender (e.g., "Male")
   transport_mode: string;           // Transport mode (e.g., "Air")
   investor: string;                 // Investor status (e.g., "Yes")
@@ -110,8 +109,7 @@ Authorization: Bearer <jwt_token>
       "pakistan_address": "123 Main St, Karachi",
       "height": "5.9",
       "color_of_hair": "Black",
-      "color_of_eyes": "Brown",
-      "departure_date": "2024-12-01",
+      "color_of_eyes": "Brown"
       "gender": "Male",
       "transport_mode": "Air",
       "investor": "Yes",
@@ -205,7 +203,6 @@ RejectedApplication;  // Single rejected application object
   "height": "5.9",
   "color_of_hair": "Black",
   "color_of_eyes": "Brown",
-  "departure_date": "2024-12-01",
   "gender": "Male",
   "transport_mode": "Air",
   "investor": "Yes",

@@ -11,12 +11,10 @@ export interface Application {
   date_of_birth: string
   nationality: string
   profession: string
-  pakistan_city: string
   pakistan_address: string
   height: string
   color_of_eyes: string
   color_of_hair: string
-  departure_date: string
   transport_mode: string
   createdAt: string
   updatedAt: string

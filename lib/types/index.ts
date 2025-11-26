@@ -59,7 +59,6 @@ export interface Application {
   height: string
   colorOfEyes: string
   colorOfHair: string
-  departureDate: string
   securityDeposit: string
   investor: string
   requestedBy?: string

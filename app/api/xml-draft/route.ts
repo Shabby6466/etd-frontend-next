@@ -113,11 +113,9 @@ export async function POST(request: NextRequest) {
         gender: extractField('gender'),
         dateOfBirth: extractField('date_of_birth'),
         profession: extractField('profession'),
-        pakistanCity: extractField('pakistan_city'),
         pakistanAddress: extractField('pakistan_address'),
         birthCountry: extractField('birth_country'),
         birthCity: extractField('birth_city'),
-        departureDate: extractField('departure_date'),
         requestedBy: extractField('requested_by'),
         
         // Optional fields

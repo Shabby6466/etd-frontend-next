@@ -9,6 +9,7 @@ import { FileText } from "lucide-react"
 import DocumentHeader from "@/components/print/DocumentHeader"
 import PrintSidebar from "@/components/print/PrintSidebar"
 import DocumentPreview from "@/components/print/DocumentPreview"
+import DocumentPreviewToggle from "@/components/print/DocumentPreviewToggle"
 
 export default function PrintApplicationPage() {
   const params = useParams()
@@ -17,6 +18,7 @@ export default function PrintApplicationPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [sheetNo, setSheetNo] = useState("")
   const [isPrinting, setIsPrinting] = useState(false)
+  const [isNewDesign, setIsNewDesign] = useState(false)
 
   useEffect(() => {
     const fetchApplication = async () => {
@@ -115,7 +117,13 @@ export default function PrintApplicationPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <PrintSidebar application={application} sheetNo={sheetNo} setSheetNo={setSheetNo} handlePrint={handlePrint} isPrinting={isPrinting} />
           
-          <DocumentPreview application={application} />
+          <div className="lg:col-span-2">
+            <DocumentPreviewToggle 
+              isNewDesign={isNewDesign} 
+              onToggle={setIsNewDesign} 
+            />
+            <DocumentPreview application={application} isNewDesign={isNewDesign} />
+          </div>
         </div>
       </div>
     </div>
