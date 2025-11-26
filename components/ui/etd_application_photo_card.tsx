@@ -2,10 +2,11 @@
 
 import { useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { ChevronRight } from "lucide-react"
+import { ArrowLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils" // optional; remove if you don't use cn()
 import { useAuthStore } from "@/lib/stores/auth-store"
 
@@ -38,6 +39,7 @@ export default function ETDApplicationPhotoCard({
   const [photoB64, setPhotoB64] = useState<string | null>(initialImageBase64)
   const [loading, setLoading] = useState(false)
   const { user } = useAuthStore()
+  const router = useRouter();
 
   const openPicker = () => fileRef.current?.click()
 
@@ -78,6 +80,7 @@ export default function ETDApplicationPhotoCard({
     onDelete?.()
   }
 
+
   const handleGetData = () => {
     console.log("ETDApplicationPhotoCard handleGetData called with citizen:", citizen)
     if (!/^\d{13}$/.test(citizen)) {
@@ -94,6 +97,14 @@ export default function ETDApplicationPhotoCard({
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="border-b">
         <CardTitle className="text-center text-2xl font-bold">{title}</CardTitle>
+        <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                className="text-sm"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
       </CardHeader>
 
       <CardContent className="pt-6">

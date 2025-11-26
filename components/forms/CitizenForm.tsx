@@ -222,7 +222,7 @@ export function CitizenForm() {
       first_name: passportData.first_names || "",
       last_name: passportData.last_name || "",
       image: passportData.photograph || "",
-      father_name: passportData.father_first_names || "",
+      father_name: passportData.father_first_names  + passportData.father_last_name|| "",
       gender:
         passportData.gender === "m"
           ? "Male"
@@ -812,57 +812,6 @@ export function CitizenForm() {
           
           // Show photo card first
           <div className="mt-40 "><DGIPHeaderWithWatermarks/>
-
-          {/* XML Draft Files Info */}
-          <div className="mb-6 p-4 bg-white-50 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FolderOpen className="h-5 w-5 text-white-600" />
-                <div>
-                  <h3 className="font-semibold text-blue-900">XML Draft Files</h3>
-                  <p className="text-sm text-black-700">
-                    {isXmlLoading ? "Loading..." : `${fileCount} files in Draft`}
-                  </p>
-                  {currentFileName && (
-                    <p className="text-xs text-orange-600 mt-1">
-                      📄 Currently processing: {currentFileName}
-                    </p>
-                  )}
-                  {xmlError && (
-                    <p className="text-sm text-red-600 mt-1">{xmlError}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={refreshFileList}
-                  disabled={isXmlLoading}
-                >
-                  <FileText className="h-4 w-4 mr-1" />
-                  Refresh
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResetXmlFiles}
-                  disabled={isXmlLoading}
-                >
-                  Reset
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleLoadXmlFile}
-                  disabled={isXmlLoading || fileCount === 0 || currentXmlFileIndex >= files.length}
-                >
-                  Load Next File ({currentXmlFileIndex + 1}/{files.length})
-                </Button>
-              </div>
-            </div>
-          </div>
 
           <ETDApplicationPhotoCard
             title="Emergency Travel Document Application"

@@ -300,7 +300,7 @@ export default function DocumentPreviewNew({ application }: DocumentPreviewNewPr
                 Citizen Number
               </div>
               <div className="absolute text-black font-normal text-[12px]" style={{ top: '778px', left: '300px' }}>
-                {application.citizenId?.toUpperCase() || 'N/A'}
+                61101-3082523-9
               </div>
               <div className="absolute text-black font-bold text-[6px]" style={{ top: '864px', left: '300px'}}>
                 Issuing Authority
