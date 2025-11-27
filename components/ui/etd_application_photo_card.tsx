@@ -2,12 +2,12 @@
 
 import { useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { ChevronRight } from "lucide-react"
+import { ArrowLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils" // optional; remove if you don't use cn()
-import BiometricCaptureModal from "@/components/ui/BiometricCaptureModal"
 import { useAuthStore } from "@/lib/stores/auth-store"
 
 type Props = {
@@ -38,8 +38,8 @@ export default function ETDApplicationPhotoCard({
   const [citizen, setCitizen] = useState(initialCitizenNumber)
   const [photoB64, setPhotoB64] = useState<string | null>(initialImageBase64)
   const [loading, setLoading] = useState(false)
-  const [showBiometricModal, setShowBiometricModal] = useState(false)
   const { user } = useAuthStore()
+  const router = useRouter();
 
   const openPicker = () => fileRef.current?.click()
 
@@ -80,92 +80,34 @@ export default function ETDApplicationPhotoCard({
     onDelete?.()
   }
 
+
   const handleGetData = () => {
     console.log("ETDApplicationPhotoCard handleGetData called with citizen:", citizen)
     if (!/^\d{13}$/.test(citizen)) {
       alert("Please enter a valid 13-digit citizen ID")
       return
     }
-    setShowBiometricModal(true)
-  }
-
-  const proceedWithGetData = () => {
+    
     console.log("Proceeding with get data - citizen:", citizen, "image:", photoB64 ? "has image" : "no image")
-  
     onNavigate?.(citizen, photoB64)
     onGetData?.(citizen)
-  }
-
-  const handleBiometricCaptured = (captureData: {
-    imageBase64: string
-    templateBase64?: string
-    imageDpi?: number
-    imageQuality?: number
-    wsqBase64?: string
-    wsqSize?: number
-    deviceModel?: string
-    serial?: string
-  }) => {
-    console.log("Biometric captured successfully, proceeding with get data")
-    setShowBiometricModal(false)
-    proceedWithGetData()
-  }
-
-  const handleBiometricClose = () => {
-    console.log("Biometric capture closed, proceeding with get data")
-    setShowBiometricModal(false)
-    proceedWithGetData()
   }
 
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="border-b">
         <CardTitle className="text-center text-2xl font-bold">{title}</CardTitle>
+        <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                className="text-sm"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
       </CardHeader>
 
       <CardContent className="pt-6">
-        {/* Photo */}
-        {/* <div className="flex w-full justify-center">
-          <div
-            className="rounded-md border bg-white"
-            style={{ width: imgWidth, height: imgHeight }}
-          >
-            <Image
-              src={imgSrc}
-              alt="Applicant Photo"
-              width={imgWidth}
-              height={imgHeight}
-              className="h-full w-full object-cover select-none pointer-events-none"
-              draggable={false}
-            />
-          </div>
-        </div> */}
-
-        {/* Actions */}
-        {/* <div className="mt-4 flex w-full justify-center gap-2">
-          <Button type="button" onClick={openPicker} disabled={loading}>
-            <UploadCloud className="mr-2 h-4 w-4" />
-            {loading ? "Uploading..." : "Upload New"}
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={clearImage}
-            disabled={loading || !photoB64}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </Button>
-          <input
-            ref={fileRef}
-            className="hidden"
-            type="file"
-            accept="image/*"
-            onChange={(e) => handleFile(e.target.files)}
-          />
-        </div> */}
-
-        {/* Citizen Number */}
         <div className="mt-6">
           <Label htmlFor="citizen-number" className="text-sm">
             Citizen Number
@@ -197,13 +139,6 @@ export default function ETDApplicationPhotoCard({
           </Button>
         </div>
       </CardContent>
-      
-      {/* Biometric Capture Modal */}
-      <BiometricCaptureModal
-        isOpen={showBiometricModal}
-        onClose={handleBiometricClose}
-        onCaptured={handleBiometricCaptured}
-      />
     </Card>
   );
 }

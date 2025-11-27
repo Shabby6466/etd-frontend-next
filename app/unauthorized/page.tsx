@@ -13,28 +13,28 @@ export default function UnauthorizedPage() {
     if (user) {
       switch (user.role) {
         case "ADMIN":
-          router.push("/admin")
+          router.replace("/admin")
           break
         case "AGENCY":
-          router.push("/agency")
+          router.replace("/agency")
           break
         case "MINISTRY":
-          router.push("/ministry")
+          router.replace("/ministry")
           break
         case "MISSION_OPERATOR":
-          router.push("/mission")
+          router.replace("/mission")
           break
         default:
-          router.push("/")
+          router.replace("/")
       }
     } else {
-      router.push("/")
+      router.replace("/")
     }
   }
 
   const handleLogout = async () => {
     await logout()
-    router.push("/login")
+    router.replace("/login")
   }
 
   return (

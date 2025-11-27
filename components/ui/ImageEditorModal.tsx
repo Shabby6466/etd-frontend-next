@@ -38,6 +38,9 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
   const [imageScale, setImageScale] = useState(1);
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
   const [imageDisplaySize, setImageDisplaySize] = useState({ width: 0, height: 0 });
+
+  const [needsUpscaling, setNeedsUpscaling] = useState(false);
+  const [isSmallImage, setIsSmallImage] = useState(false);
   
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -83,13 +86,29 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
     const img = imageRef.current;
     const container = containerRef.current;
     
+    // Check if image is smaller than target
+    const isSmall = img.naturalWidth < TARGET_WIDTH || img.naturalHeight < TARGET_HEIGHT;
+    setIsSmallImage(isSmall);
+    
+    // Only set needsUpscaling if we want to enforce the warning (which we don't for small images anymore)
+    setNeedsUpscaling(false); 
+    
     // Calculate scale to fit image in container while maintaining aspect ratio
     const containerWidth = container.clientWidth;
     const containerHeight = 400; // Fixed height for preview
     
-    const scaleX = containerWidth / img.naturalWidth;
-    const scaleY = containerHeight / img.naturalHeight;
-    const scale = Math.min(scaleX, scaleY);
+    // For small images, we might want to scale them up for better visibility
+    let scale;
+    if (isSmall) {
+      // Scale up small images to make them more visible in the preview
+      const scaleX = Math.min(containerWidth / img.naturalWidth, 2); // Max 2x upscale for preview
+      const scaleY = Math.min(containerHeight / img.naturalHeight, 2);
+      scale = Math.min(scaleX, scaleY);
+    } else {
+      const scaleX = containerWidth / img.naturalWidth;
+      const scaleY = containerHeight / img.naturalHeight;
+      scale = Math.min(scaleX, scaleY);
+    }
     
     setImageScale(scale);
     
@@ -104,20 +123,37 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
     
     setImageOffset({ x: offsetX, y: offsetY });
     
-    // Initialize crop area to center of image with target aspect ratio
-    const cropAspectRatio = TARGET_WIDTH / TARGET_HEIGHT;
+    // Initialize crop area
     let cropWidth, cropHeight;
     
-    if (displayWidth / displayHeight > cropAspectRatio) {
-      // Image is wider than target ratio
-      cropHeight = displayHeight;
-      cropWidth = displayHeight * cropAspectRatio;
-    } else {
-      // Image is taller than target ratio
+    if (isSmall) {
+      // For small images, select the entire image by default
       cropWidth = displayWidth;
-      cropHeight = displayWidth / cropAspectRatio;
+      cropHeight = displayHeight;
+    } else {
+      // Initialize crop area with fixed aspect ratio (540:420) for larger images
+      const cropAspectRatio = TARGET_WIDTH / TARGET_HEIGHT; // 540/420 = 1.2857
+      
+      // For larger images, use 80% to give more flexibility
+      const maxCropWidth = displayWidth * 0.8;
+      const maxCropHeight = displayHeight * 0.8;
+      
+      if (maxCropWidth / maxCropHeight > cropAspectRatio) {
+        // Limited by height
+        cropHeight = Math.min(maxCropHeight, displayHeight);
+        cropWidth = cropHeight * cropAspectRatio;
+      } else {
+        // Limited by width
+        cropWidth = Math.min(maxCropWidth, displayWidth);
+        cropHeight = cropWidth / cropAspectRatio;
+      }
     }
     
+    // Ensure crop area doesn't exceed image bounds
+    cropWidth = Math.min(cropWidth, displayWidth);
+    cropHeight = Math.min(cropHeight, displayHeight);
+    
+    // Center the crop area on the image
     const cropX = offsetX + (displayWidth - cropWidth) / 2;
     const cropY = offsetY + (displayHeight - cropHeight) / 2;
     
@@ -140,11 +176,30 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Check if click is inside crop area
+    // Check if click is inside crop area - if so, drag from that point
     if (x >= cropArea.x && x <= cropArea.x + cropArea.width &&
         y >= cropArea.y && y <= cropArea.y + cropArea.height) {
       setIsDragging(true);
       setDragStart({ x: x - cropArea.x, y: y - cropArea.y });
+      e.preventDefault();
+    } else {
+      // If clicked outside, center the crop area on the click point
+      const newX = x - cropArea.width / 2;
+      const newY = y - cropArea.height / 2;
+      
+      // Constrain to image bounds
+      const maxX = imageOffset.x + imageDisplaySize.width - cropArea.width;
+      const maxY = imageOffset.y + imageDisplaySize.height - cropArea.height;
+      
+      setCropArea(prev => ({
+        ...prev,
+        x: Math.max(imageOffset.x, Math.min(maxX, newX)),
+        y: Math.max(imageOffset.y, Math.min(maxY, newY))
+      }));
+      
+      // Start dragging from the center
+      setIsDragging(true);
+      setDragStart({ x: cropArea.width / 2, y: cropArea.height / 2 });
       e.preventDefault();
     }
   };
@@ -156,17 +211,23 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    const newX = x - dragStart.x;
-    const newY = y - dragStart.y;
+    let newX = x - dragStart.x;
+    let newY = y - dragStart.y;
     
     // Constrain crop area to image bounds
+    const minX = imageOffset.x;
+    const minY = imageOffset.y;
     const maxX = imageOffset.x + imageDisplaySize.width - cropArea.width;
     const maxY = imageOffset.y + imageDisplaySize.height - cropArea.height;
     
+    // Clamp the values
+    newX = Math.max(minX, Math.min(maxX, newX));
+    newY = Math.max(minY, Math.min(maxY, newY));
+    
     setCropArea(prev => ({
       ...prev,
-      x: Math.max(imageOffset.x, Math.min(maxX, newX)),
-      y: Math.max(imageOffset.y, Math.min(maxY, newY))
+      x: newX,
+      y: newY
     }));
   }, [isDragging, imageLoaded, dragStart, imageOffset, imageDisplaySize, cropArea.width, cropArea.height]);
 
@@ -201,67 +262,78 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
       const img = imageRef.current;
       
       // Calculate the actual crop coordinates in the original image
+      // The scale is the ratio between the original image and the displayed image
       const scaleX = img.naturalWidth / imageDisplaySize.width;
       const scaleY = img.naturalHeight / imageDisplaySize.height;
       
-      const cropX = (cropArea.x - imageOffset.x) * scaleX;
-      const cropY = (cropArea.y - imageOffset.y) * scaleY;
-      const cropWidth = cropArea.width * scaleX;
-      const cropHeight = cropArea.height * scaleY;
+      // Convert crop area from display coordinates to original image coordinates
+      // Subtract imageOffset to get position relative to the image (not container)
+      const cropXRelative = cropArea.x - imageOffset.x;
+      const cropYRelative = cropArea.y - imageOffset.y;
+      
+      // Scale to original image coordinates
+      const cropX = Math.round(cropXRelative * scaleX);
+      const cropY = Math.round(cropYRelative * scaleY);
+      const cropWidth = Math.round(cropArea.width * scaleX);
+      const cropHeight = Math.round(cropArea.height * scaleY);
+      
+      // Ensure we're within bounds
+      const finalCropX = Math.max(0, Math.min(img.naturalWidth - cropWidth, cropX));
+      const finalCropY = Math.max(0, Math.min(img.naturalHeight - cropHeight, cropY));
+      const finalCropWidth = Math.min(cropWidth, img.naturalWidth - finalCropX);
+      const finalCropHeight = Math.min(cropHeight, img.naturalHeight - finalCropY);
 
       // Set canvas to target size
-      canvas.width = TARGET_WIDTH;
-      canvas.height = TARGET_HEIGHT;
+      // If small image, use the actual crop dimensions to avoid upscaling
+      const targetCanvasWidth = isSmallImage ? finalCropWidth : TARGET_WIDTH;
+      const targetCanvasHeight = isSmallImage ? finalCropHeight : TARGET_HEIGHT;
+
+      canvas.width = targetCanvasWidth;
+      canvas.height = targetCanvasHeight;
 
       // Fill with white background first
       ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+      ctx.fillRect(0, 0, targetCanvasWidth, targetCanvasHeight);
 
       // Draw the cropped portion to fill the entire canvas
       ctx.drawImage(
         img,
-        cropX, cropY, cropWidth, cropHeight,
-        0, 0, TARGET_WIDTH, TARGET_HEIGHT
+        finalCropX, finalCropY, finalCropWidth, finalCropHeight,
+        0, 0, targetCanvasWidth, targetCanvasHeight
       );
 
-      // Convert to base64 with compression
-      let quality = 0.8;
+      // Convert to base64 with compression - try multiple quality levels
+      let quality = 0.9;
       let base64 = canvas.toDataURL("image/jpeg", quality);
-      
-      // Remove data URL prefix to get pure base64
-      const base64Data = base64.split(",")[1];
-      
-      // Calculate size in KB
-      const sizeKB = Math.ceil((base64Data.length * 3) / 4) / 1024;
+      let base64Data = base64.split(",")[1];
+      let sizeKB = Math.ceil((base64Data.length * 3) / 4) / 1024;
 
-      // If still too large, compress further
-      if (sizeKB > MAX_SIZE_KB && quality > 0.1) {
-        quality -= 0.1;
+      // Iteratively reduce quality if needed
+      while (sizeKB > MAX_SIZE_KB && quality > 0.1) {
+        quality -= 0.05;
         base64 = canvas.toDataURL("image/jpeg", quality);
-        const newBase64Data = base64.split(",")[1];
-        const newSizeKB = Math.ceil((newBase64Data.length * 3) / 4) / 1024;
-        
-        setProcessedImage({
-          base64: newBase64Data,
-          sizeKB: newSizeKB,
-          width: TARGET_WIDTH,
-          height: TARGET_HEIGHT
-        });
-      } else {
-        setProcessedImage({
-          base64: base64Data,
-          sizeKB,
-          width: TARGET_WIDTH,
-          height: TARGET_HEIGHT
-        });
+        base64Data = base64.split(",")[1];
+        sizeKB = Math.ceil((base64Data.length * 3) / 4) / 1024;
       }
+      
+      setProcessedImage({
+        base64: base64Data,
+        sizeKB,
+        width: targetCanvasWidth,
+        height: targetCanvasHeight
+      });
       
       if (sizeKB > MAX_SIZE_KB) {
         showNotification.warning(`Image size is ${sizeKB.toFixed(1)}KB (max: ${MAX_SIZE_KB}KB). Quality has been reduced to meet requirements.`);
+      } else if (isSmallImage) {
+        showNotification.success(`Image processed successfully! Size: ${sizeKB.toFixed(1)}KB (Original dimensions preserved)`);
+      } else if (needsUpscaling) {
+        showNotification.success(`Image processed successfully! Size: ${sizeKB.toFixed(1)}KB (upscaled from smaller original)`);
       } else {
         showNotification.success(`Image processed successfully! Size: ${sizeKB.toFixed(1)}KB`);
       }
     } catch (error) {
+      console.error("Image processing error:", error);
       showNotification.error("Failed to process image");
     } finally {
       setIsProcessing(false);
@@ -281,6 +353,9 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
     setOriginalDimensions(null);
     setImageLoaded(false);
     setIsDragging(false);
+    setIsDragging(false);
+    setNeedsUpscaling(false);
+    setIsSmallImage(false);
     onClose();
   };
 
@@ -310,11 +385,19 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
 
           {/* Original Image Info */}
           {originalDimensions && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-2">Original Image:</h3>
-              <p className="text-sm text-gray-700">
+            <div className={`p-4 rounded-lg ${needsUpscaling ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}>
+              <h3 className={`font-semibold mb-2 ${needsUpscaling ? 'text-yellow-900' : 'text-gray-900'}`}>
+                Original Image:
+              </h3>
+              <p className={`text-sm ${needsUpscaling ? 'text-yellow-800' : 'text-gray-700'}`}>
                 Dimensions: {originalDimensions.width} × {originalDimensions.height} pixels
               </p>
+              {needsUpscaling && (
+                <div className="mt-2 text-sm text-yellow-900">
+                  <p className="font-medium">⚠️ Image is smaller than required ({TARGET_WIDTH}×{TARGET_HEIGHT})</p>
+                  <p className="mt-1">The image will be upscaled to fit the required size. This may result in some quality loss, but the system will optimize for best results.</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -322,11 +405,13 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Original Preview with Crop */}
             <div>
-              <h3 className="font-semibold mb-3">Crop Image (Drag the box to adjust)</h3>
+              <h3 className="font-semibold mb-3">
+                {needsUpscaling ? 'Select Area to Crop (Image will be upscaled)' : isSmallImage ? 'Confirm Image Selection' : 'Crop Image (Drag the box to adjust)'}
+              </h3>
               <div 
                 ref={containerRef}
-                className="relative border rounded-lg overflow-hidden bg-gray-100"
-                style={{ height: '400px' }}
+                className={`relative border-2 rounded-lg overflow-hidden ${needsUpscaling ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300 bg-gray-100'}`}
+                style={{ height: '400px', cursor: isDragging ? 'grabbing' : 'crosshair' }}
                 onMouseDown={handleMouseDown}
               >
                 {previewUrl && (
@@ -340,7 +425,8 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
                       height: `${imageDisplaySize.height}px`,
                       left: `${imageOffset.x}px`,
                       top: `${imageOffset.y}px`,
-                      cursor: isDragging ? 'grabbing' : 'grab'
+                      userSelect: 'none',
+                      pointerEvents: 'none'
                     }}
                     onLoad={handleImageLoad}
                   />
@@ -355,40 +441,33 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
                       style={{ pointerEvents: 'none' }}
                     />
                     
-                    {/* Crop area (transparent) */}
+                    {/* Crop area with clear border */}
                     <div
-                      className="absolute border-2 border-white border-dashed"
+                      className="absolute border-4 border-blue-500 shadow-lg"
                       style={{
                         left: `${cropArea.x}px`,
                         top: `${cropArea.y}px`,
                         width: `${cropArea.width}px`,
                         height: `${cropArea.height}px`,
                         backgroundColor: 'transparent',
-                        pointerEvents: 'none'
+                        pointerEvents: 'none',
+                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)'
                       }}
-                    />
-                    
-                    {/* Crop area outline */}
-                    <div
-                      className="absolute border-2 border-blue-500"
-                      style={{
-                        left: `${cropArea.x}px`,
-                        top: `${cropArea.y}px`,
-                        width: `${cropArea.width}px`,
-                        height: `${cropArea.height}px`,
-                        backgroundColor: 'transparent',
-                        pointerEvents: 'none'
-                      }}
-                    />
+                    >
+                      {/* Crop area label */}
+                      <div className="absolute -top-7 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                        {isSmallImage ? `${Math.round(cropArea.width / imageScale)}×${Math.round(cropArea.height / imageScale)}` : `${TARGET_WIDTH}×${TARGET_HEIGHT}`}
+                      </div>
+                    </div>
                     
                     {/* Corner handles */}
                     {['nw', 'ne', 'sw', 'se'].map((corner) => (
                       <div
                         key={corner}
-                        className="absolute w-3 h-3 bg-blue-500 border border-white"
+                        className="absolute w-4 h-4 bg-white border-2 border-blue-500 rounded-full"
                         style={{
-                          left: `${cropArea.x + (corner.includes('e') ? cropArea.width : 0) - 6}px`,
-                          top: `${cropArea.y + (corner.includes('s') ? cropArea.height : 0) - 6}px`,
+                          left: `${cropArea.x + (corner.includes('e') ? cropArea.width : 0) - 8}px`,
+                          top: `${cropArea.y + (corner.includes('s') ? cropArea.height : 0) - 8}px`,
                           pointerEvents: 'none'
                         }}
                       />
@@ -405,24 +484,32 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
               </div>
               
               {/* Crop Controls */}
-              <div className="mt-3 flex justify-between items-center">
-                <div className="text-sm text-gray-600">
-                  <Move className="inline w-4 h-4 mr-1" />
-                  Drag to move crop area
+              <div className="mt-3">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    <Move className="inline w-4 h-4 mr-1" />
+                    Click anywhere or drag the blue box to position
+                  </div>
+                  <Button
+                    onClick={processImageFile}
+                    disabled={!imageLoaded || isProcessing}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {isProcessing ? "Processing..." : "Process Crop"}
+                  </Button>
                 </div>
-                <Button
-                  onClick={processImageFile}
-                  disabled={!imageLoaded || isProcessing}
-                  size="sm"
-                >
-                  {isProcessing ? "Processing..." : "Process Crop"}
-                </Button>
+                {needsUpscaling && (
+                  <div className="mt-2 text-xs text-yellow-700 bg-yellow-100 p-2 rounded">
+                    💡 Tip: Position the crop area to capture the most important part of the image. The selected area will be enlarged to {TARGET_WIDTH}×{TARGET_HEIGHT}.
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Processed Preview */}
             <div>
-              <h3 className="font-semibold mb-3">Processed Image ({TARGET_WIDTH}×{TARGET_HEIGHT})</h3>
+              <h3 className="font-semibold mb-3">Processed Image {processedImage ? `(${processedImage.width}×${processedImage.height})` : ''}</h3>
               {processedImage ? (
                 <div className="border rounded-lg overflow-hidden">
                   <img
@@ -430,11 +517,14 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
                     alt="Processed"
                     className="w-full h-auto max-h-80 object-contain"
                   />
-                  <div className="p-3 bg-gray-50">
+                  <div className={`p-3 ${needsUpscaling ? 'bg-yellow-50' : 'bg-gray-50'}`}>
                     <p className="text-sm text-gray-700">
                       Size: {processedImage.sizeKB.toFixed(1)}KB
                       {processedImage.sizeKB > MAX_SIZE_KB && (
                         <span className="text-red-600 ml-2">(Exceeds limit)</span>
+                      )}
+                      {needsUpscaling && processedImage.sizeKB <= MAX_SIZE_KB && (
+                        <span className="text-green-600 ml-2">✓ Upscaled successfully</span>
                       )}
                     </p>
                   </div>

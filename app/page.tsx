@@ -15,23 +15,23 @@ export default function HomePage() {
       // Redirect to appropriate dashboard based on role
       switch (user.role) {
         case "ADMIN":
-          router.push("/admin")
+          router.replace("/admin")
           break
         case "AGENCY":
-          router.push("/agency")
+          router.replace("/agency")
           break
         case "MINISTRY":
-          router.push("/ministry")
+          router.replace("/ministry")
           break
         case "MISSION_OPERATOR":
-          router.push("/mission")
+          router.replace("/mission")
           break
         default:
-          router.push("/admin")
+          router.replace("/admin")
       }
     } else {
       // Redirect to login if not authenticated
-      router.push("/login")
+      router.replace("/login")
     }
   }, [isAuthenticated, user, router])
 

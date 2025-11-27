@@ -1,11 +1,8 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "sonner"
 import { AuthProvider } from "@/components/auth/AuthProvider"
 import { QueryProvider } from "@/components/providers/QueryProvider"
-
-const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Emergency Travel Document System",
@@ -19,13 +16,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="font-sans">
         <QueryProvider>
           <AuthProvider>
             {children}
           </AuthProvider>
         </QueryProvider>
-        <Toaster position="top-right" />
+        <Toaster position="top-right" closeButton richColors />
       </body>
     </html>
   )

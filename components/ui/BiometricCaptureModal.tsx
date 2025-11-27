@@ -245,7 +245,7 @@ export default function BiometricCaptureModal({ isOpen, onClose, onCaptured, end
             <Button variant="ghost" onClick={onClose} disabled={isCapturing}>✕</Button>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="flex flex-col items-center">
                 <div className=" border rounded-md bg-gray-50 flex items-center justify-center overflow-hidden">
                   {preview ? (
@@ -261,63 +261,6 @@ export default function BiometricCaptureModal({ isOpen, onClose, onCaptured, end
                   <Button variant="secondary" onClick={handleUse} disabled={!details || wsqEncoding || !preview}>
                     {wsqEncoding ? "Encoding WSQ..." : "Next"}
                   </Button>
-                  {wsqPreview && (
-                    <Button variant="outline" onClick={downloadWSQ} disabled={wsqEncoding}>
-                     Download WSQ
-                    </Button>
-                  )}
-                </div>
-                {wsqEncoding && (
-                  <div className="mt-2 text-xs text-blue-600">
-                    Encoding fingerprint to WSQ format...
-                  </div>
-                )}
-                {connectionStatus && (
-                  <div className="mt-2 text-xs text-gray-600">
-                    {connectionStatus}
-                  </div>
-                )}
-                {error && (
-                  <div className="mt-2 text-sm text-red-600">
-                    {error.split('\n').map((line, i) => (
-                      <p key={i}>{line}</p>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="text-sm text-gray-700 space-y-2">
-                <div>
-                  <p><strong>Image DPI:</strong> {details?.ImageDPI ?? "-"}</p>
-                  <p><strong>Quality (1-100):</strong> {details?.ImageQuality ?? "-"}</p>
-                  <p><strong>NFIQ (1-5):</strong> {details?.NFIQ ?? "-"}</p>
-                </div>
-                
-                
-                <div className="border-t pt-2">
-                  <p><strong>WSQ Encoding:</strong></p>
-                  {wsqResult ? (
-                    <div className="text-xs">
-                      <p className="pl-2">• Original: {wsqResult.originalSize.toLocaleString()} bytes</p>
-                      <p className="pl-2">• Compressed: {wsqResult.compressedSize.toLocaleString()} bytes</p>
-                      <p className="pl-2">• Ratio: {wsqResult.compressionRatio}:1</p>
-                      <p className="pl-2">• Quality: {wsqResult.quality}%</p>
-                      <p className="pl-2">• Savings: {(((wsqResult.originalSize - wsqResult.compressedSize) / wsqResult.originalSize) * 100).toFixed(1)}%</p>
-                    </div>
-                  ) : details?.WSQImageSize ? (
-                    <div className="text-xs">
-                      <p className="pl-2">• Size: {details.WSQImageSize} bytes</p>
-                      <p className="pl-2">• Data: {wsqPreview?.length} chars</p>
-                    </div>
-                  ) : (
-                    <p className="text-xs pl-2 text-gray-500">• {wsqEncoding ? "Encoding..." : "Not available"}</p>
-                  )}
-                  {wsqPreview && (
-                    <div className="mt-1 p-2 rounded text-xs font-mono max-h-40 overflow-y-auto">
-                      <div className="break-all">
-                        {wsqPreview}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

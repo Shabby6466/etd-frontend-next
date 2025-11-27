@@ -1,10 +1,10 @@
 import { env } from '@/lib/config/env'
 
 export const API_CONFIG = {
-  BASE_URL: env.NEXT_PUBLIC_API_URL || 'http://172.17.128.145:3836/v1/api',
-  TIMEOUT: 60000, // Increased timeout to 60 seconds
+  BASE_URL: env.NEXT_PUBLIC_API_URL || 'http://etd-backend:3836/v1/api',
+  TIMEOUT: 30000, // 30 seconds timeout
   RETRY_ATTEMPTS: 3,
-  RETRY_DELAY: 2000 // Increased retry delay
+  RETRY_DELAY: 1000 // 1 second retry delay
 }
 
 export const API_ENDPOINTS = {
