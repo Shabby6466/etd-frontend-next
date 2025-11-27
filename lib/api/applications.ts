@@ -181,7 +181,7 @@ export const applicationAPI = {
     }
   }> => {
     const params = new URLSearchParams()
-    
+
     // Add all optional parameters
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.limit) params.append('limit', filters.limit.toString())
@@ -198,9 +198,9 @@ export const applicationAPI = {
     if (filters.region) params.append('region', filters.region)
 
     const response = await apiClient.get(`/applications?${params.toString()}`)
-    
+
     console.log('Raw applications API response:', response.data)
-    
+
     // Handle the API response structure
     let applications = []
     let meta = {
@@ -210,7 +210,7 @@ export const applicationAPI = {
       totalPages: 0,
       totalItems: 0
     }
-    
+
     if (response.data.data && response.data.meta) {
       // API returns { data: [...], meta: {...} }
       applications = response.data.data.map(transformApplicationData)
@@ -253,7 +253,7 @@ export const applicationAPI = {
         totalItems: 0
       }
     }
-    
+
     return {
       data: applications,
       meta
@@ -264,7 +264,7 @@ export const applicationAPI = {
   getAgencyApplications: async (filters?: any): Promise<{ data: Application[] }> => {
     const response = await apiClient.get(`/applications/agency/applications`, { params: filters })
     const rawData = response.data?.applications || []
-    const transformedData = Array.isArray(rawData) 
+    const transformedData = Array.isArray(rawData)
       ? rawData.map(transformApplicationData)
       : []
     return { data: transformedData }
@@ -291,7 +291,7 @@ export const applicationAPI = {
     }
   }> => {
     const params = new URLSearchParams()
-    
+
     // Add all optional parameters
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.limit) params.append('limit', filters.limit.toString())
@@ -299,9 +299,9 @@ export const applicationAPI = {
     if (filters.status) params.append('status', filters.status)
 
     const response = await apiClient.get(`/applications/location/${locationId}?${params.toString()}`)
-    
+
     console.log('Raw location applications API response:', response.data)
-    
+
     // Handle the API response structure
     let applications = []
     let meta = {
@@ -312,7 +312,7 @@ export const applicationAPI = {
       totalItems: 0
     }
     let location = undefined
-    
+
     if (response.data.data && response.data.meta) {
       // API returns { data: [...], meta: {...}, location: {...} }
       applications = response.data.data.map(transformApplicationData)
@@ -335,7 +335,7 @@ export const applicationAPI = {
         totalItems: 0
       }
     }
-    
+
     return {
       data: applications,
       meta,
@@ -354,7 +354,7 @@ export const applicationAPI = {
     console.log('API create called with data:', data)
     console.log('API URL:', `${apiClient.defaults.baseURL}/applications`)
     console.log('Request headers:', apiClient.defaults.headers)
-    
+
     try {
       const response = await apiClient.post("/applications", data)
       console.log('API response:', response.data)
@@ -414,7 +414,7 @@ export const applicationAPI = {
     etd_expiry_date?: string
   }): Promise<Application> => {
     console.log('Ministry review with data:', { id, data })
-    
+
     // Create payload with only required fields based on approval status
     const payload: any = {
       approved: data.approved,
@@ -423,17 +423,17 @@ export const applicationAPI = {
       etd_expiry_date: data.etd_expiry_date,
       rejection_reason: data.rejection_reason
     }
-    
+
     // Only include rejection_reason for rejections
     if (!data.approved && data.rejection_reason?.trim()) {
       payload.rejection_reason = data.rejection_reason.trim()
     }
-    
+
     console.log('Sending payload:', payload)
     console.log('API endpoint (PATCH):', `/applications/${id}/review`)
     console.log('Base URL:', apiClient.defaults.baseURL)
     console.log('Full URL will be:', `PATCH ${apiClient.defaults.baseURL}/applications/${id}/review`)
-    
+
     try {
       const response = await apiClient.patch(`/applications/${id}/review`, payload)
       console.log('Ministry review successful:', response.data)
@@ -488,17 +488,17 @@ export const applicationAPI = {
 
     // Create FormData for multipart/form-data request
     const formData = new FormData()
-    
+
     // Add agencies as individual form fields (as per API expectation)
     data.agencies.forEach(agency => {
       formData.append('agencies', agency)
     })
-    
+
     // Add remarks
     if (data.remarks.trim()) {
       formData.append('remarks', data.remarks.trim())
     }
-    
+
     // Add verification document if provided
     if (data.verification_document) {
       formData.append('verification_document', data.verification_document)
@@ -525,13 +525,13 @@ export const applicationAPI = {
   }): Promise<Application> => {
     // Get current user from auth store to determine agency
     let authStore, user, userAgency
-    
+
     try {
       authStore = JSON.parse(localStorage.getItem('auth-storage') || '{}')
       user = authStore?.state?.user
       console.log('Auth store:', authStore)
       console.log('User from store:', user)
-      
+
       // Determine agency from current user
       userAgency = user?.agency || user?.state
       if (!userAgency) {
@@ -554,9 +554,9 @@ export const applicationAPI = {
           userAgency = 'INTELLIGENCE_BUREAU'
         }
       }
-      
+
       console.log('Determined agency:', userAgency)
-      
+
       // Fallback if still no agency
       if (!userAgency) {
         userAgency = 'INTELLIGENCE_BUREAU'
@@ -566,18 +566,18 @@ export const applicationAPI = {
       console.error('Error reading auth store:', error)
       userAgency = 'INTELLIGENCE_BUREAU'
     }
-    
+
     // Validate required fields
     const remarks = data.remarks?.trim() || ''
     if (!remarks) {
       throw new Error('Remarks are required')
     }
-    
+
     // Always use FormData (multipart/form-data) format as per new API specification
     const formData = new FormData()
     formData.append('agency', userAgency || 'INTELLIGENCE_BUREAU')
     formData.append('remarks', remarks)
-    
+
     // Add attachment if provided, otherwise it will be omitted from FormData
     if (data.attachment) {
       formData.append('attachment', data.attachment)
@@ -586,7 +586,7 @@ export const applicationAPI = {
     } else {
       console.log('Submitting verification without file attachment')
     }
-    
+
     console.log('Agency:', userAgency)
     console.log('Remarks:', remarks)
     console.log('FormData entries:')
@@ -597,7 +597,7 @@ export const applicationAPI = {
         console.log(`${key}: ${value}`)
       }
     }
-    
+
     const response = await apiClient.post(`/applications/${id}/submit-verification`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -614,7 +614,7 @@ export const applicationAPI = {
     console.log('Updating application status:', { id, data })
     console.log('API endpoint (PATCH):', `/applications/${id}/status`)
     console.log('Base URL:', apiClient.defaults.baseURL)
-    
+
     try {
       const response = await apiClient.patch(`/applications/${id}/status`, data)
       console.log('Status update successful:', response.data)
@@ -643,13 +643,13 @@ export const applicationAPI = {
   // Print application with sheet number
   printApplicationWithSheet: async (trackingId: string, sheetNo: string): Promise<Application> => {
     console.log('Printing application with sheet number:', { trackingId, sheetNo })
-    
+
     const payload = {
       sheet_no: sheetNo
     }
-    
+
     console.log('Print payload:', payload)
-    
+
     try {
       const response = await apiClient.post(`/applications/${trackingId}/print`, payload)
       console.log('Print successful:', response.data)
@@ -671,7 +671,7 @@ export const applicationAPI = {
   // QC Pass API
   qcPass: async (applicationId: string): Promise<any> => {
     console.log('QC Pass for application:', applicationId)
-    
+
     try {
       const response = await apiClient.post(`/applications/${applicationId}/qc-pass`, {})
       console.log('QC Pass successful:', response.data)
@@ -692,9 +692,9 @@ export const applicationAPI = {
   // QC Fail API
   qcFail: async (applicationId: string, failureReason?: string): Promise<any> => {
     console.log('QC Fail for application:', { applicationId, failureReason })
-    
+
     const payload = failureReason ? { failure_reason: failureReason } : {}
-    
+
     try {
       const response = await apiClient.post(`/applications/${applicationId}/qc-fail`, payload)
       console.log('QC Fail successful:', response.data)
@@ -767,7 +767,7 @@ export const applicationAPI = {
     hasPrev: boolean
   }> => {
     const params = new URLSearchParams()
-    
+
     // Add all optional parameters
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.limit) params.append('limit', filters.limit.toString())
@@ -781,13 +781,13 @@ export const applicationAPI = {
     if (filters.sort_order) params.append('sort_order', filters.sort_order)
 
     const response = await apiClient.get(`/applications/rejected?${params.toString()}`)
-    
+
     console.log('Raw rejected applications API response:', response.data)
-    
+
     // Handle the API response structure
     let applications = []
     let paginationData: any = {}
-    
+
     if (response.data.rejectedApplications) {
       // API returns { rejectedApplications: [...], pagination: {...} }
       applications = response.data.rejectedApplications.map(transformApplicationData)
@@ -805,7 +805,7 @@ export const applicationAPI = {
       applications = []
       paginationData = {}
     }
-    
+
     return {
       data: applications,
       page: paginationData.current_page || paginationData.page || 1,
@@ -839,7 +839,7 @@ export const applicationAPI = {
     hasPrev: boolean
   }> => {
     const params = new URLSearchParams()
-    
+
     // Add all optional parameters
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.limit) params.append('limit', filters.limit.toString())
@@ -853,13 +853,13 @@ export const applicationAPI = {
     if (filters.sort_order) params.append('sort_order', filters.sort_order)
 
     const response = await apiClient.get(`/applications/completed?${params.toString()}`)
-    
+
     console.log('Raw API response:', response.data)
-    
+
     // Handle the actual API response structure
     let applications = []
     let paginationData: any = {}
-    
+
     if (response.data.completed_applications) {
       // API returns { completed_applications: [...], pagination: {...} }
       applications = response.data.completed_applications.map(transformApplicationData)
@@ -873,7 +873,7 @@ export const applicationAPI = {
       applications = []
       paginationData = {}
     }
-    
+
     return {
       data: applications,
       page: paginationData.current_page || paginationData.page || 1,
@@ -924,7 +924,7 @@ export const applicationAPI = {
     hasPreviousPage: boolean
   }> => {
     const params = new URLSearchParams()
-    
+
     // Add all optional parameters
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.limit) params.append('limit', filters.limit.toString())
@@ -958,7 +958,7 @@ export const applicationAPI = {
     hasPreviousPage: boolean
   }> => {
     const params = new URLSearchParams()
-    
+
     // Add all optional parameters
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.limit) params.append('limit', filters.limit.toString())
@@ -969,4 +969,99 @@ export const applicationAPI = {
     const response = await apiClient.get(`/applications/remarks/acceptance?${params.toString()}`)
     return response.data
   },
+
+  // Get count of temp applications
+  getTempApplicationsCount: async (): Promise<{ count: number }> => {
+    const response = await apiClient.get('/applications/temp/count')
+    return response.data
+  },
+
+  // Get all temp applications
+  getAllTempApplications: async (filters: {
+    page?: number
+    limit?: number
+    search?: string
+    sort_by?: string
+    sort_order?: 'ASC' | 'DESC'
+  } = {}): Promise<{
+    data: any[]
+    meta: {
+      currentPage: number
+      itemCount: number
+      itemsPerPage: number
+      totalPages: number
+      totalItems: number
+    }
+  }> => {
+    const params = new URLSearchParams()
+
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.search) params.append('search', filters.search)
+    if (filters.sort_by) params.append('sort_by', filters.sort_by)
+    if (filters.sort_order) params.append('sort_order', filters.sort_order)
+
+    const response = await apiClient.get(`/applications/temp?${params.toString()}`)
+
+    // Handle the API response structure
+    let applications = []
+    let meta = {
+      currentPage: 1,
+      itemCount: 0,
+      itemsPerPage: 10,
+      totalPages: 0,
+      totalItems: 0
+    }
+
+    if (response.data.data && response.data.meta) {
+      applications = response.data.data
+      meta = {
+        currentPage: response.data.meta.currentPage || 1,
+        itemCount: response.data.meta.itemCount || 0,
+        itemsPerPage: response.data.meta.itemsPerPage || 10,
+        totalPages: response.data.meta.totalPages || 0,
+        totalItems: response.data.meta.totalItems || 0
+      }
+    } else if (Array.isArray(response.data)) {
+      applications = response.data
+      meta = {
+        currentPage: 1,
+        itemCount: applications.length,
+        itemsPerPage: applications.length,
+        totalPages: 1,
+        totalItems: applications.length
+      }
+    }
+
+    return {
+      data: applications,
+      meta
+    }
+  },
+
+  // Get next temp application sequentially
+  getNextTempApplication: async (): Promise<any> => {
+    const response = await apiClient.get('/applications/temp/next')
+    return response.data
+  },
+
+  // Delete temp application by ID
+  deleteTempApplication: async (id: number): Promise<void> => {
+    console.log(`Calling DELETE /applications/temp/${id}`)
+    console.log(`Full URL: ${apiClient.defaults.baseURL}/applications/temp/${id}`)
+    try {
+      const response = await apiClient.delete(`/applications/temp/${id}`)
+      console.log('Delete response:', response)
+      return response.data
+    } catch (error: any) {
+      console.error('Delete temp application error:', {
+        url: `/applications/temp/${id}`,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      })
+      throw error
+    }
+  }
 }

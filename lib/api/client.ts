@@ -2,8 +2,8 @@ import axios from "axios"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { env } from "@/lib/config/env"
 
-// const API_BASE_URL = "http://localhost:3836/v1/api"
-const API_BASE_URL = "http://10.11.1.122:3836/v1/api"
+const API_BASE_URL = "http://localhost:3837/v1/api"
+// const API_BASE_URL = "http://10.11.1.122:3836/v1/api"
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -45,7 +45,7 @@ apiClient.interceptors.response.use(
       // Only auto-logout if it's not a login endpoint or token verification endpoint
       const isLoginEndpoint = error.config?.url?.includes('/auth/login')
       const isVerifyEndpoint = error.config?.url?.includes('/auth/verify')
-      
+
       if (!isLoginEndpoint && !isVerifyEndpoint && typeof window !== "undefined") {
         console.log('401 error on non-auth endpoint, logging out')
         const { logout } = useAuthStore.getState()

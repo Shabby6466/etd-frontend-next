@@ -12,7 +12,7 @@ function createWindow() {
   const noSandbox = process.argv.includes('--no-sandbox');
   const disableWebSecurity = process.argv.includes('--disable-web-security');
   const enableDevTools = process.argv.includes('--devtools');
-  
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -88,7 +88,7 @@ function createWindow() {
       callback({ responseHeaders: details.responseHeaders });
       return;
     }
-    
+
     callback({
       responseHeaders: {
         ...details.responseHeaders,
@@ -175,11 +175,11 @@ ipcMain.handle('secugen-test-connection', async (event, endpoint) => {
     const https = require('https');
     const http = require('http');
     const { URL } = require('url');
-    
+
     const url = new URL(endpoint + '?Timeout=3000');
     const isHttps = url.protocol === 'https:';
     const client = isHttps ? https : http;
-    
+
     return new Promise((resolve, reject) => {
       const req = client.request(url, { method: 'GET' }, (res) => {
         let data = '';
@@ -193,16 +193,16 @@ ipcMain.handle('secugen-test-connection', async (event, endpoint) => {
           }
         });
       });
-      
+
       req.on('error', (err) => {
         resolve({ success: false, error: err.message });
       });
-      
+
       req.setTimeout(5000, () => {
         req.destroy();
         resolve({ success: false, error: 'Connection timeout' });
       });
-      
+
       req.end();
     });
   } catch (error) {
@@ -215,13 +215,13 @@ ipcMain.handle('secugen-capture', async (event, endpoint, params) => {
     const https = require('https');
     const http = require('http');
     const { URL } = require('url');
-    
+
     const url = new URL(endpoint);
     Object.keys(params).forEach(key => url.searchParams.set(key, params[key]));
-    
+
     const isHttps = url.protocol === 'https:';
     const client = isHttps ? https : http;
-    
+
     return new Promise((resolve, reject) => {
       const req = client.request(url, { method: 'GET' }, (res) => {
         let data = '';
@@ -235,16 +235,16 @@ ipcMain.handle('secugen-capture', async (event, endpoint, params) => {
           }
         });
       });
-      
+
       req.on('error', (err) => {
         resolve({ success: false, error: err.message });
       });
-      
+
       req.setTimeout(30000, () => {
         req.destroy();
         resolve({ success: false, error: 'Capture timeout' });
       });
-      
+
       req.end();
     });
   } catch (error) {
@@ -278,18 +278,18 @@ ipcMain.handle('close-window', () => {
 ipcMain.handle('validate-login-xml', async (event, credentials) => {
   try {
     const { email, password } = credentials;
-    
+
     // Try to read from C:\Users\Default\AppData first
     let xmlPath;
     let xmlContent;
-    
+
     try {
       const defaultUserPath = path.join(os.homedir(), '..', 'Default', 'AppData');
       xmlPath = path.join(defaultUserPath, 'etLog.xml');
       xmlContent = fs.readFileSync(xmlPath, 'utf8');
     } catch (defaultError) {
       console.warn('Failed to read from Default user directory:', defaultError.message);
-      
+
       // Fallback to current user's AppData
       try {
         const userAppData = path.join(os.homedir(), 'AppData', 'Local', 'ETD');
@@ -300,24 +300,33 @@ ipcMain.handle('validate-login-xml', async (event, credentials) => {
         return { isValid: false, error: 'XML file not found' };
       }
     }
-    
+
     // Parse XML content
     try {
-      // Simple XML parsing for email and password
+      // Simple XML parsing for email, password, and locationId
       const emailMatch = xmlContent.match(/<email>(.*?)<\/email>/);
       const passwordMatch = xmlContent.match(/<password>(.*?)<\/password>/);
-      
+      const locationIdMatch = xmlContent.match(/<locationId>(.*?)<\/locationId>/);
+
       if (!emailMatch || !passwordMatch) {
         return { isValid: false, error: 'Invalid XML format' };
       }
-      
+
       const storedEmail = emailMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
       const storedPassword = passwordMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
-      
+      const storedLocationId = locationIdMatch ? locationIdMatch[1] : "2010"; // Default to 2010 if not found
+
       // Validate credentials
       if (storedEmail === email && storedPassword === password) {
         console.log('XML validation successful');
-        return { isValid: true, credentials: { email: storedEmail, password: storedPassword } };
+        return {
+          isValid: true,
+          credentials: {
+            email: storedEmail,
+            password: storedPassword,
+            locationId: storedLocationId
+          }
+        };
       } else {
         console.log('XML validation failed - credentials do not match');
         return { isValid: false, error: 'Invalid credentials' };
@@ -344,7 +353,7 @@ ipcMain.handle('check-xml-file-exists', async () => {
     } catch (defaultError) {
       console.warn('Failed to check Default user directory:', defaultError.message);
     }
-    
+
     // Fallback to current user's AppData
     try {
       const userAppData = path.join(os.homedir(), 'AppData', 'Local', 'ETD');
@@ -355,7 +364,7 @@ ipcMain.handle('check-xml-file-exists', async () => {
     } catch (fallbackError) {
       console.warn('Failed to check fallback location:', fallbackError.message);
     }
-    
+
     return { exists: false };
   } catch (error) {
     console.error('XML file check error:', error);
@@ -363,15 +372,77 @@ ipcMain.handle('check-xml-file-exists', async () => {
   }
 });
 
+ipcMain.handle('save-login-xml', async (event, credentials) => {
+  try {
+    const { email, password, locationId } = credentials;
+
+    if (!email || !password) {
+      return { success: false, error: 'Email and password are required' };
+    }
+
+    // Create XML content
+    const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<etLog>
+  <email>${email.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')}</email>
+  <password>${password.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')}</password>
+  <locationId>${(locationId || "2010").toString()}</locationId>
+  <timestamp>${new Date().toISOString()}</timestamp>
+</etLog>`;
+
+    // Try to save to secure locations
+    let xmlPath;
+
+    // Try C:\Users\Default\AppData first
+    try {
+      const defaultUserPath = path.join(os.homedir(), '..', 'Default', 'AppData');
+      xmlPath = path.join(defaultUserPath, 'etLog.xml');
+
+      // Ensure directory exists
+      if (!fs.existsSync(path.dirname(xmlPath))) {
+        fs.mkdirSync(path.dirname(xmlPath), { recursive: true });
+      }
+
+      // Write the XML file
+      fs.writeFileSync(xmlPath, xmlContent, 'utf8');
+      console.log('XML file saved to:', xmlPath);
+      return { success: true, path: xmlPath };
+    } catch (defaultError) {
+      console.warn('Failed to save to Default user directory:', defaultError.message);
+
+      // Fallback to current user's AppData
+      try {
+        const userAppData = path.join(os.homedir(), 'AppData', 'Local', 'ETD');
+        xmlPath = path.join(userAppData, 'etLog.xml');
+
+        // Ensure directory exists
+        if (!fs.existsSync(path.dirname(xmlPath))) {
+          fs.mkdirSync(path.dirname(xmlPath), { recursive: true });
+        }
+
+        // Write the XML file
+        fs.writeFileSync(xmlPath, xmlContent, 'utf8');
+        console.log('XML file saved to fallback location:', xmlPath);
+        return { success: true, path: xmlPath };
+      } catch (fallbackError) {
+        console.error('Failed to save to fallback location:', fallbackError.message);
+        return { success: false, error: 'Failed to save XML file to any location' };
+      }
+    }
+  } catch (error) {
+    console.error('Error saving XML file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('xml-storage-save-application', async (event, applicationData) => {
   try {
     const storageDir = path.join(os.homedir(), 'AppData', 'Local', 'xml_draft');
-    
+
     // Ensure directory exists
     if (!fs.existsSync(storageDir)) {
       fs.mkdirSync(storageDir, { recursive: true });
     }
-    
+
     // Get next sequence number
     const files = fs.readdirSync(storageDir).filter(file => file.endsWith('.xml'));
     const sequenceNumbers = files
@@ -380,19 +451,19 @@ ipcMain.handle('xml-storage-save-application', async (event, applicationData) =>
         return match ? parseInt(match[1]) : 0;
       })
       .filter(num => num > 0);
-    
+
     const nextSequence = sequenceNumbers.length > 0 ? Math.max(...sequenceNumbers) + 1 : 1;
-    
+
     // Create filename
     const filename = `${nextSequence}_${applicationData.citizen_id}_${Date.now()}.xml`;
     const filepath = path.join(storageDir, filename);
-    
+
     // Generate XML content
     const xmlContent = generateXMLContent(applicationData);
-    
+
     // Write file
     fs.writeFileSync(filepath, xmlContent, 'utf8');
-    
+
     return { success: true, filepath, filename };
   } catch (error) {
     console.error('Error saving application:', error);
@@ -403,11 +474,11 @@ ipcMain.handle('xml-storage-save-application', async (event, applicationData) =>
 ipcMain.handle('xml-storage-get-applications', async () => {
   try {
     const storageDir = path.join(os.homedir(), 'AppData', 'Local', 'xml_draft');
-    
+
     if (!fs.existsSync(storageDir)) {
       return { success: true, applications: [] };
     }
-    
+
     const files = fs.readdirSync(storageDir).filter(file => file.endsWith('.xml'));
     return { success: true, applications: files };
   } catch (error) {
@@ -420,7 +491,7 @@ ipcMain.handle('xml-storage-read-application', async (event, filename) => {
   try {
     const storageDir = path.join(os.homedir(), 'AppData', 'Local', 'xml_draft');
     const filepath = path.join(storageDir, filename);
-    
+
     const content = fs.readFileSync(filepath, 'utf8');
     return { success: true, content };
   } catch (error) {
@@ -429,10 +500,35 @@ ipcMain.handle('xml-storage-read-application', async (event, filename) => {
   }
 });
 
+ipcMain.handle('xml-storage-move-to-complete', async (event, filename) => {
+  try {
+    const draftDir = path.join(os.homedir(), 'AppData', 'Local', 'xml_draft');
+    const completeDir = path.join(os.homedir(), 'AppData', 'Local', 'xml_complete');
+
+    // Ensure complete directory exists
+    if (!fs.existsSync(completeDir)) {
+      fs.mkdirSync(completeDir, { recursive: true });
+    }
+
+    const sourcePath = path.join(draftDir, filename);
+    const destPath = path.join(completeDir, filename);
+
+    if (fs.existsSync(sourcePath)) {
+      fs.renameSync(sourcePath, destPath);
+      return { success: true };
+    } else {
+      return { success: false, error: 'Source file not found' };
+    }
+  } catch (error) {
+    console.error('Error moving application:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Helper function to generate XML content
 function generateXMLContent(data) {
   const timestamp = new Date().toISOString();
-  
+
   const escapeXML = (str) => {
     if (!str) return '';
     return str
@@ -442,7 +538,7 @@ function generateXMLContent(data) {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&apos;');
   };
-  
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <application>
   <metadata>

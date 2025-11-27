@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import LoginScreen from './screens/LoginScreen';
 import DataInputScreen from './screens/DataInputScreen';
+import UploadScreen from './screens/UploadScreen';
 import './App.css';
 
 // Make sure React and ReactDOM are properly imported
@@ -10,11 +11,12 @@ declare global {
   }
 }
 
-export type Screen = 'login' | 'data-input';
+export type Screen = 'login' | 'data-input' | 'upload';
 
 export interface User {
   email: string;
   role: string;
+  locationId?: string;
 }
 
 function App() {
@@ -35,6 +37,14 @@ function App() {
     setCurrentScreen('login');
   };
 
+  const handleNavigateToUpload = () => {
+    setCurrentScreen('upload');
+  };
+
+  const handleBackFromUpload = () => {
+    setCurrentScreen('data-input');
+  };
+
   return (
     <div className="App">
       {currentScreen === 'login' && (
@@ -45,7 +55,11 @@ function App() {
           user={user} 
           onLogout={handleLogout}
           onBack={handleBack}
+          onNavigateToUpload={handleNavigateToUpload}
         />
+      )}
+      {currentScreen === 'upload' && (
+        <UploadScreen onBack={handleBackFromUpload} user={user} />
       )}
     </div>
   );
