@@ -70,7 +70,7 @@ export function AgencyTrackingDashboard({ applicationId, onRefresh }: AgencyTrac
       document.body.removeChild(a)
     } catch (error) {
       console.error('Failed to download attachment:', error)
-      showNotification.error('Failed to download attachment')
+      // showNotification.error('Failed to download attachment')
     }
   }
 

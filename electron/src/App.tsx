@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import LoginScreen from './screens/LoginScreen';
 import DataInputScreen from './screens/DataInputScreen';
+import UploadScreen from './screens/UploadScreen';
+import HomeScreen from './screens/HomeScreen';
 import './App.css';
 
 // Make sure React and ReactDOM are properly imported
@@ -10,11 +12,12 @@ declare global {
   }
 }
 
-export type Screen = 'login' | 'data-input';
+export type Screen = 'login' | 'home' | 'data-input' | 'upload';
 
 export interface User {
   email: string;
   role: string;
+  locationId?: string;
 }
 
 function App() {
@@ -23,7 +26,7 @@ function App() {
 
   const handleLogin = (userData: User) => {
     setUser(userData);
-    setCurrentScreen('data-input');
+    setCurrentScreen('home');
   };
 
   const handleLogout = () => {
@@ -31,8 +34,16 @@ function App() {
     setCurrentScreen('login');
   };
 
-  const handleBack = () => {
-    setCurrentScreen('login');
+  const handleNavigateToHome = () => {
+    setCurrentScreen('home');
+  };
+
+  const handleNavigateToDataInput = () => {
+    setCurrentScreen('data-input');
+  };
+
+  const handleNavigateToUpload = () => {
+    setCurrentScreen('upload');
   };
 
   return (
@@ -40,12 +51,24 @@ function App() {
       {currentScreen === 'login' && (
         <LoginScreen onLogin={handleLogin} />
       )}
+      {currentScreen === 'home' && (
+        <HomeScreen
+          user={user}
+          onLogout={handleLogout}
+          onNavigateToDataInput={handleNavigateToDataInput}
+          onNavigateToUpload={handleNavigateToUpload}
+        />
+      )}
       {currentScreen === 'data-input' && (
         <DataInputScreen 
           user={user} 
           onLogout={handleLogout}
-          onBack={handleBack}
+          onBack={handleNavigateToHome}
+          onNavigateToUpload={handleNavigateToUpload}
         />
+      )}
+      {currentScreen === 'upload' && (
+        <UploadScreen onBack={handleNavigateToHome} user={user} />
       )}
     </div>
   );

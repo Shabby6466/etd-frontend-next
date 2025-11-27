@@ -62,11 +62,11 @@ export default function DocumentPreviewNew({ application }: DocumentPreviewNewPr
               pageBreakInside: 'avoid'
             }}
           >
-            <img
+            {/* <img
               src="/etd-new-leaf.jpg"
               alt="New Design Template"
               className="absolute inset-0 w-full h-full opacity-100 pointer-events-none print:hidden z-0 transition-opacity duration-300 ease-in-out"
-            /> 
+            />  */}
             
             {/* New Design Data Container - Passport-like three-section layout */}
             <div className="absolute inset-0 w-full h-full z-10">

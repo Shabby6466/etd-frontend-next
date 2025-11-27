@@ -352,7 +352,7 @@ export default function ApplicationViewPage() {
 
       showNotification.success("Application downloaded successfully");
     } catch (error) {
-      showNotification.error("Failed to download application");
+      // showNotification.error("Failed to download application");
     } finally {
       setIsActionLoading(false);
     }
@@ -936,7 +936,7 @@ export default function ApplicationViewPage() {
                         setTimeout(() => URL.revokeObjectURL(url), 1000);
                       } catch (error) {
                         console.error("Download failed:", error);
-                        showNotification.error("Failed to download document");
+                        // showNotification.error("Failed to download document");
                       }
                     }}
                     variant="outline"

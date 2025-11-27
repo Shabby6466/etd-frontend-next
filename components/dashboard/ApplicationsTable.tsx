@@ -389,7 +389,7 @@ export function ApplicationsTable({
                               setTimeout(() => window.URL.revokeObjectURL(url), 1000)
                             } catch (error) {
                               console.error('Download failed:', error)
-                              showNotification.error('Failed to download document')
+                              // showNotification.error('Failed to download document')
                             }
                           }}
                           className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"

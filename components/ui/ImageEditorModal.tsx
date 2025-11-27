@@ -38,7 +38,9 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
   const [imageScale, setImageScale] = useState(1);
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
   const [imageDisplaySize, setImageDisplaySize] = useState({ width: 0, height: 0 });
+
   const [needsUpscaling, setNeedsUpscaling] = useState(false);
+  const [isSmallImage, setIsSmallImage] = useState(false);
   
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,9 +86,12 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
     const img = imageRef.current;
     const container = containerRef.current;
     
-    // Check if image needs upscaling
-    const needsUpscale = img.naturalWidth < TARGET_WIDTH || img.naturalHeight < TARGET_HEIGHT;
-    setNeedsUpscaling(needsUpscale);
+    // Check if image is smaller than target
+    const isSmall = img.naturalWidth < TARGET_WIDTH || img.naturalHeight < TARGET_HEIGHT;
+    setIsSmallImage(isSmall);
+    
+    // Only set needsUpscaling if we want to enforce the warning (which we don't for small images anymore)
+    setNeedsUpscaling(false); 
     
     // Calculate scale to fit image in container while maintaining aspect ratio
     const containerWidth = container.clientWidth;
@@ -94,7 +99,7 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
     
     // For small images, we might want to scale them up for better visibility
     let scale;
-    if (needsUpscale) {
+    if (isSmall) {
       // Scale up small images to make them more visible in the preview
       const scaleX = Math.min(containerWidth / img.naturalWidth, 2); // Max 2x upscale for preview
       const scaleY = Math.min(containerHeight / img.naturalHeight, 2);
@@ -118,27 +123,17 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
     
     setImageOffset({ x: offsetX, y: offsetY });
     
-    // Initialize crop area with fixed aspect ratio (540:420)
-    const cropAspectRatio = TARGET_WIDTH / TARGET_HEIGHT; // 540/420 = 1.2857
-    
+    // Initialize crop area
     let cropWidth, cropHeight;
     
-    if (needsUpscale) {
-      // For small images, make the crop area cover as much as possible
-      // Use 95% of the image size to maximize the usable area
-      const maxCropWidth = displayWidth * 0.95;
-      const maxCropHeight = displayHeight * 0.95;
-      
-      if (maxCropWidth / maxCropHeight > cropAspectRatio) {
-        // Limited by height
-        cropHeight = maxCropHeight;
-        cropWidth = cropHeight * cropAspectRatio;
-      } else {
-        // Limited by width
-        cropWidth = maxCropWidth;
-        cropHeight = cropWidth / cropAspectRatio;
-      }
+    if (isSmall) {
+      // For small images, select the entire image by default
+      cropWidth = displayWidth;
+      cropHeight = displayHeight;
     } else {
+      // Initialize crop area with fixed aspect ratio (540:420) for larger images
+      const cropAspectRatio = TARGET_WIDTH / TARGET_HEIGHT; // 540/420 = 1.2857
+      
       // For larger images, use 80% to give more flexibility
       const maxCropWidth = displayWidth * 0.8;
       const maxCropHeight = displayHeight * 0.8;
@@ -289,18 +284,22 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
       const finalCropHeight = Math.min(cropHeight, img.naturalHeight - finalCropY);
 
       // Set canvas to target size
-      canvas.width = TARGET_WIDTH;
-      canvas.height = TARGET_HEIGHT;
+      // If small image, use the actual crop dimensions to avoid upscaling
+      const targetCanvasWidth = isSmallImage ? finalCropWidth : TARGET_WIDTH;
+      const targetCanvasHeight = isSmallImage ? finalCropHeight : TARGET_HEIGHT;
+
+      canvas.width = targetCanvasWidth;
+      canvas.height = targetCanvasHeight;
 
       // Fill with white background first
       ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+      ctx.fillRect(0, 0, targetCanvasWidth, targetCanvasHeight);
 
       // Draw the cropped portion to fill the entire canvas
       ctx.drawImage(
         img,
         finalCropX, finalCropY, finalCropWidth, finalCropHeight,
-        0, 0, TARGET_WIDTH, TARGET_HEIGHT
+        0, 0, targetCanvasWidth, targetCanvasHeight
       );
 
       // Convert to base64 with compression - try multiple quality levels
@@ -320,12 +319,14 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
       setProcessedImage({
         base64: base64Data,
         sizeKB,
-        width: TARGET_WIDTH,
-        height: TARGET_HEIGHT
+        width: targetCanvasWidth,
+        height: targetCanvasHeight
       });
       
       if (sizeKB > MAX_SIZE_KB) {
         showNotification.warning(`Image size is ${sizeKB.toFixed(1)}KB (max: ${MAX_SIZE_KB}KB). Quality has been reduced to meet requirements.`);
+      } else if (isSmallImage) {
+        showNotification.success(`Image processed successfully! Size: ${sizeKB.toFixed(1)}KB (Original dimensions preserved)`);
       } else if (needsUpscaling) {
         showNotification.success(`Image processed successfully! Size: ${sizeKB.toFixed(1)}KB (upscaled from smaller original)`);
       } else {
@@ -352,7 +353,9 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
     setOriginalDimensions(null);
     setImageLoaded(false);
     setIsDragging(false);
+    setIsDragging(false);
     setNeedsUpscaling(false);
+    setIsSmallImage(false);
     onClose();
   };
 
@@ -403,7 +406,7 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
             {/* Original Preview with Crop */}
             <div>
               <h3 className="font-semibold mb-3">
-                {needsUpscaling ? 'Select Area to Crop (Image will be upscaled)' : 'Crop Image (Drag the box to adjust)'}
+                {needsUpscaling ? 'Select Area to Crop (Image will be upscaled)' : isSmallImage ? 'Confirm Image Selection' : 'Crop Image (Drag the box to adjust)'}
               </h3>
               <div 
                 ref={containerRef}
@@ -453,7 +456,7 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
                     >
                       {/* Crop area label */}
                       <div className="absolute -top-7 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                        {TARGET_WIDTH}×{TARGET_HEIGHT}
+                        {isSmallImage ? `${Math.round(cropArea.width / imageScale)}×${Math.round(cropArea.height / imageScale)}` : `${TARGET_WIDTH}×${TARGET_HEIGHT}`}
                       </div>
                     </div>
                     
@@ -506,7 +509,7 @@ export function ImageEditorModal({ isOpen, onClose, onSave, file }: ImageEditorM
 
             {/* Processed Preview */}
             <div>
-              <h3 className="font-semibold mb-3">Processed Image ({TARGET_WIDTH}×{TARGET_HEIGHT})</h3>
+              <h3 className="font-semibold mb-3">Processed Image {processedImage ? `(${processedImage.width}×${processedImage.height})` : ''}</h3>
               {processedImage ? (
                 <div className="border rounded-lg overflow-hidden">
                   <img

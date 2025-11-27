@@ -45,7 +45,7 @@ apiClient.interceptors.response.use(
       // Only auto-logout if it's not a login endpoint or token verification endpoint
       const isLoginEndpoint = error.config?.url?.includes('/auth/login')
       const isVerifyEndpoint = error.config?.url?.includes('/auth/verify')
-      
+
       if (!isLoginEndpoint && !isVerifyEndpoint && typeof window !== "undefined") {
         console.log('401 error on non-auth endpoint, logging out')
         const { logout } = useAuthStore.getState()

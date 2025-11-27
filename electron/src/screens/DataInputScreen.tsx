@@ -47,9 +47,10 @@ interface DataInputScreenProps {
   user: User | null;
   onLogout: () => void;
   onBack: () => void;
+  onNavigateToUpload: () => void;
 }
 
-const DataInputScreen: React.FC<DataInputScreenProps> = ({ user, onLogout, onBack }) => {
+const DataInputScreen: React.FC<DataInputScreenProps> = ({ user, onLogout, onBack, onNavigateToUpload }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [fingerprintPreview, setFingerprintPreview] = useState<string | null>(null);
@@ -326,6 +327,13 @@ const DataInputScreen: React.FC<DataInputScreenProps> = ({ user, onLogout, onBac
               {user && <p className="text-sm text-gray-500">Logged in as: {user.email}</p>}
             </div>
             <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onNavigateToUpload}
+                className="flex items-center px-4 py-2 text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50"
+              >
+                Upload Pending
+              </button>
               <button
                 type="button"
                 onClick={onBack}

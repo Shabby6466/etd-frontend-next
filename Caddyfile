@@ -1,0 +1,46 @@
+# Caddyfile for development with automatic self-signed certificates
+# This will automatically generate SSL certificates for localhost
+
+# HTTPS configuration for localhost
+https://localhost:443 {
+    # Use Caddy's internal CA to generate self-signed certificates
+    tls internal
+    
+    # Proxy all requests to the Next.js application
+    reverse_proxy etd-frontend:3000 {
+        # Preserve original headers for proper functionality
+        header_up Host {upstream_hostport}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+    
+    # Add security headers
+    header {
+        # Enable HSTS (HTTP Strict Transport Security)
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        # Prevent clickjacking
+        X-Frame-Options "SAMEORIGIN"
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        # XSS protection
+        X-XSS-Protection "1; mode=block"
+        # Referrer policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+    
+    # Enable compression
+    encode gzip
+    
+    # Log access
+    log {
+        output stdout
+        format console
+    }
+}
+
+# HTTP to HTTPS redirect
+http://localhost:80 {
+    redir https://localhost{uri} permanent
+}

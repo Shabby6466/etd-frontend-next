@@ -7,23 +7,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
   closeWindow: () => ipcRenderer.invoke('close-window'),
-  
+
   // SecuGen device integration for desktop apps
   secugenTestConnection: (endpoint) => ipcRenderer.invoke('secugen-test-connection', endpoint),
   secugenCapture: (endpoint, params) => ipcRenderer.invoke('secugen-capture', endpoint, params),
-  
+
   // XML file validation functionality
   validateLoginXML: (credentials) => ipcRenderer.invoke('validate-login-xml', credentials),
   checkXMLFileExists: () => ipcRenderer.invoke('check-xml-file-exists'),
-  
+  saveLoginXML: (credentials) => ipcRenderer.invoke('save-login-xml', credentials),
+
   // XML Storage functionality
   invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
-  
+  moveApplicationToComplete: (filename) => ipcRenderer.invoke('xml-storage-move-to-complete', filename),
+
   // Add any other APIs you need for your app
   onApplicationData: (callback) => {
     ipcRenderer.on('application-data', callback);
   },
-  
+
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);
   }

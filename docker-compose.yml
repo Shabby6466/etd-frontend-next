@@ -1,4 +1,20 @@
 services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: etd-caddy
+    restart: always
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - etd-frontend
+    networks:
+      - etd-network
+
   etd-frontend:
     build: .
     container_name: etd-frontend
@@ -45,3 +61,5 @@ networks:
 
 volumes:
   postgres-data:
+  caddy_data:
+  caddy_config:

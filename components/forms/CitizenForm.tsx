@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -62,6 +62,26 @@ export function CitizenForm() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { fileCount, files, isLoading: isXmlLoading, error: xmlError, currentFileName, loadFile, refreshFileList, moveCurrentFile } = useXmlDraft();
+  const [tempApplicationsCount, setTempApplicationsCount] = useState<number>(0);
+  const [isLoadingTempCount, setIsLoadingTempCount] = useState(false);
+  const [currentTempApplicationId, setCurrentTempApplicationId] = useState<number | null>(null);
+
+  // Fetch temp applications count on mount
+  useEffect(() => {
+    const fetchTempCount = async () => {
+      setIsLoadingTempCount(true);
+      try {
+        const result = await applicationAPI.getTempApplicationsCount();
+        setTempApplicationsCount(result.count);
+      } catch (error) {
+        console.error('Error fetching temp applications count:', error);
+      } finally {
+        setIsLoadingTempCount(false);
+      }
+    };
+
+    fetchTempCount();
+  }, []);
 
   // Function to convert file to base64
   const convertFileToBase64 = (file: File): Promise<string> => {
@@ -389,6 +409,9 @@ export function CitizenForm() {
     // Clear biometric data
     setCapturedFingerprint(null);
     setBiometricData(null);
+    
+    // Clear temp application ID
+    setCurrentTempApplicationId(null);
 
     // Reset to photo card view
     setShowFullForm(false);
@@ -485,6 +508,75 @@ export function CitizenForm() {
     setCurrentXmlFileIndex(0);
     setBiometricData(null);
     showNotification.info("XML file loading reset to beginning");
+  };
+
+  // Function to load next temp application
+  const handleLoadNextTempApplication = async () => {
+    setIsLoading(true);
+    try {
+      const tempApp = await applicationAPI.getNextTempApplication();
+      
+      if (!tempApp) {
+        showNotification.info("No more temp applications available");
+        return;
+      }
+
+      // Populate form fields with temp application data
+      // Sanitize citizen_id (remove dashes)
+      const sanitizedCitizenId = (tempApp.citizen_id || "").replace(/-/g, "");
+      form.setValue("citizen_id", sanitizedCitizenId);
+      form.setValue("first_name", tempApp.first_name || "");
+      form.setValue("last_name", tempApp.last_name || "");
+      form.setValue("father_name", tempApp.father_name || "");
+      form.setValue("mother_name", tempApp.mother_name || "");
+      form.setValue("gender", tempApp.gender || "");
+      form.setValue("date_of_birth", tempApp.date_of_birth || "");
+      form.setValue("profession", tempApp.profession || "");
+      form.setValue("pakistan_address", tempApp.pakistan_address || "");
+      form.setValue("birth_country", tempApp.birth_country || "");
+      form.setValue("birth_city", tempApp.birth_city || "");
+      form.setValue("requested_by", tempApp.requested_by || "");
+      
+      // Optional fields
+      if (tempApp.height) form.setValue("height", tempApp.height);
+      if (tempApp.color_of_eyes) form.setValue("color_of_eyes", tempApp.color_of_eyes);
+      if (tempApp.color_of_hair) form.setValue("color_of_hair", tempApp.color_of_hair);
+      if (tempApp.transport_mode) form.setValue("transport_mode", tempApp.transport_mode);
+      if (tempApp.reason_for_deport) form.setValue("reason_for_deport", tempApp.reason_for_deport);
+      if (tempApp.amount) form.setValue("amount", parseFloat(tempApp.amount) || 0);
+      if (tempApp.currency) form.setValue("currency", tempApp.currency);
+      if (tempApp.investor) form.setValue("investor", tempApp.investor);
+      
+      // Set image if available
+      if (tempApp.image) {
+        setImageBase64(tempApp.image);
+        setInitialImageBase64(tempApp.image);
+        setManualPhoto(`data:image/jpeg;base64,${tempApp.image}`);
+        form.setValue("image", tempApp.image);
+      }
+      
+      // Set initial values
+      setInitialCitizenId(sanitizedCitizenId);
+      
+      // Store the temp application ID for deletion after submission
+      console.log(`Storing temp application ID for later deletion: ${tempApp.application_id}`);
+      setCurrentTempApplicationId(tempApp.application_id);
+      console.log(`Current temp application ID set to: ${tempApp.application_id}`);
+      
+      // Navigate to full form
+      setShowFullForm(true);
+      
+      // Refresh count
+      const result = await applicationAPI.getTempApplicationsCount();
+      setTempApplicationsCount(result.count);
+      
+      showNotification.success(`Loaded temp application #${tempApp.application_id}`);
+    } catch (error) {
+      console.error("Error loading temp application:", error);
+      showNotification.error("Failed to load temp application");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGetData = async () => {
@@ -751,6 +843,35 @@ export function CitizenForm() {
         }
       }
 
+      // Delete temp application if it was loaded from temp applications
+      if (currentTempApplicationId !== null) {
+        console.log(`Attempting to delete temp application with ID: ${currentTempApplicationId}`);
+        try {
+          await applicationAPI.deleteTempApplication(currentTempApplicationId);
+          console.log(`Temp application ${currentTempApplicationId} deleted successfully`);
+          showNotification.success(`Temp application #${currentTempApplicationId} deleted successfully`);
+          setCurrentTempApplicationId(null);
+          
+          // Refresh the temp applications count
+          try {
+            const result = await applicationAPI.getTempApplicationsCount();
+            setTempApplicationsCount(result.count);
+            console.log(`Updated temp applications count: ${result.count}`);
+          } catch (countError) {
+            console.error("Error refreshing temp count:", countError);
+          }
+        } catch (deleteError) {
+          console.error("Error deleting temp application:", deleteError);
+          console.error("Delete error details:", {
+            message: deleteError instanceof Error ? deleteError.message : "Unknown error",
+            error: deleteError
+          });
+          showNotification.warning(`Application created but failed to delete temp application #${currentTempApplicationId}`);
+        }
+      } else {
+        console.log("No temp application ID to delete (currentTempApplicationId is null)");
+      }
+
       // Navigate based on user role
       console.log("Application created successfully, user role:", user?.role);
       if (user?.role === "MISSION_OPERATOR") {
@@ -811,7 +932,42 @@ export function CitizenForm() {
         {!showFullForm ? (
           
           // Show photo card first
-          <div className="mt-40 "><DGIPHeaderWithWatermarks/>
+          <div className="mt-20 "><DGIPHeaderWithWatermarks/>
+
+          {/* Temp Applications Count Card */}
+          {tempApplicationsCount > 0 && (
+            <Card className="mb-6">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-100 rounded-full">
+                      <FileText className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900">
+                        Temp Applications Available
+                      </h3>
+                      <p className="text-sm text-blue-700">
+                        {isLoadingTempCount ? (
+                          "Loading..."
+                        ) : (
+                          `${tempApplicationsCount} application${tempApplicationsCount !== 1 ? 's' : ''} waiting to be processed`
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleLoadNextTempApplication}
+                    disabled={isLoading || isLoadingTempCount}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <FolderOpen className="mr-2 h-4 w-4" />
+                    {isLoading ? "Loading..." : "Load Next Application"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <ETDApplicationPhotoCard
             title="Emergency Travel Document Application"
