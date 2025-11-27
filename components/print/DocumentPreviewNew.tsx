@@ -180,7 +180,7 @@ export default function DocumentPreviewNew({ application }: DocumentPreviewNewPr
                 Type
               </div>
               <div className="absolute text-black font-normal text-[12px]" style={{ top: '722px', left: '150px' }}>
-                PT
+                PE
               </div>
               <div className="absolute text-black font-bold text-[6px]" style={{ top: '717px', left: '202px' }}>
                 Country Code
@@ -327,7 +327,7 @@ export default function DocumentPreviewNew({ application }: DocumentPreviewNewPr
                <div className="absolute text-black text-[11.5px]" style={{ top: '940px  ', left: '20px', fontFamily: '"OCR-B"' }}>
                 {application.processing.mrz_line1.toUpperCase() || 'N/A'}
              </div>
-             <div className="absolute text-black text-[11.5px]" style={{ top: '955px  ', left: '20px', fontFamily: '"OCR-B" ' }}>
+             <div className="absolute text-black  text-[11.5px]" style={{ top: '965px  ', left: '20px', fontFamily: '"OCR-B" ' }}>
                 {application.processing.mrz_line2.toUpperCase() || 'N/A'}
              </div>
             </div>

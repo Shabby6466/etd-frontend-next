@@ -242,7 +242,7 @@ export function CitizenForm() {
       first_name: passportData.first_names || "",
       last_name: passportData.last_name || "",
       image: passportData.photograph || "",
-      father_name: passportData.father_first_names  + passportData.father_last_name|| "",
+      father_name: passportData.father_first_names+ " "  + passportData.father_last_name|| "",
       gender:
         passportData.gender === "m"
           ? "Male"

@@ -83,7 +83,7 @@ export default function QCModal({ application, isOpen, onClose, onSuccess }: QCM
             Sheet No: <span className="font-medium">{application.processing?.sheet_no || "Not printed"}</span>
           </p>
           <p className="text-sm text-gray-600">
-            Status: <span className="font-medium">{application.processing?.status || "Unknown"}</span>
+            Status: <span className="font-medium">{application.status || "Unknown"}</span>
           </p>
         </div>
 
