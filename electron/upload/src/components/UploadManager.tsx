@@ -148,13 +148,10 @@ export function UploadManager() {
                 <CardTitle className="text-2xl font-semibold text-gray-900 flex items-center justify-between">
                     <span>XML File Upload</span>
                     <Button
-                        variant="outline"
-                        size="sm"
                         onClick={fetchFiles}
                         disabled={isLoading || isUploading}
-                        className="rounded-xl"
+                        className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white ml-4"
                     >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
                         Refresh
                     </Button>
                 </CardTitle>
@@ -173,7 +170,7 @@ export function UploadManager() {
                         <Button
                             onClick={handleUploadAll}
                             disabled={isUploading || files.length === 0 || isLoading}
-                            className="rounded-xl text-white flex-1"
+                            className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex-1"
                         >
                             {isUploading ? (
                                 <>

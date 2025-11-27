@@ -96,7 +96,7 @@ export function UploadLoginForm({ onSuccess }: UploadLoginFormProps) {
             )}
           </div>
 
-          <Button type="submit" className="w-full rounded-3xl text-white" disabled={isLoading}>
+          <Button type="submit" className="w-full rounded-3xl bg-blue-600 hover:bg-blue-700 text-white" disabled={isLoading}>
             {isLoading ? "Signing in..." : "Sign in"}
           </Button>
         </form>
