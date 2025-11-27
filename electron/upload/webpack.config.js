@@ -107,7 +107,7 @@ module.exports = {
     host: "0.0.0.0",
     hot: true,
     historyApiFallback: true,
-    open: false,
+    open: true,
     allowedHosts: "all",
   },
   target: "web",
