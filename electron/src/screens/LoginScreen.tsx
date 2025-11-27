@@ -18,6 +18,7 @@ interface LoginScreenProps {
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const electronAPI = (window as any)?.electronAPI;
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -33,9 +34,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     
     try {
       console.log('Electron login attempt:', { email: data.email });
-      
-      // Check if XML file exists
-      const xmlFileExists = await (window as any).electronAPI.checkXMLFileExists();
+      const xmlFileExists = electronAPI?.checkXMLFileExists
+        ? await electronAPI.checkXMLFileExists()
+        : { exists: false };
       console.log('XML file exists:', xmlFileExists);
       
       if (xmlFileExists.exists) {
@@ -45,53 +46,61 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
         console.log('Validating against XML file...');
         console.log('Attempting login with:', { email: data.email, password: '***' });
         
-        const xmlValidation = await (window as any).electronAPI.validateLoginXML({
-          email: data.email,
-          password: data.password
-        });
-        console.log('XML validation result:', xmlValidation);
-        
-        if (xmlValidation.isValid) {
-          console.log('XML validation successful - allowing login');
-          
-          // Create user object for successful login
-          const user: User = {
-            email: data.email,
-            role: "OPERATOR",
-            locationId: xmlValidation.credentials.locationId || "2010"
-          };
-          
-          onLogin(user);
+        if (!electronAPI?.validateLoginXML) {
+          console.warn('validateLoginXML unavailable - skipping offline login path');
         } else {
-          console.log('XML validation failed:', xmlValidation.error);
-          console.log('Blocking login due to invalid credentials');
-          setErrorMessage(`Authentication failed: ${xmlValidation.error}`);
-        }
-      } else {
-        console.log('No XML file found - attempting online login');
-        
-        try {
-          // Attempt online login
-          const response = await fetch('http://localhost:3837/v1/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: data.email,
-              password: data.password
-            }),
+          const xmlValidation = await electronAPI.validateLoginXML({
+            email: data.email,
+            password: data.password
           });
+          console.log('XML validation result:', xmlValidation);
+          
+          if (xmlValidation.isValid) {
+            console.log('XML validation successful - allowing login');
+            
+            // Create user object for successful login
+            const user: User = {
+              email: data.email,
+              role: "OPERATOR",
+              locationId: xmlValidation.credentials.locationId || "2010"
+            };
+            
+            onLogin(user);
+            return;
+          } else {
+            console.log('XML validation failed:', xmlValidation.error);
+            console.log('Blocking login due to invalid credentials');
+            setErrorMessage(`Authentication failed: ${xmlValidation.error}`);
+            return;
+          }
+        }
+      }
 
-          if (response.ok) {
-            const result = await response.json();
-            console.log('Online login successful:', result);
-            
-            const locationId = result.user?.locationId || "2010";
-            
-            // Save credentials to XML for future offline access
+      console.log('No usable XML file found - attempting online login');
+      
+      try {
+        // Attempt online login
+        const response = await fetch('http://localhost:3836/v1/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Online login successful:', result);
+          
+          const locationId = result.user?.locationId || "2010";
+          
+          // Save credentials to XML for future offline access
+          if (electronAPI?.saveLoginXML) {
             console.log('Saving credentials to XML...');
-            const saveResult = await (window as any).electronAPI.saveLoginXML({
+            const saveResult = await electronAPI.saveLoginXML({
               email: data.email,
               password: data.password,
               locationId: locationId
@@ -102,23 +111,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             } else {
               console.warn('Failed to save credentials:', saveResult.error);
             }
-            
-            // Create user object
-            const user: User = {
-              email: data.email,
-              role: result.user?.role || "OPERATOR",
-              locationId: locationId
-            };
-            
-            onLogin(user);
           } else {
-            console.log('Online login failed:', response.status);
-            setErrorMessage("Online login failed. Please check your credentials.");
+            console.log('Electron API unavailable - skipping credential persistence');
           }
-        } catch (apiError) {
-          console.error('API login error:', apiError);
-          setErrorMessage("Login failed. No local credentials found and online login failed.");
+          
+          // Create user object
+          const user: User = {
+            email: data.email,
+            role: result.user?.role || "OPERATOR",
+            locationId: locationId
+          };
+          
+          onLogin(user);
+        } else {
+          console.log('Online login failed:', response.status);
+          setErrorMessage("Online login failed. Please check your credentials.");
         }
+      } catch (apiError) {
+        console.error('API login error:', apiError);
+        setErrorMessage("Login failed. No local credentials found and online login failed.");
       }
     } catch (error) {
       console.error('Login error:', error);
