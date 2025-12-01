@@ -520,7 +520,8 @@ export default function ApplicationViewPage() {
                               <img
                                 src={`data:image/jpeg;base64,${application.image}`}
                                 alt="Citizen Photograph"
-                                className="w-32 h-40 object-cover rounded"
+                                style={{ width: '120px', height: '145px' }}
+                                className="object-cover rounded"
                               />
                             </div>
                             <span className="text-sm text-gray-600 mt-2">
@@ -542,7 +543,8 @@ export default function ApplicationViewPage() {
                                 <img
                                   src={passportResponseData?.image_url}
                                   alt="Passport Photograph"
-                                  className="w-32 h-40 object-cover rounded"
+                                  style={{ width: '120px', height: '145px' }}
+                                  className="object-cover rounded"
                                   onError={(e) => {
                                     e.currentTarget.style.display = "none";
                                     e.currentTarget.nextElementSibling?.classList.remove(

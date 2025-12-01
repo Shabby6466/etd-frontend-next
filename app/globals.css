@@ -156,6 +156,11 @@
   .status-completed {
     @apply bg-purple-100 text-purple-700;
   }
+
+  /* Mirror effect for camera preview */
+  .mirror {
+    transform: scaleX(-1);
+  }
 }
 
 /* Custom scrollbar */

@@ -24,9 +24,10 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { DGIPHeaderWithWatermarks } from "@/components/ui/dgip_header_watermarks";
 import ETDApplicationPhotoCard from "@/components/ui/etd_application_photo_card";
 import { DetailForm } from "@/components/forms/DetailForm";
-import { ArrowLeft, ChevronDown, FolderOpen, FileText } from "lucide-react";
+import { ArrowLeft, ChevronDown, FolderOpen, FileText, Camera } from "lucide-react";
 import { ImageEditorModal } from "@/components/ui/ImageEditorModal";
 import BiometricCaptureModal from "@/components/ui/BiometricCaptureModal";
+import { SmartCameraCapture } from "@/components/ui/SmartCameraCapture";
 import { useXmlDraft } from "@/lib/hooks/useXmlDraft";
 
 export function CitizenForm() {
@@ -48,6 +49,7 @@ export function CitizenForm() {
   const [currentXmlFileIndex, setCurrentXmlFileIndex] = useState(0);
   const [biometricData, setBiometricData] = useState<any>(null);
   const [showBiometricModal, setShowBiometricModal] = useState(false);
+  const [showSmartCamera, setShowSmartCamera] = useState(false);
   const [capturedFingerprint, setCapturedFingerprint] = useState<{
     imageBase64: string;
     templateBase64?: string;
@@ -166,6 +168,15 @@ export function CitizenForm() {
     setCapturedFingerprint(data);
     setShowBiometricModal(false);
     showNotification.success("Fingerprint captured successfully");
+  };
+
+  // Function to handle smart camera capture
+  const handleSmartCameraCapture = (imageBase64: string) => {
+    setImageBase64(imageBase64);
+    form.setValue("image", imageBase64);
+    setManualPhoto(`data:image/jpeg;base64,${imageBase64}`);
+    setShowSmartCamera(false);
+    showNotification.success("Photo captured successfully");
   };
 
   // Function to clear captured fingerprint
@@ -1092,6 +1103,20 @@ export function CitizenForm() {
                     Photograph *
                   </Label>
 
+                  {/*Capture Image*/}
+                  <div className="mb-4">
+                    <Button
+                      type="button"
+                      onClick={() => setShowSmartCamera(true)}
+                      className="w-full flex items-center justify-center gap-2"
+                      variant="outline"
+                    >
+                      <Camera className="w-4 h-4" />
+                      Capture Photo with Smart Camera
+                    </Button>
+                  </div>
+
+
                   {/* Image Display */}
                   {manualPhoto && (
                     <div className="flex justify-center mb-4">
@@ -1556,6 +1581,14 @@ export function CitizenForm() {
         onCaptured={handleBiometricCapture}
         endpoint="https://localhost:8443/SGIFPCapture"
       />
+
+      {/* Smart Camera Capture Modal */}
+      {showSmartCamera && (
+        <SmartCameraCapture
+          onCapture={handleSmartCameraCapture}
+          onCancel={() => setShowSmartCamera(false)}
+        />
+      )}
     </div>
   );
 }
