@@ -149,97 +149,6 @@ export default function ApplicationViewPage() {
     }
   }, [application?.id]);
 
-
-
-  // New Ministry Review handlers
-  const handleMinistryReviewApprove = async (data: {
-    approved: boolean;
-    blacklist_check_pass: boolean;
-    etd_issue_date?: string;
-    etd_expiry_date?: string;
-  }) => {
-    if (!application) return;
-    setIsActionLoading(true);
-    try {
-      // For applications with agency remarks (VERIFICATION_RECEIVED status), use updateStatus
-      if (application.status === "VERIFICATION_RECEIVED") {
-        await applicationAPI.updateStatus(application.id, {
-          status: "READY_FOR_PERSONALIZATION",
-          blacklist_check_pass: data.blacklist_check_pass || false,
-          ...(data.etd_issue_date && { etd_issue_date: data.etd_issue_date }),
-          ...(data.etd_expiry_date && {
-            etd_expiry_date: data.etd_expiry_date,
-          }),
-        });
-      } else {
-        // For other statuses, use ministryReview
-        await applicationAPI.ministryReview(application.id, {
-          approved: true,
-          blacklist_check_pass: data.blacklist_check_pass,
-          etd_issue_date: data.etd_issue_date,
-          etd_expiry_date: data.etd_expiry_date,
-        });
-      }
-      showNotification.success("Application approved successfully");
-      await refresh();
-    } catch (error) {
-      const message =
-        (error as any)?.response?.data?.message ||
-        "Failed to approve application";
-      showNotification.error(message);
-      throw error; // Re-throw to handle in modal
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  const handleMinistryReviewReject = async (data: {
-    approved: boolean;
-    blacklist_check_pass: boolean;
-    rejection_reason: string;
-    etd_issue_date?: string;
-    etd_expiry_date?: string;
-  }) => {
-    if (!application) return;
-    setIsActionLoading(true);
-    try {
-      // For DRAFT status, use updateStatus to reject
-      if (application.status === "DRAFT") {
-        await applicationAPI.updateStatus(application.id, {
-          status: "REJECTED",
-          rejection_reason: data.rejection_reason,
-          blacklist_check_pass: false,
-        });
-      }
-      // For applications with agency remarks (VERIFICATION_RECEIVED status), use updateStatus
-      else if (application.status === "VERIFICATION_RECEIVED") {
-        await applicationAPI.updateStatus(application.id, {
-          status: "REJECTED",
-          rejection_reason: data.rejection_reason,
-          blacklist_check_pass: false,
-        });
-      } else {
-        // For other statuses, use ministryReview
-        await applicationAPI.ministryReview(application.id, {
-          approved: false,
-          blacklist_check_pass: false,
-          rejection_reason: data.rejection_reason,
-          etd_issue_date: undefined,
-          etd_expiry_date: undefined,
-        });
-      }
-      showNotification.success("Application rejected");
-      // Navigate back instead of refreshing
-      router.back();
-    } catch (error) {
-      const message =
-        (error as any)?.response?.data?.message ||
-        "Failed to reject application";
-      showNotification.error(message);
-      throw error; // Re-throw to handle in modal
-    } finally {
-    }
-  };
   const handleQcClick = (application: Application) => {
     setSelectedApplication(application);
     setQcModalOpen(true);
@@ -352,7 +261,7 @@ export default function ApplicationViewPage() {
 
       showNotification.success("Application downloaded successfully");
     } catch (error) {
-      // showNotification.error("Failed to download application");
+      showNotification.error("Failed to download application");
     } finally {
       setIsActionLoading(false);
     }
@@ -1357,7 +1266,6 @@ function Section({
 function GridItem({
   label,
   value,
-  className,
   mono,
 }: {
   label: string;
