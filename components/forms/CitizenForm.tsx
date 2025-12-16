@@ -253,13 +253,13 @@ export function CitizenForm() {
       first_name: passportData.first_names || "",
       last_name: passportData.last_name || "",
       image: passportData.photograph || "",
-      father_name: passportData.father_first_names+ " "  + passportData.father_last_name|| "",
+      father_name: passportData.father_first_names + " " + passportData.father_last_name || "",
       gender:
         passportData.gender === "m"
           ? "Male"
           : passportData.gender === "f"
-          ? "Female"
-          : passportData.gender,
+            ? "Female"
+            : passportData.gender,
       date_of_birth: formatDate(passportData.birthdate),
       profession: passportData.profession,
       birth_country:
@@ -274,11 +274,13 @@ export function CitizenForm() {
   // Handler for immediate navigation from photo card
   const handlePhotoCardNavigate = (
     citizenId: string,
-    imageBase64: string | null
+    imageBase64: string | null,
+    biometricData: any
   ) => {
     console.log("handlePhotoCardNavigate called with:", {
       citizenId,
       hasImage: !!imageBase64,
+      hasBiometric: !!biometricData,
     });
 
     if (!/^\d{13}$/.test(citizenId)) {
@@ -298,6 +300,11 @@ export function CitizenForm() {
     if (imageBase64) {
       setManualPhoto(`data:image/jpeg;base64,${imageBase64}`);
       setImageBase64(imageBase64);
+    }
+
+    // Set biometric data if available
+    if (biometricData) {
+      setCapturedFingerprint(biometricData);
     }
 
     // Immediately show the full form
@@ -322,22 +329,84 @@ export function CitizenForm() {
       return;
     }
 
-    // Note: Form values are already set by handlePhotoCardNavigate
 
     setIsFetchingData(true);
+
+    // Prepare NADRA input with proper null checks
+    const NadraInput = {
+      citizenNumber: citizenId,
+      fingerTemplate: capturedFingerprint?.wsqBase64 || null,
+      photograph: imageBase64 || null, // Use base64 without data URL prefix
+    }
+    console.log("=== NADRA API INPUT DEBUG ===");
+    console.log("Citizen Number:", NadraInput.citizenNumber);
+    console.log("Has Fingerprint Data:", !!capturedFingerprint);
+    console.log("Has WSQ Base64:", !!capturedFingerprint?.wsqBase64);
+    console.log("Has Template Base64:", !!capturedFingerprint?.templateBase64);
+    console.log("Has Photograph:", !!imageBase64);
+    if (capturedFingerprint?.wsqBase64) {
+      console.log("WSQ Base64 Length:", capturedFingerprint.wsqBase64.length);
+      console.log("WSQ Base64 First 100 chars:", capturedFingerprint.wsqBase64.substring(0, 100));
+      console.log("WSQ Base64 Starts with:", capturedFingerprint.wsqBase64.substring(0, 20));
+    }
+    console.log("Full NADRA Input:", JSON.stringify(NadraInput, null, 2));
+    console.log("=== END NADRA INPUT DEBUG ===");
+
+    // Call both APIs independently with separate error handling
+    let passportData = null;
+    let nadraData = null;
+
+    // Try Passport API
     try {
-      // Try passport API first
-      const passportData = await passportAPI.getCitizenData(citizenId);
+      console.log("Calling Passport API...");
+      passportData = await passportAPI.getCitizenData(citizenId);
+      console.log("Passport API Response received");
+    } catch (error) {
+      console.error("Passport API Error:", error);
+      showNotification.error("Failed to fetch data from Passport API");
+    }
+
+    // Try NADRA API independently
+    try {
+      console.log("Calling NADRA API...");
+      nadraData = await nadraAPI.getCitizenData(NadraInput);
+      console.log("NADRA Response:", JSON.stringify(nadraData, null, 2));
+
+      // Store NADRA API data for submission
+      if (nadraData) {
+        form.setValue("nadra_api_data", nadraData);
+
+        // Set NADRA detail data for display if available
+        if (nadraData.citizenData) {
+          setNadraDetailData({
+            name: nadraData.citizenData.name,
+            father_name: nadraData.citizenData.fatherName || nadraData.citizenData.fatherNameEnglish,
+            mother_name: nadraData.citizenData.motherName || nadraData.citizenData.motherNameEnglish,
+            date_of_birth: nadraData.citizenData.dateOfBirth,
+            gender: nadraData.citizenData.gender,
+            photograph: nadraData.citizenData.photograph,
+            facial_result: nadraData.modalityResult?.facialResult,
+            fingerprint_result: nadraData.modalityResult?.fingerprintResilt,
+          });
+        }
+
+        showNotification.success("NADRA verification completed successfully");
+      }
+    } catch (error) {
+      console.error("NADRA API Error:", error);
+      showNotification.error("Failed to fetch data from NADRA API");
+    }
+
+    // Process Passport data if available
+    if (passportData) {
       const mappedData = mapPassportDataToForm(passportData);
 
-      // Update form with mapped data (skip empty values)
       Object.entries(mappedData).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
           form.setValue(key as keyof CitizenFormData, value, { shouldDirty: true, shouldValidate: true });
         }
       });
 
-      // Set passport photo if available (override uploaded photo)
       if (passportData.photograph) {
         setPassportPhoto(`data:image/jpeg;base64,${passportData.photograph}`);
         setImageBase64(passportData.photograph);
@@ -362,18 +431,9 @@ export function CitizenForm() {
 
       // Mark passport data as fetched
       setIsPassportDataFetched(true);
-
-      // Clear NADRA detail data
-      setNadraDetailData(null);
-
-      // Store passport API data for later use in application creation
-      form.setValue("passport_api_data", passportData);
-
-      // showNotification.success("Data fetched successfully from Passport API");
-    } finally {
-      setIsFetchingData(false);
-      // Don't show full form here - it's already shown by navigation
     }
+
+    setIsFetchingData(false);
   };
   const handleBackBtn = () => {
     // Clear form values
@@ -420,7 +480,7 @@ export function CitizenForm() {
     // Clear biometric data
     setCapturedFingerprint(null);
     setBiometricData(null);
-    
+
     // Clear temp application ID
     setCurrentTempApplicationId(null);
 
@@ -458,7 +518,7 @@ export function CitizenForm() {
       form.setValue("birth_country", xmlData.birthCountry);
       form.setValue("birth_city", xmlData.birthCity);
       form.setValue("requested_by", xmlData.requestedBy);
-      
+
       // Optional fields
       if (xmlData.height) form.setValue("height", xmlData.height);
       if (xmlData.colorOfEyes) form.setValue("color_of_eyes", xmlData.colorOfEyes);
@@ -469,13 +529,13 @@ export function CitizenForm() {
       if (xmlData.currency) form.setValue("currency", xmlData.currency);
       if (xmlData.investor) form.setValue("investor", xmlData.investor);
       if (xmlData.securityDeposit) form.setValue("securityDeposit", xmlData.securityDeposit);
-      
+
       // Set image states
       setImageBase64(xmlData.imageBase64);
       setInitialCitizenId(xmlData.citizenId);
       setInitialImageBase64(xmlData.imageBase64);
       setManualPhoto(`data:image/jpeg;base64,${xmlData.imageBase64}`);
-      
+
       // Store biometric data if available
       if (xmlData.fingerprint || xmlData.fingerprintTemplate || xmlData.biometricImage) {
         setBiometricData({
@@ -483,7 +543,7 @@ export function CitizenForm() {
           fingerprintTemplate: xmlData.fingerprintTemplate,
           biometricImage: xmlData.biometricImage
         });
-        
+
         // Also set captured fingerprint data for display
         if (xmlData.fingerprint) {
           setCapturedFingerprint({
@@ -494,20 +554,20 @@ export function CitizenForm() {
             serial: 'XML-Import'
           });
         }
-        
+
         console.log("Biometric data loaded from XML:", {
           hasFingerprint: !!xmlData.fingerprint,
           hasTemplate: !!xmlData.fingerprintTemplate,
           hasBiometricImage: !!xmlData.biometricImage
         });
       }
-      
+
       // Move to next file for next time
       setCurrentXmlFileIndex(prev => prev + 1);
-      
+
       // Trigger GetData automatically
-      handlePhotoCardNavigate(xmlData.citizenId, xmlData.imageBase64);
-      
+      handlePhotoCardNavigate(xmlData.citizenId, xmlData.imageBase64, null);
+
       showNotification.success(`Loaded file ${currentXmlFileIndex + 1}/${files.length}: ${fileName} - All fields populated`);
     } else {
       showNotification.error(`Failed to load file: ${fileName}`);
@@ -526,7 +586,7 @@ export function CitizenForm() {
     setIsLoading(true);
     try {
       const tempApp = await applicationAPI.getNextTempApplication();
-      
+
       if (!tempApp) {
         showNotification.info("No more temp applications available");
         return;
@@ -547,7 +607,7 @@ export function CitizenForm() {
       form.setValue("birth_country", tempApp.birth_country || "");
       form.setValue("birth_city", tempApp.birth_city || "");
       form.setValue("requested_by", tempApp.requested_by || "");
-      
+
       // Optional fields
       if (tempApp.height) form.setValue("height", tempApp.height);
       if (tempApp.color_of_eyes) form.setValue("color_of_eyes", tempApp.color_of_eyes);
@@ -557,7 +617,7 @@ export function CitizenForm() {
       if (tempApp.amount) form.setValue("amount", parseFloat(tempApp.amount) || 0);
       if (tempApp.currency) form.setValue("currency", tempApp.currency);
       if (tempApp.investor) form.setValue("investor", tempApp.investor);
-      
+
       // Set image if available
       if (tempApp.image) {
         setImageBase64(tempApp.image);
@@ -565,22 +625,22 @@ export function CitizenForm() {
         setManualPhoto(`data:image/jpeg;base64,${tempApp.image}`);
         form.setValue("image", tempApp.image);
       }
-      
+
       // Set initial values
       setInitialCitizenId(sanitizedCitizenId);
-      
+
       // Store the temp application ID for deletion after submission
       console.log(`Storing temp application ID for later deletion: ${tempApp.application_id}`);
       setCurrentTempApplicationId(tempApp.application_id);
       console.log(`Current temp application ID set to: ${tempApp.application_id}`);
-      
+
       // Navigate to full form
       setShowFullForm(true);
-      
+
       // Refresh count
       const result = await applicationAPI.getTempApplicationsCount();
       setTempApplicationsCount(result.count);
-      
+
       showNotification.success(`Loaded temp application #${tempApp.application_id}`);
     } catch (error) {
       console.error("Error loading temp application:", error);
@@ -862,7 +922,7 @@ export function CitizenForm() {
           console.log(`Temp application ${currentTempApplicationId} deleted successfully`);
           showNotification.success(`Temp application #${currentTempApplicationId} deleted successfully`);
           setCurrentTempApplicationId(null);
-          
+
           // Refresh the temp applications count
           try {
             const result = await applicationAPI.getTempApplicationsCount();
@@ -941,255 +1001,260 @@ export function CitizenForm() {
     <div className="min-h-screen p-4 dashboardBackgroundColor">
       <div className="relative z-20 max-w-4xl mx-auto  ">
         {!showFullForm ? (
-          
+
           // Show photo card first
-          <div className="mt-20 "><DGIPHeaderWithWatermarks/>
+          <div className="mt-20 "><DGIPHeaderWithWatermarks />
 
-          {/* Temp Applications Count Card */}
-          {tempApplicationsCount > 0 && (
-            <Card className="mb-6">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-100 rounded-full">
-                      <FileText className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-blue-900">
-                        Temp Applications Available
-                      </h3>
-                      <p className="text-sm text-blue-700">
-                        {isLoadingTempCount ? (
-                          "Loading..."
-                        ) : (
-                          `${tempApplicationsCount} application${tempApplicationsCount !== 1 ? 's' : ''} waiting to be processed`
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleLoadNextTempApplication}
-                    disabled={isLoading || isLoadingTempCount}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <FolderOpen className="mr-2 h-4 w-4" />
-                    {isLoading ? "Loading..." : "Load Next Application"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <ETDApplicationPhotoCard
-            title="Emergency Travel Document Application"
-            onNavigate={(citizenId, imageBase64) => {
-              console.log("Get Data pressed with citizen ID:", citizenId);
-              console.log("Current imageBase64:", imageBase64);
-              handlePhotoCardNavigate(citizenId, imageBase64);
-            }}
-            onImageChange={(base64) => {
-              console.log("Image changed:", base64 ? "has image" : "no image");
-              if (base64) {
-                setImageBase64(base64);
-                form.setValue("image", base64);
-              } else {
-                setImageBase64("");
-                form.setValue("image", "");
-              }
-            }}
-          
-          />
-        </div>
-        ) : (
-          <div >             <DGIPHeaderWithWatermarks/>
-          <Card>
-            <CardHeader>
-
-              {/* <div className="flex items-center justify-between"> */}
-              <div>
-                <CardTitle className="text-2xl font-bold">
-                  Emergency Travel Document Application
-                </CardTitle>
-                <CardDescription>
-                  Enter citizen information to create a new application
-                </CardDescription>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleBackBtn()}
-                className="text-sm"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
-              </Button>
-              {/* </div> */}
-            </CardHeader>
-            <CardContent>
-              <form
-                onSubmit={form.handleSubmit(onSubmit, (errors) => {
-                  console.error("Form validation errors:", errors);
-
-                  // Get the first error message to show to the user
-                  const firstError = Object.values(errors)[0];
-                  if (firstError && typeof firstError === 'object' && 'message' in firstError) {
-                    showNotification.error(firstError.message as string);
-                  } else {
-                    showNotification.error(
-                      "Please fill all the required fields before submitting"
-                    );
-                  }
-                })}
-                className="space-y-6"
-              >
-                {/* Citizen ID Section */}
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <Label htmlFor="citizen_id">Citizen ID</Label>
-                    <Input
-                      id="citizen_id"
-                      placeholder="Enter 13-digit citizen ID"
-                      maxLength={13}
-                      pattern="\d{13}"
-                      inputMode="numeric"
-                      {...form.register("citizen_id")}
-                      className={`rounded-xl ${
-                        form.formState.errors.citizen_id ? "border-red-500" : ""
-                      }`}
-                    />
-                    {form.formState.errors.citizen_id && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.citizen_id.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <Button
-                    type="button"
-                    onClick={handleGetData}
-                    disabled={
-                      isFetchingData ||
-                      !/^\d{13}$/.test(form.watch("citizen_id"))
-                    }
-                    className="mt-6"
-                  >
-                    {isFetchingData ? "Fetching..." : "Get Data"}
-                  </Button>
-                </div>
-                <div className="mx-auto p-2 space-y-2">
-                  <div className="flex items-center gap-3">
-                    {/* Passport Details - Shows data when passport API is successful */}
-                    <DetailForm
-                      data={passportDetailData}
-                      title="Passport Details"
-                      passportPhoto={passportPhoto}
-                      onNext={() => {}}
-                      onBack={() => {}}
-                    />
-
-                    {/* NADRA Details - Always shows "Not available" for now */}
-                    <DetailForm
-                      data={{}}
-                      title="NADRA Details"
-                      passportPhoto={null}
-                      onNext={() => {}}
-                      onBack={() => {}}
-                    />
-                  </div>
-                </div>
-
-                {/* Image Upload Section */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <Label className="text-lg font-semibold mb-4 block">
-                    Photograph *
-                  </Label>
-
-                  {/*Capture Image*/}
-                  <div className="mb-4">
-                    <Button
-                      type="button"
-                      onClick={() => setShowSmartCamera(true)}
-                      className="w-full flex items-center justify-center gap-2"
-                      variant="outline"
-                    >
-                      <Camera className="w-4 h-4" />
-                      Capture Photo with Smart Camera
-                    </Button>
-                  </div>
-
-
-                  {/* Image Display */}
-                  {manualPhoto && (
-                    <div className="flex justify-center mb-4">
-                      <div className=" bg-white">
-                        <Image
-                          src={manualPhoto || ""}
-                          alt="Citizen Photo"
-                          width={128}
-                          height={160}
-                          className="object-cover rounded"
-                        />
+            {/* Temp Applications Count Card */}
+            {tempApplicationsCount > 0 && (
+              <Card className="mb-6">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-blue-100 rounded-full">
+                        <FileText className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-blue-900">
+                          Temp Applications Available
+                        </h3>
+                        <p className="text-sm text-blue-700">
+                          {isLoadingTempCount ? (
+                            "Loading..."
+                          ) : (
+                            `${tempApplicationsCount} application${tempApplicationsCount !== 1 ? 's' : ''} waiting to be processed`
+                          )}
+                        </p>
                       </div>
                     </div>
-                  )}
+                    <Button
+                      onClick={handleLoadNextTempApplication}
+                      disabled={isLoading || isLoadingTempCount}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <FolderOpen className="mr-2 h-4 w-4" />
+                      {isLoading ? "Loading..." : "Load Next Application"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-                  {/* Upload Controls */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                                                 <input
-                           ref={fileInputRef}
-                           type="file"
-                           accept="image/*"
-                           onChange={handleImageUpload}
-                           className="block w-full text-sm text-gray-500
+            <ETDApplicationPhotoCard
+              title="Emergency Travel Document Application"
+              onNavigate={(citizenId, imageBase64, biometricData) => {
+                console.log("Get Data pressed with citizen ID:", citizenId);
+                console.log("Current imageBase64:", imageBase64);
+                console.log("Current biometricData:", biometricData);
+                handlePhotoCardNavigate(citizenId, imageBase64, biometricData);
+              }}
+              onImageChange={(base64) => {
+                console.log("Image changed:", base64 ? "has image" : "no image");
+                if (base64) {
+                  setImageBase64(base64);
+                  form.setValue("image", base64);
+                } else {
+                  setImageBase64("");
+                  form.setValue("image", "");
+                }
+              }}
+              onBiometricChange={(data) => {
+                console.log("Biometric changed:", data ? "has biometric" : "no biometric");
+                if (data) {
+                  setCapturedFingerprint(data);
+                }
+              }}
+            />
+          </div>
+        ) : (
+          <div >             <DGIPHeaderWithWatermarks />
+            <Card>
+              <CardHeader>
+
+                {/* <div className="flex items-center justify-between"> */}
+                <div>
+                  <CardTitle className="text-2xl font-bold">
+                    Emergency Travel Document Application
+                  </CardTitle>
+                  <CardDescription>
+                    Enter citizen information to create a new application
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleBackBtn()}
+                  className="text-sm"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+                {/* </div> */}
+              </CardHeader>
+              <CardContent>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit, (errors) => {
+                    console.error("Form validation errors:", errors);
+
+                    // Get the first error message to show to the user
+                    const firstError = Object.values(errors)[0];
+                    if (firstError && typeof firstError === 'object' && 'message' in firstError) {
+                      showNotification.error(firstError.message as string);
+                    } else {
+                      showNotification.error(
+                        "Please fill all the required fields before submitting"
+                      );
+                    }
+                  })}
+                  className="space-y-6"
+                >
+                  {/* Citizen ID Section */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <Label htmlFor="citizen_id">Citizen ID</Label>
+                      <Input
+                        id="citizen_id"
+                        placeholder="Enter 13-digit citizen ID"
+                        maxLength={13}
+                        pattern="\d{13}"
+                        inputMode="numeric"
+                        {...form.register("citizen_id")}
+                        className={`rounded-xl ${form.formState.errors.citizen_id ? "border-red-500" : ""
+                          }`}
+                      />
+                      {form.formState.errors.citizen_id && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.citizen_id.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={handleGetData}
+                      disabled={
+                        isFetchingData ||
+                        !/^\d{13}$/.test(form.watch("citizen_id"))
+                      }
+                      className="mt-6"
+                    >
+                      {isFetchingData ? "Fetching..." : "Get Data"}
+                    </Button>
+                  </div>
+                  <div className="mx-auto p-2 space-y-2">
+                    <div className="flex items-center gap-3">
+                      {/* Passport Details - Shows data when passport API is successful */}
+                      <DetailForm
+                        data={passportDetailData}
+                        title="Passport Details"
+                        passportPhoto={passportPhoto}
+                        onNext={() => { }}
+                        onBack={() => { }}
+                      />
+
+                      {/* NADRA Details - Always shows "Not available" for now */}
+                      <DetailForm
+                        data={{}}
+                        title="NADRA Details"
+                        passportPhoto={null}
+                        onNext={() => { }}
+                        onBack={() => { }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Image Upload Section */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <Label className="text-lg font-semibold mb-4 block">
+                      Photograph *
+                    </Label>
+
+                    {/*Capture Image*/}
+                    <div className="mb-4">
+                      <Button
+                        type="button"
+                        onClick={() => setShowSmartCamera(true)}
+                        className="w-full flex items-center justify-center gap-2"
+                        variant="outline"
+                      >
+                        <Camera className="w-4 h-4" />
+                        Capture Photo with Smart Camera
+                      </Button>
+                    </div>
+
+
+                    {/* Image Display */}
+                    {manualPhoto && (
+                      <div className="flex justify-center mb-4">
+                        <div className=" bg-white">
+                          <Image
+                            src={manualPhoto || ""}
+                            alt="Citizen Photo"
+                            width={128}
+                            height={160}
+                            className="object-cover rounded"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Upload Controls */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="block w-full text-sm text-gray-500
                              file:mr-4 file:py-2 file:px-4
                              file:rounded-full file:border-0
                              file:text-sm file:font-semibold
                              file:bg-blue-50 file:text-blue-700
                              hover:file:bg-blue-100"
-                         />
+                          />
+                        </div>
                       </div>
+
+                      {!manualPhoto && !imageBase64 && (
+                        <p className="text-sm text-gray-600">
+                          No image available from passport API. Please upload a
+                          photo manually.
+                        </p>
+                      )}
+
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <p className="text-xs text-blue-800">
+                          <strong>Image Requirements:</strong> 540×420 pixels, maximum 18KB, JPEG format
+                        </p>
+                      </div>
+
+                      {form.formState.errors.image && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.image.message}
+                        </p>
+                      )}
                     </div>
-
-                    {!manualPhoto && !imageBase64 && (
-                      <p className="text-sm text-gray-600">
-                        No image available from passport API. Please upload a
-                        photo manually.
-                      </p>
-                    )}
-
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-xs text-blue-800">
-                        <strong>Image Requirements:</strong> 540×420 pixels, maximum 18KB, JPEG format
-                      </p>
-                    </div>
-
-                    {form.formState.errors.image && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.image.message}
-                      </p>
-                    )}
                   </div>
-                </div>
 
-                {/* Fingerprint Capture Section */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <Label className="text-lg font-semibold mb-4 block">
-                    Fingerprint Capture
-                  </Label>
+                  {/* Fingerprint Capture Section */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <Label className="text-lg font-semibold mb-4 block">
+                      Fingerprint Capture
+                    </Label>
 
-                  {/* Fingerprint Display */}
-                  {capturedFingerprint && (
-                    <div className="flex justify-center mb-4">
-                      <div className="bg-white p-2 rounded border">
-                        <img
-                          src={`data:image/bmp;base64,${capturedFingerprint.imageBase64}`}
-                          alt="Captured Fingerprint"
-                          width={128}
-                          height={160}
-                          className="object-contain rounded"
-                        />
-                        {/* <div className="text-xs text-gray-600 mt-2 text-center">
+                    {/* Fingerprint Display */}
+                    {capturedFingerprint && (
+                      <div className="flex justify-center mb-4">
+                        <div className="bg-white p-2 rounded border">
+                          <img
+                            src={`data:image/bmp;base64,${capturedFingerprint.imageBase64}`}
+                            alt="Captured Fingerprint"
+                            width={128}
+                            height={160}
+                            className="object-contain rounded"
+                          />
+                          {/* <div className="text-xs text-gray-600 mt-2 text-center">
                           <p>Device: {capturedFingerprint.deviceModel || 'Unknown'}</p>
                           <p>Serial: {capturedFingerprint.serial || 'N/A'}</p>
                           <p>Quality: {capturedFingerprint.imageQuality || 'N/A'}</p>
@@ -1197,121 +1262,121 @@ export function CitizenForm() {
                             <p>WSQ Size: {capturedFingerprint.wsqSize || 'N/A'} bytes</p>
                           )}
                         </div> */}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Fingerprint Controls */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-4">
-                      <Button
-                        type="button"
-                        onClick={() => setShowBiometricModal(true)}
-                        variant="outline"
-                        className="flex items-center gap-2"
-                      >
-                        {capturedFingerprint ? "Recapture Fingerprint" : "Capture Fingerprint"}
-                      </Button>
-                      
-                      {capturedFingerprint && (
+                    {/* Fingerprint Controls */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-4">
                         <Button
                           type="button"
-                          onClick={handleClearFingerprint}
+                          onClick={() => setShowBiometricModal(true)}
                           variant="outline"
-                          className="text-red-600 hover:text-red-700"
+                          className="flex items-center gap-2"
                         >
-                          Clear Fingerprint
+                          {capturedFingerprint ? "Recapture Fingerprint" : "Capture Fingerprint"}
                         </Button>
+
+                        {capturedFingerprint && (
+                          <Button
+                            type="button"
+                            onClick={handleClearFingerprint}
+                            variant="outline"
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            Clear Fingerprint
+                          </Button>
+                        )}
+                      </div>
+
+                      {!capturedFingerprint && (
+                        <p className="text-sm text-gray-600">
+                          No fingerprint captured. Click "Capture Fingerprint" to add biometric data.
+                        </p>
                       )}
                     </div>
+                  </div>
 
-                    {!capturedFingerprint && (
-                      <p className="text-sm text-gray-600">
-                        No fingerprint captured. Click "Capture Fingerprint" to add biometric data.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Personal Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="first_name" className="font-bold">
-                      First Name *
-                    </Label>
-                    <Input
-                      id="first_name"
-                      {...form.register("first_name")}
-                      className={
-                        form.formState.errors.first_name ? "border-red-500" : ""
-                      }
-                    />
-                    {form.formState.errors.first_name && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.first_name.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="last_name" className="font-bold">
-                      Last Name *
-                    </Label>
-                    <Input
-                      id="last_name"
-                      {...form.register("last_name")}
-                      className={
-                        form.formState.errors.last_name ? "border-red-500" : ""
-                      }
-                    />
-                    {form.formState.errors.last_name && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.last_name.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="father_name" className="font-bold">
-                      Father&apos;s Name *
-                    </Label>
-                    <Input
-                      id="father_name"
-                      {...form.register("father_name")}
-                      className={
-                        form.formState.errors.father_name
-                          ? "border-red-500"
-                          : ""
-                      }
-                    />
-                    {form.formState.errors.father_name && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.father_name.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="mother_name" className="font-bold">
-                      Mother&apos;s Name *
-                    </Label>
-                    <Input
-                      id="mother_name"
-                      {...form.register("mother_name")}
-                      className={
-                        form.formState.errors.mother_name
-                          ? "border-red-500"
-                          : ""
-                      }
-                    />
-                    {form.formState.errors.mother_name && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.mother_name.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="gender" className="font-bold">
-                      Gender *
-                    </Label>
-                    {/* <Input 
+                  {/* Personal Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="first_name" className="font-bold">
+                        First Name *
+                      </Label>
+                      <Input
+                        id="first_name"
+                        {...form.register("first_name")}
+                        className={
+                          form.formState.errors.first_name ? "border-red-500" : ""
+                        }
+                      />
+                      {form.formState.errors.first_name && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.first_name.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="last_name" className="font-bold">
+                        Last Name *
+                      </Label>
+                      <Input
+                        id="last_name"
+                        {...form.register("last_name")}
+                        className={
+                          form.formState.errors.last_name ? "border-red-500" : ""
+                        }
+                      />
+                      {form.formState.errors.last_name && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.last_name.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="father_name" className="font-bold">
+                        Father&apos;s Name *
+                      </Label>
+                      <Input
+                        id="father_name"
+                        {...form.register("father_name")}
+                        className={
+                          form.formState.errors.father_name
+                            ? "border-red-500"
+                            : ""
+                        }
+                      />
+                      {form.formState.errors.father_name && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.father_name.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="mother_name" className="font-bold">
+                        Mother&apos;s Name *
+                      </Label>
+                      <Input
+                        id="mother_name"
+                        {...form.register("mother_name")}
+                        className={
+                          form.formState.errors.mother_name
+                            ? "border-red-500"
+                            : ""
+                        }
+                      />
+                      {form.formState.errors.mother_name && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.mother_name.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="gender" className="font-bold">
+                        Gender *
+                      </Label>
+                      {/* <Input 
                      id="gender" 
                      {...form.register("gender")} 
                      className={form.formState.errors.gender ? "border-red-500" : ""}
@@ -1319,248 +1384,246 @@ export function CitizenForm() {
                    {form.formState.errors.gender && (
                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.gender.message}</p>
                    )} */}
-                    <div className="relative">
-                      <select
-                        id="gender"
-                        {...form.register("gender")}
-                        className={`text-sm bg-white appearance-none w-full px-3 py-2 rounded-xl text-gray-500 border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          form.formState.errors.gender
+                      <div className="relative">
+                        <select
+                          id="gender"
+                          {...form.register("gender")}
+                          className={`text-sm bg-white appearance-none w-full px-3 py-2 rounded-xl text-gray-500 border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${form.formState.errors.gender
                             ? "border-red-500"
                             : "border-gray-300"
-                        }`}
-                      >
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Transgender">Transgender</option>
-                      </select>
+                            }`}
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Transgender">Transgender</option>
+                        </select>
 
-                      {form.formState.errors.gender && (
+                        {form.formState.errors.gender && (
+                          <p className="text-sm text-red-500 mt-1">
+                            {form.formState.errors.gender.message}
+                          </p>
+                        )}
+                        <ChevronDown className="absolute right-2 top-3 text-gray-500 h-4 w-4" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="date_of_birth" className="font-bold">
+                        Date of Birth *
+                      </Label>
+                      <Input
+                        id="date_of_birth"
+                        type="date"
+                        {...form.register("date_of_birth")}
+                        className={`text-gray-500 ${form.formState.errors.date_of_birth
+                          ? "border-red-500"
+                          : ""
+                          }`}
+                      />
+                      {form.formState.errors.date_of_birth && (
                         <p className="text-sm text-red-500 mt-1">
-                          {form.formState.errors.gender.message}
+                          {form.formState.errors.date_of_birth.message}
                         </p>
                       )}
-                      <ChevronDown className="absolute right-2 top-3 text-gray-500 h-4 w-4" />
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="date_of_birth" className="font-bold">
-                      Date of Birth *
-                    </Label>
-                    <Input
-                      id="date_of_birth"
-                      type="date"
-                      {...form.register("date_of_birth")}
-                      className={`text-gray-500 ${
-                        form.formState.errors.date_of_birth
-                          ? "border-red-500"
-                          : ""
-                      }`}
-                    />
-                    {form.formState.errors.date_of_birth && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.date_of_birth.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
 
-                {/* Address & Birth Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="birth_country" className="font-bold">
-                      Birth Country *
-                    </Label>
-                    <Input
-                      id="birth_country"
-                      {...form.register("birth_country")}
-                      className={
-                        form.formState.errors.birth_country
-                          ? "border-red-500"
-                          : ""
-                      }
-                    />
-                    {form.formState.errors.birth_country && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.birth_country.message}
-                      </p>
-                    )}
+                  {/* Address & Birth Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="birth_country" className="font-bold">
+                        Birth Country *
+                      </Label>
+                      <Input
+                        id="birth_country"
+                        {...form.register("birth_country")}
+                        className={
+                          form.formState.errors.birth_country
+                            ? "border-red-500"
+                            : ""
+                        }
+                      />
+                      {form.formState.errors.birth_country && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.birth_country.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="birth_city" className="font-bold">
+                        Birth City *
+                      </Label>
+                      <Input
+                        id="birth_city"
+                        {...form.register("birth_city")}
+                        className={
+                          form.formState.errors.birth_city ? "border-red-500" : ""
+                        }
+                      />
+                      {form.formState.errors.birth_city && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.birth_city.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="profession" className="font-bold">
+                        Profession *
+                      </Label>
+                      <Input
+                        id="profession"
+                        {...form.register("profession")}
+                        className={
+                          form.formState.errors.profession ? "border-red-500" : ""
+                        }
+                      />
+                      {form.formState.errors.profession && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.profession.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="pakistan_address" className="font-bold">
+                        Address *
+                      </Label>
+                      <Input
+                        id="pakistan_address"
+                        {...form.register("pakistan_address")}
+                        className={
+                          form.formState.errors.pakistan_address
+                            ? "border-red-500"
+                            : ""
+                        }
+                      />
+                      {form.formState.errors.pakistan_address && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.pakistan_address.message}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="birth_city" className="font-bold">
-                      Birth City *
-                    </Label>
-                    <Input
-                      id="birth_city"
-                      {...form.register("birth_city")}
-                      className={
-                        form.formState.errors.birth_city ? "border-red-500" : ""
-                      }
-                    />
-                    {form.formState.errors.birth_city && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.birth_city.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="profession" className="font-bold">
-                      Profession *
-                    </Label>
-                    <Input
-                      id="profession"
-                      {...form.register("profession")}
-                      className={
-                        form.formState.errors.profession ? "border-red-500" : ""
-                      }
-                    />
-                    {form.formState.errors.profession && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.profession.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="pakistan_address" className="font-bold">
-                      Address *
-                    </Label>
-                    <Input
-                      id="pakistan_address"
-                      {...form.register("pakistan_address")}
-                      className={
-                        form.formState.errors.pakistan_address
-                          ? "border-red-500"
-                          : ""
-                      }
-                    />
-                    {form.formState.errors.pakistan_address && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.pakistan_address.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
 
-                {/* Physical Characteristics */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="height">Height</Label>
-                    <Input
-                      id="height"
-                      placeholder="e.g., 5.9"
-                      {...form.register("height")}
-                    />
+                  {/* Physical Characteristics */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="height">Height</Label>
+                      <Input
+                        id="height"
+                        placeholder="e.g., 5.9"
+                        {...form.register("height")}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="color_of_eyes">Eye Color</Label>
+                      <Input
+                        id="color_of_eyes"
+                        {...form.register("color_of_eyes")}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="color_of_hair">Hair Color</Label>
+                      <Input
+                        id="color_of_hair"
+                        {...form.register("color_of_hair")}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="color_of_eyes">Eye Color</Label>
-                    <Input
-                      id="color_of_eyes"
-                      {...form.register("color_of_eyes")}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="color_of_hair">Hair Color</Label>
-                    <Input
-                      id="color_of_hair"
-                      {...form.register("color_of_hair")}
-                    />
-                  </div>
-                </div>
 
-                {/* Travel & Request Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="transport_mode">Transport Mode</Label>
-                    <Input
-                      id="transport_mode"
-                      placeholder="e.g., Air, Road, Sea"
-                      {...form.register("transport_mode")}
-                    />
+                  {/* Travel & Request Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="transport_mode">Transport Mode</Label>
+                      <Input
+                        id="transport_mode"
+                        placeholder="e.g., Air, Road, Sea"
+                        {...form.register("transport_mode")}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="investor">Investor</Label>
+                      <Input
+                        id="investor"
+                        placeholder="Gov of Pakistan"
+                        {...form.register("investor")}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="requested_by" className="font-bold">
+                        Requested By *
+                      </Label>
+                      <Input
+                        id="requested_by"
+                        {...form.register("requested_by")}
+                        className={
+                          form.formState.errors.requested_by
+                            ? "border-red-500"
+                            : ""
+                        }
+                      />
+                      {form.formState.errors.requested_by && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.requested_by.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="reason_for_deport">Reason for Deport</Label>
+                      <Input
+                        id="reason_for_deport"
+                        {...form.register("reason_for_deport")}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="securityDeposit">
+                        Security Deposit Description (if any)
+                      </Label>
+                      <Input
+                        id="securityDeposit"
+                        placeholder="-"
+                        {...form.register("securityDeposit")}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="amount">Amount</Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        step="0.01"
+                        {...form.register("amount", { valueAsNumber: true })}
+                        className={
+                          form.formState.errors.amount ? "border-red-500" : ""
+                        }
+                      />
+                      {form.formState.errors.amount && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {form.formState.errors.amount.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="currency">Currency</Label>
+                      <Input id="currency" {...form.register("currency")} />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="investor">Investor</Label>
-                    <Input
-                      id="investor"
-                      placeholder="Gov of Pakistan"
-                      {...form.register("investor")}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="requested_by" className="font-bold">
-                      Requested By *
-                    </Label>
-                    <Input
-                      id="requested_by"
-                      {...form.register("requested_by")}
-                      className={
-                        form.formState.errors.requested_by
-                          ? "border-red-500"
-                          : ""
-                      }
-                    />
-                    {form.formState.errors.requested_by && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.requested_by.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="reason_for_deport">Reason for Deport</Label>
-                    <Input
-                      id="reason_for_deport"
-                      {...form.register("reason_for_deport")}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="securityDeposit">
-                      Security Deposit Description (if any)
-                    </Label>
-                    <Input
-                      id="securityDeposit"
-                      placeholder="-"
-                      {...form.register("securityDeposit")}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="amount">Amount</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      step="0.01"
-                      {...form.register("amount", { valueAsNumber: true })}
-                      className={
-                        form.formState.errors.amount ? "border-red-500" : ""
-                      }
-                    />
-                    {form.formState.errors.amount && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {form.formState.errors.amount.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="currency">Currency</Label>
-                    <Input id="currency" {...form.register("currency")} />
-                  </div>
-                </div>
 
-                {/* Submit Button */}
-                <div className="flex justify-end gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => router.back()}
-                  >
-                    Cancel
-                  </Button>
+                  {/* Submit Button */}
+                  <div className="flex justify-end gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => router.back()}
+                    >
+                      Cancel
+                    </Button>
 
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading ? "Creating..." : "Create Application"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+                    <Button type="submit" disabled={isLoading}>
+                      {isLoading ? "Creating..." : "Create Application"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
           </div>
 
         )}
