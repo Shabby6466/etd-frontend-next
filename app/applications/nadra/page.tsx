@@ -4,14 +4,14 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Camera, Fingerprint, Loader2, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react"
+import { ArrowLeft, Camera, Fingerprint, Loader2, CheckCircle2, AlertCircle, RefreshCw, XCircle, Clock, Eye } from "lucide-react"
 import { SmartCameraCapture } from "@/components/ui/SmartCameraCapture"
 import BiometricCaptureModal from "@/components/ui/BiometricCaptureModal"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import axios from "axios"
-import Image from "next/image"
 import { toast } from "sonner"
+import { nadraAPI, ResultResponse, NadraMatch } from "@/lib/api/nadra"
+import { Badge } from "@/components/ui/badge"
 
 // --- Constants & Types ---
 
@@ -30,114 +30,88 @@ const FINGERS = [
 
 type FingerKey = typeof FINGERS[number]['key'];
 
-interface IdentifyResponse {
+interface LocalTransaction {
   transactionId: string
-  status: string
-  requestMetadata?: any
+  referenceNumber: string
+  submittedAt: string
+  status: 'pending' | 'completed' | 'failed'
+  result?: ResultResponse | null
+  responseMessage?: string
+  photo: string | null // Base64 needed for list display
 }
 
-interface ResultResponse {
-  responseStatus: {
-    code: string
-    message: string
-  }
-  matches: any[]
-}
-
-const STORAGE_KEY = 'nadra_1_to_n_txn'
+const STORAGE_KEY_LIST = 'nadra_1_to_n_list'
 
 export default function NadraProcessingPage() {
   const router = useRouter()
 
-  // --- State ---
+  // --- Persistence ---
+  const [transactions, setTransactions] = useState<LocalTransaction[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(true)
+
+  // --- New Request State ---
   const [referenceNumber, setReferenceNumber] = useState(`APP-${Math.floor(Math.random() * 100000)}`)
   const [photo, setPhoto] = useState<string | null>(null) // base64
   const [fingerprints, setFingerprints] = useState<Record<string, string>>({}) // key -> base64 (WSQ)
-  
-  // UI State
+
+  // --- UI State ---
   const [isCameraOpen, setIsCameraOpen] = useState(false)
-  const [activeFingerKey, setActiveFingerKey] = useState<string | null>(null) // which finger we are strictly capturing
+  const [activeFingerKey, setActiveFingerKey] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  // Polling / Result State
-  const [transactionId, setTransactionId] = useState<string | null>(null)
-  const [pollingStatus, setPollingStatus] = useState<'idle' | 'pending' | 'completed' | 'failed'>('idle')
-  const [pollingLogs, setPollingLogs] = useState<string[]>([])
-  const [result, setResult] = useState<ResultResponse | null>(null)
 
-  // --- Effects ---
+  // --- Navigation/View State ---
+  const [viewMode, setViewMode] = useState<'list' | 'new' | 'detail'>('list')
+  const [selectedTxn, setSelectedTxn] = useState<LocalTransaction | null>(null)
+  const [pollingTxnId, setPollingTxnId] = useState<string | null>(null)
 
-  // Check generic local storage for any existing transaction on mount
+  // Load transactions
   useEffect(() => {
-    const savedTxn = localStorage.getItem(STORAGE_KEY)
-    if (savedTxn) {
-      setTransactionId(savedTxn)
-      setPollingStatus('pending')
-      setPollingLogs(prev => [...prev, `Found active transaction: ${savedTxn}`])
-      // Trigger an immediate check
-      checkStatus(savedTxn)
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_LIST)
+      if (stored) {
+        setTransactions(JSON.parse(stored))
+      }
+    } catch (e) {
+      console.error("Failed to load transactions", e)
+    } finally {
+      setLoadingHistory(false)
     }
   }, [])
 
-  // Poll when status is 'pending'
+  // Save transactions
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    if (pollingStatus === 'pending' && transactionId) {
-       // Simple progressive polling logic
-       // For demo/simplicity, we'll poll every 10s initially. 
-       // In a real app, implement the exponential backoff described in Requirements.
-       
-       const poll = async () => {
-         await checkStatus(transactionId);
-         // If still pending after check, schedule next
-         if (pollingStatus === 'pending') {
-             timeoutId = setTimeout(poll, 15000); // 15 seconds
-         }
-       }
-       
-       timeoutId = setTimeout(poll, 15000);
+    if (!loadingHistory) {
+      localStorage.setItem(STORAGE_KEY_LIST, JSON.stringify(transactions))
     }
+  }, [transactions, loadingHistory])
 
-    return () => clearTimeout(timeoutId)
-  }, [pollingStatus, transactionId])
+  // --- Actions ---
 
-
-  // --- Handlers ---
-
-  const handleGoBack = () => router.back()
-
-  // Photo
-  const handlePhotoCaptured = (base64: string) => {
-    setPhoto(base64)
-    setIsCameraOpen(false)
+  const handleGoBack = () => {
+    if (viewMode !== 'list') {
+      setViewMode('list')
+      setSelectedTxn(null)
+      // Reset form
+      setPhoto(null)
+      setFingerprints({})
+    } else {
+      router.back()
+    }
   }
 
-  // Fingerprint
-  const handleFingerCaptured = (data: { wsqBase64?: string; imageBase64: string }) => {
-    if (!activeFingerKey) return;
-    
-    // Prefer WSQ, fall back to image if necessary (though API likely needs WSQ/ISO for heavy lifting)
-    // The requirement says "WSQ or ISO template". The modal returns WSQ.
-    const payload = data.wsqBase64 || data.imageBase64; 
-    
-    setFingerprints(prev => ({
-      ...prev,
-      [activeFingerKey]: payload
-    }))
-    setActiveFingerKey(null)
+  const handleCreateNew = () => {
+    setReferenceNumber(`APP-${Math.floor(Math.random() * 100000)}`)
+    setPhoto(null)
+    setFingerprints({})
+    setViewMode('new')
   }
 
-  // Submit Logic
   const handleSubmit = async () => {
     if (!photo) {
       toast.error("Photograph is required")
       return
     }
-    // Validation: Require at least some fingers? Or all? User said "capture 10 fingerprints".
-    // We will warn but allow if > 0 for testing, but strictly strictly 10 is better.
-    const capturedCount = Object.keys(fingerprints).length
-    if (capturedCount < 1) {
+    if (Object.keys(fingerprints).length < 1) {
       toast.error("At least one fingerprint is required")
       return
     }
@@ -150,283 +124,466 @@ export default function NadraProcessingPage() {
         fingerprintMap: fingerprints
       }
 
-      // API Call
-      // POST /nadra/1toNIdentify
-      // Note: Assuming API is proxied or absolute path needed. Using relative for now.
-      const res = await axios.post<IdentifyResponse>('/api/nadra/1toNIdentify', payload)
-      
-      const { transactionId: newTxnId } = res.data;
-      
-      setTransactionId(newTxnId)
-      setPollingStatus('pending')
-      setPollingLogs(prev => [...prev, `Request submitted. Txn ID: ${newTxnId}`])
-      
-      // Persist
-      localStorage.setItem(STORAGE_KEY, newTxnId)
+      const data = await nadraAPI.identify1toN(payload);
+      const { transactionId: newTxnId } = data;
+
+      const newTxn: LocalTransaction = {
+        transactionId: newTxnId,
+        referenceNumber,
+        submittedAt: new Date().toISOString(),
+        status: 'pending',
+        photo: photo // Save for list view
+      }
+
+      setTransactions(prev => [newTxn, ...prev])
+      toast.success("Request Submitted", { description: `Txn ID: ${newTxnId}` })
+
+      setViewMode('list')
+      setReferenceNumber(`APP-${Math.floor(Math.random() * 100000)}`)
 
     } catch (err: any) {
       console.error(err)
-      toast.error("Failed to submit identification request", {
-          description: err.response?.data?.message || err.message
+      toast.error("Failed to submit", {
+        description: err.response?.data?.message || err.message
       })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Check Status Logic
-  const checkStatus = async (txnId: string) => {
+  const handleCheckStatus = async (txn: LocalTransaction) => {
+    setPollingTxnId(txn.transactionId)
     try {
-      setPollingLogs(prev => [...prev, `Checking status for ${txnId} at ${new Date().toLocaleTimeString()}...`])
-      
-      const res = await axios.post('/api/nadra/1toNGetResult', { transactionId: txnId })
-      
-      // Scenario B: Result Available
-      if (res.status === 200 || res.status === 201) {
-          const data = res.data as ResultResponse;
-          setResult(data)
-          setPollingStatus('completed')
-          setPollingLogs(prev => [...prev, "Result received!"])
-          localStorage.removeItem(STORAGE_KEY) // Clear stored txn on success
+      const data = await nadraAPI.getIdentificationResult(txn.transactionId);
+
+      if (data && data.responseStatus) {
+        // Determine success based on Nadra response code or convention
+        // "100" usually means success/done, and check if matches exist
+        const isCompleted = data.responseStatus.code === "100" || (data.matches && data.matches.length > 0);
+
+        const updatedTxn: LocalTransaction = {
+          ...txn,
+          status: isCompleted ? 'completed' : 'pending',
+          result: data,
+          responseMessage: data.responseStatus.message
+        }
+
+        setTransactions(prev => prev.map(t =>
+          t.transactionId === txn.transactionId ? updatedTxn : t
+        ))
+
+        if (isCompleted) {
+          toast.success("Result Received!", { description: "Identification process completed." })
+        } else {
+          toast.info("Status Update", { description: data.responseStatus.message })
+        }
       }
     } catch (err: any) {
-      // Scenario A: Result Not Ready (404/400)
+      // Handle "Not Ready" vs "Error"
       if (err.response && (err.response.status === 404 || err.response.status === 400)) {
-         setPollingLogs(prev => [...prev, "Result not ready yet. Waiting..."])
-         // Stay in pending
+        toast.info("Not Ready Yet", { description: "Still processing on server." })
       } else {
-          // Real error
-          console.error("Polling error", err)
-          setPollingLogs(prev => [...prev, "Error checking status. Retrying next cycle."])
+        toast.error("Error Checking Status", { description: err.message })
+        setTransactions(prev => prev.map(t =>
+          t.transactionId === txn.transactionId ? { ...t, status: 'failed' } : t
+        ))
       }
+    } finally {
+      setPollingTxnId(null)
     }
   }
-  
-  const resetFlow = () => {
-      setTransactionId(null)
-      setPollingStatus('idle')
-      setResult(null)
-      setPhoto(null)
-      setFingerprints({})
-      setPollingLogs([])
-      localStorage.removeItem(STORAGE_KEY)
+
+  const handleDelete = (txnId: string) => {
+    if (confirm("Remove this transaction record?")) {
+      setTransactions(prev => prev.filter(t => t.transactionId !== txnId))
+      if (selectedTxn?.transactionId === txnId) setSelectedTxn(null);
+    }
   }
 
-  // --- Render Sections ---
+  const handleViewDetail = (txn: LocalTransaction) => {
+    setSelectedTxn(txn);
+    setViewMode('detail');
+  }
 
-  const renderPollingView = () => (
-    <Card className="max-w-3xl mx-auto w-full">
-      <CardHeader>
-        <CardTitle>Processing Identification</CardTitle>
-        <CardDescription>Transaction ID: {transactionId}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        
-        {/* Progress Display */}
-        <div className="bg-slate-50 p-4 rounded-lg border h-64 overflow-y-auto font-mono text-xs space-y-1">
-            {pollingLogs.map((log, i) => (
-                <div key={i} className="text-slate-600 border-b border-slate-100 pb-1 last:border-0">{log}</div>
-            ))}
-            {pollingStatus === 'pending' && (
-                 <div className="flex items-center gap-2 text-blue-600 animate-pulse mt-2">
-                    <Loader2 className="w-3 h-3 animate-spin"/>
-                    Checking server...
-                 </div>
-            )}
-        </div>
-        
-        {/* Result Display */}
-        {pollingStatus === 'completed' && result && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h3 className="font-bold text-green-800 flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="w-5 h-5"/>
-                    Identification Successful
-                </h3>
-                <div className="space-y-2">
-                    <p className="text-sm">Response: {result.responseStatus?.message}</p>
-                    <div className="bg-white p-3 rounded border">
-                        <pre className="text-xs overflow-auto max-h-40">{JSON.stringify(result.matches, null, 2)}</pre>
-                    </div>
-                </div>
-            </div>
-        )}
+  // --- Render Helpers ---
 
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        {pollingStatus === 'completed' ? (
-             <Button onClick={resetFlow} className="w-full">Start New Request</Button>
-        ) : (
-            <div className="w-full text-center text-xs text-muted-foreground">
-                You can leave this page. The request will continue in the background. Return later to check status.
-            </div>
-        )}
-      </CardFooter>
-    </Card>
-  )
+  const renderDetailView = () => {
+    if (!selectedTxn) return null;
+    const result = selectedTxn.result;
 
-  if (transactionId) {
+    if (!result) return <div className="p-8 text-center">No result data found.</div>
+
+    // Assuming first match is primary
+    const match = result.matches?.[0] as NadraMatch | undefined;
+
+    if (!match) {
       return (
-          <div className="min-h-screen bg-slate-50 p-8">
-               <div className="mb-6">
-                 <Button variant="ghost" onClick={handleGoBack} className="gap-2">
-                    <ArrowLeft className="w-4 h-4" /> Back
-                 </Button>
-               </div>
-               {renderPollingView()}
+        <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-dashed">
+          <AlertCircle className="w-12 h-12 text-amber-500 mb-4" />
+          <h3 className="text-lg font-semibold text-slate-900">No Matches Found</h3>
+          <p className="text-slate-500 max-w-md text-center">
+            The identification process completed successfully, but no matching identity records were found in the database.
+          </p>
+          <div className="mt-6 border p-4 rounded bg-slate-50 text-sm font-mono">
+            Response: {selectedTxn.responseMessage || result.responseStatus.message}
           </div>
+        </div>
       )
+    }
+
+    const { citizenData, modalityResult } = match;
+
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <Card className="border-green-200 shadow-md">
+          <div className="h-2 bg-gradient-to-r from-green-500 to-emerald-600" />
+          <CardHeader className="bg-green-50/30 pb-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-xl text-green-900">Identification Match Found</CardTitle>
+                <CardDescription>Session ID: {match.sessionId} | Ref: {selectedTxn.referenceNumber}</CardDescription>
+              </div>
+              <Badge className="bg-green-600 hover:bg-green-700">Verified</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-8">
+            <div className="flex flex-col md:flex-row gap-8">
+              {/* Biometrics Column */}
+              <div className="shrink-0 flex flex-col items-center space-y-4">
+                <div className="w-[180px] h-[220px] bg-slate-200 rounded-lg border shadow-sm overflow-hidden relative">
+                  {citizenData.photograph ? (
+                    <img
+                      src={`data:image/jpeg;base64,${citizenData.photograph}`}
+                      alt="Citizen"
+                      className="w-full h-full object-contain bg-slate-900"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-400">
+                      <Camera className="w-10 h-10" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full space-y-2">
+                  <div className="flex items-center justify-between p-2 bg-slate-50 rounded border text-sm">
+                    <span className="text-xs font-semibold text-slate-500">Face</span>
+                    <Badge variant={modalityResult.facialResult === "MATCH" ? "default" : "secondary"}>
+                      {modalityResult.facialResult}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-slate-50 rounded border text-sm">
+                    <span className="text-xs font-semibold text-slate-500">Fingers</span>
+                    <Badge variant={modalityResult.fingerprintResult === "MATCH" ? "default" : "secondary"}>
+                      {modalityResult.fingerprintResult}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Column */}
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b pb-2">Citizen Particulars</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500 uppercase">Citizen Number</Label>
+                    <div className="text-xl font-mono font-semibold text-slate-900">
+                      {match.citizenNumber || selectedTxn.transactionId}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500 uppercase">Gender</Label>
+                    <div className="text-lg text-slate-900 capitalize">{citizenData.gender}</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500 uppercase">Name (Native)</Label>
+                    <div className="text-xl font-serif text-right text-slate-900" style={{ direction: 'rtl' }}>{citizenData.name}</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500 uppercase">Father Name (Native)</Label>
+                    <div className="text-xl font-serif text-right text-slate-900" style={{ direction: 'rtl' }}>{citizenData.fatherName}</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500 uppercase">Name (English)</Label>
+                    <div className="text-lg text-slate-900">{citizenData.name || '-'}</div>
+                    {/* Note: nameEnglish handling depends on API providing it or just relying on native */}
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500 uppercase">Father Name (English)</Label>
+                    <div className="text-lg text-slate-900">{citizenData.fatherNameEnglish}</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500 uppercase">Date of Birth</Label>
+                    <div className="text-lg text-slate-900">{citizenData.dateOfBirth}</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500 uppercase">Mother Name (Native)</Label>
+                    <div className="text-lg font-serif text-right text-slate-900" style={{ direction: 'rtl' }}>{citizenData.motherName}</div>
+                  </div>
+
+                  <div className="md:col-span-2 pt-2">
+                    <div className="border-b my-4" />
+                  </div>
+
+                  <div className="md:col-span-2 space-y-1">
+                    <Label className="text-xs text-slate-500 uppercase">Present Address</Label>
+                    <div className="text-lg font-serif text-right text-slate-900 bg-slate-50 p-3 rounded" style={{ direction: 'rtl' }}>
+                      {citizenData.presentAddress}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 space-y-1">
+                    <Label className="text-xs text-slate-500 uppercase">Permanent Address</Label>
+                    <div className="text-lg font-serif text-right text-slate-900 bg-slate-50 p-3 rounded" style={{ direction: 'rtl' }}>
+                      {citizenData.permanentAddress}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
+
+  // --- Main Render ---
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="outline" size="icon" onClick={handleGoBack}>
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <div>
-           <h1 className="text-2xl font-bold text-slate-900">NADRA 1:N Identification</h1>
-           <p className="text-slate-500">Submit biometrics for backend identification processing</p>
+      {/* Header Bar */}
+      <div className="max-w-7xl mx-auto flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={handleGoBack}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">
+              {viewMode === 'list' && 'NADRA Identification Dashboard'}
+              {viewMode === 'new' && 'New Biometric Request'}
+              {viewMode === 'detail' && 'Match Results'}
+            </h1>
+            <p className="text-slate-500">
+              1:N Biometric Identification System
+            </p>
+          </div>
         </div>
+
+        {viewMode === 'list' && (
+          <Button onClick={handleCreateNew} size="lg" className="shadow-sm">
+            + Start New Request
+          </Button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-        
-        {/* Left Col: Photo & Main Info */}
-        <div className="space-y-6 lg:col-span-1">
-             <Card>
-                 <CardHeader>
-                     <CardTitle className="text-lg">1. Subject Photograph</CardTitle>
-                 </CardHeader>
-                 <CardContent className="flex flex-col items-center gap-4">
-                     <div className="relative w-full aspect-[4/5] bg-slate-100 rounded-lg overflow-hidden border-2 border-dashed border-slate-300 flex items-center justify-center">
-                         {photo ? (
-                             <img 
-                                src={`data:image/jpeg;base64,${photo}`} 
-                                alt="Captured" 
-                                className="w-full h-full object-cover"
-                             />
-                         ) : (
-                             <div className="text-center text-slate-400">
-                                 <Camera className="w-12 h-12 mx-auto mb-2 opacity-50"/>
-                                 <span>No photo captured</span>
-                             </div>
-                         )}
-                     </div>
-                     <Button className="w-full" onClick={() => setIsCameraOpen(true)}>
-                         {photo ? 'Retake Photo' : 'Capture Photo'}
-                     </Button>
-                 </CardContent>
-             </Card>
+      <div className="max-w-7xl mx-auto">
 
-             <Card>
-                 <CardHeader>
-                     <CardTitle className="text-lg">Reference</CardTitle>
-                 </CardHeader>
-                 <CardContent>
-                     <Label>Application Reference</Label>
-                     <Input 
-                        value={referenceNumber} 
-                        onChange={(e) => setReferenceNumber(e.target.value)}
-                        placeholder="APP-..."
-                        className="mt-1.5"
-                     />
-                 </CardContent>
-             </Card>
-        </div>
+        {/* LIST MODE */}
+        {viewMode === 'list' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Sent Applications</CardTitle>
+              <CardDescription>History of identification requests and status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {transactions.length === 0 ? (
+                <div className="text-center py-16 text-slate-400 flex flex-col items-center border border-dashed rounded-lg bg-slate-50">
+                  <Fingerprint className="w-12 h-12 mb-3 opacity-20" />
+                  <p>No transactions found</p>
+                  <Button variant="link" onClick={handleCreateNew} className="mt-2">Create your first request</Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {transactions.map(txn => (
+                    <div key={txn.transactionId} className="group flex flex-col sm:flex-row items-center p-4 bg-white border rounded-lg hover:shadow-md transition-all gap-6">
 
-        {/* Right Col: Fingerprints */}
-        <div className="lg:col-span-2 space-y-6">
-             <Card className="h-full">
-                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                     <CardTitle className="text-lg">2. Biometric Fingerprints</CardTitle>
-                     <div className="text-sm text-muted-foreground">
-                         Captured: <span className="font-bold text-primary">{Object.keys(fingerprints).length}</span>/10
-                     </div>
-                 </CardHeader>
-                 <CardContent>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         
-                         {FINGERS.map((finger) => {
-                             const isCaptured = !!fingerprints[finger.key];
-                             return (
-                                 <div 
-                                    key={finger.key}
-                                    className={`
-                                        flex items-center justify-between p-3 rounded-lg border transition-all
-                                        ${isCaptured ? 'bg-green-50 border-green-200' : 'bg-white hover:border-blue-300'}
-                                    `}
-                                 >
-                                     <div className="flex items-center gap-3">
-                                         <div className={`p-2 rounded-full ${isCaptured ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-500'}`}>
-                                             <Fingerprint className="w-5 h-5" />
-                                         </div>
-                                         <div>
-                                             <p className="font-medium text-sm text-slate-900">{finger.label}</p>
-                                             <p className="text-xs text-slate-500">
-                                                 {isCaptured ? 'Captured' : 'Pending'}
-                                             </p>
-                                         </div>
-                                     </div>
-                                     
-                                     <Button 
-                                        size="sm" 
-                                        variant={isCaptured ? "ghost" : "outline"}
-                                        className={isCaptured ? "text-green-600 hover:text-green-700 hover:bg-green-100" : ""}
-                                        onClick={() => setActiveFingerKey(finger.key)}
-                                     >
-                                         {isCaptured ? <CheckCircle2 className="w-4 h-4"/> : "Capture"}
-                                     </Button>
-                                 </div>
-                             )
-                         })}
+                      {/* Thumbnail */}
+                      <div className="shrink-0 w-16 h-20 bg-slate-100 rounded overflow-hidden border">
+                        {txn.photo ? (
+                          <img src={`data:image/jpeg;base64,${txn.photo}`} className="w-full h-full object-contain bg-slate-900" alt="Thumb" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center"><Camera className="w-6 h-6 text-slate-300" /></div>
+                        )}
+                      </div>
 
-                     </div>
-                 </CardContent>
-                 <CardFooter className="bg-slate-50/50 border-t p-6">
-                     <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-4">
-                         <div className="flex items-start gap-2 text-xs text-slate-500 max-w-sm">
-                             <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
-                             <p>Processing time for 1:N identification can take up to 4 hours. You will receive a transaction ID to track the status.</p>
-                         </div>
-                         <Button 
-                            size="lg" 
-                            className="w-full sm:w-auto min-w-[200px]"
-                            disabled={isSubmitting || !photo || Object.keys(fingerprints).length === 0}
-                            onClick={handleSubmit}
-                         >
-                             {isSubmitting ? (
-                                 <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin"/>
-                                    Submitting Request...
-                                 </>
-                             ) : (
-                                "Submit for Identification"
-                             )}
-                         </Button>
-                     </div>
-                 </CardFooter>
-             </Card>
-        </div>
+                      {/* Info */}
+                      <div className="flex-1 text-center sm:text-left">
+                        <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                          <span className="font-semibold text-slate-900">{txn.referenceNumber}</span>
+                          <Badge variant={
+                            txn.status === 'completed' ? 'default' :
+                              txn.status === 'failed' ? 'destructive' : 'secondary'
+                          }>
+                            {txn.status}
+                          </Badge>
+                        </div>
+                        <div className="text-xs font-mono text-slate-500 mb-1">ID: {txn.transactionId}</div>
+                        <div className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1">
+                          <Clock className="w-3 h-3" /> {new Date(txn.submittedAt).toLocaleString()}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2">
+                        {txn.status === 'completed' ? (
+                          <Button onClick={() => handleViewDetail(txn)} className="bg-green-600 hover:bg-green-700">
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Result
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            onClick={() => handleCheckStatus(txn)}
+                            disabled={pollingTxnId === txn.transactionId}
+                          >
+                            {pollingTxnId === txn.transactionId ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                            Check Status
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500" onClick={() => handleDelete(txn.transactionId)}>
+                          <XCircle className="w-5 h-5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* NEW MODE */}
+        {viewMode === 'new' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="space-y-6 lg:col-span-1">
+              <Card>
+                <CardHeader><CardTitle className="text-lg">1. Subject Photo</CardTitle></CardHeader>
+                <CardContent className="flex flex-col items-center gap-4">
+                  <div className="relative w-full rounded flex items-center justify-center overflow-hidden">
+                    {photo ? (
+                      <img src={`data:image/jpeg;base64,${photo}`} className="w-full h-full object-contain" alt="Subject" />
+                    ) : (
+                      <div className="text-slate-400 text-center">
+                        <Camera className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                        <div>Capture Photo</div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 w-full">
+                    <Button className="flex-1" onClick={() => setIsCameraOpen(true)}>
+                      {photo ? 'Retake Photo' : 'Capture Photo'}
+                    </Button>
+                    {photo && (
+                      <Button variant="destructive" size="icon" onClick={() => setPhoto(null)} title="Clear Photo">
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Reference</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Label>Ref No.</Label>
+                  <Input
+                    value={referenceNumber}
+                    onChange={(e) => setReferenceNumber(e.target.value)}
+                    placeholder="APP-..."
+                    className="mt-1"
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Col: Fingerprints */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="h-full flex flex-col">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div className="flex items-center gap-4">
+                    <CardTitle className="text-lg">2. Capture Fingerprints</CardTitle>
+                    {Object.keys(fingerprints).length > 0 && (
+                      <Button variant="ghost" size="sm" onClick={() => setFingerprints({})} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 px-2">
+                        <XCircle className="w-4 h-4 mr-1.5" />
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+                  <Badge variant="outline">{Object.keys(fingerprints).length}/10 Scanned</Badge>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {FINGERS.map(f => (
+                      <div key={f.key} className={`flex items-center justify-between p-3 rounded border ${fingerprints[f.key] ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                        <div className="flex items-center gap-3">
+                          <Fingerprint className={`w-5 h-5 ${fingerprints[f.key] ? 'text-green-600' : 'text-slate-400'}`} />
+                          <div className="text-sm font-medium">{f.label}</div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {fingerprints[f.key] ? (
+                            <>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => {
+                                const newPrints = { ...fingerprints };
+                                delete newPrints[f.key];
+                                setFingerprints(newPrints);
+                              }} title="Delete Fingerprint">
+                                <XCircle className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 px-2 text-green-600 cursor-default hover:bg-transparent hover:text-green-600">
+                                <CheckCircle2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button size="sm" variant="outline" onClick={() => setActiveFingerKey(f.key)}>
+                              Capture
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t bg-slate-50/50 p-6 flex justify-end">
+                  <Button size="lg" disabled={isSubmitting} onClick={handleSubmit} className="min-w-[200px]">
+                    {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Sending...</> : "Submit Request"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* DETAIL MODE */}
+        {viewMode === 'detail' && renderDetailView()}
+
       </div>
 
       {/* --- Modals --- */}
-      
       {isCameraOpen && (
-          <SmartCameraCapture 
-              onCapture={handlePhotoCaptured}
-              onCancel={() => setIsCameraOpen(false)}
-          />
+        <SmartCameraCapture
+          onCapture={(b64) => { setPhoto(b64); setIsCameraOpen(false); }}
+          onCancel={() => setIsCameraOpen(false)}
+        />
       )}
-
-      {/* Fingerprint Modal - Only active when a finger is selected */}
-      <BiometricCaptureModal 
-          isOpen={!!activeFingerKey}
-          onClose={() => setActiveFingerKey(null)}
-          onCaptured={handleFingerCaptured}
-          // Pass any device specific options here
+      <BiometricCaptureModal
+        isOpen={!!activeFingerKey}
+        onClose={() => setActiveFingerKey(null)}
+        onCaptured={(d) => {
+          if (activeFingerKey) {
+            setFingerprints(p => ({ ...p, [activeFingerKey]: d.wsqBase64 || d.imageBase64 }));
+            setActiveFingerKey(null);
+          }
+        }}
       />
-
     </div>
   )
 }

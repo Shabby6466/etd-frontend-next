@@ -215,39 +215,19 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    // Set canvas size to target dimensions (540x420)
-    canvas.width = 540;
-    canvas.height = 420;
+    // Use full video resolution to avoid cropping
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Mirror the image horizontally (flip it)
+    // Mirror the image horizontally (flip it) for user-facing camera
     ctx.save();
     ctx.scale(-1, 1);
     ctx.translate(-canvas.width, 0);
 
-    // Calculate scaling to fill canvas while maintaining aspect ratio
-    const videoAspect = video.videoWidth / video.videoHeight;
-    const canvasAspect = canvas.width / canvas.height;
-
-    let sourceX = 0, sourceY = 0, sourceWidth = video.videoWidth, sourceHeight = video.videoHeight;
-
-    if (videoAspect > canvasAspect) {
-      // Video is wider
-      sourceWidth = video.videoHeight * canvasAspect;
-      sourceX = (video.videoWidth - sourceWidth) / 2;
-    } else {
-      // Video is taller
-      sourceHeight = video.videoWidth / canvasAspect;
-      sourceY = (video.videoHeight - sourceHeight) / 2;
-    }
-
-    ctx.drawImage(
-      video,
-      sourceX, sourceY, sourceWidth, sourceHeight,
-      0, 0, canvas.width, canvas.height
-    );
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     ctx.restore();
 
