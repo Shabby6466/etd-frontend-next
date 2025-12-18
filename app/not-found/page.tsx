@@ -12,7 +12,6 @@ export default function NotFoundPage() {
 
   const handleGoHome = () => {
     if (isAuthenticated && user) {
-      // Redirect to user's appropriate dashboard
       switch (user.role) {
         case "ADMIN":
           router.replace("/admin")

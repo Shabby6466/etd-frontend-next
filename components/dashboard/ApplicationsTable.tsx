@@ -222,6 +222,12 @@ export function ApplicationsTable({
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
+                {userRole === 'MISSION_OPERATOR' && (
+                <Button onClick={() => router.push("/applications/nadra")}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Process Nadra
+                </Button>
+              )}
               {userRole === 'MISSION_OPERATOR' && (
                 <Button onClick={() => router.push("/applications/new")}>
                   <Plus className="h-4 w-4 mr-2" />
