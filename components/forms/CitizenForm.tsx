@@ -455,8 +455,8 @@ export function CitizenForm() {
             setNadraDetailData({
               first_name: data.citizenData.name, // "First Name will be Name"
               last_name: " ", // Intentionally empty or handle in component if needed, but keeping structure valid
-              father_name: data.citizenData.fatherNameEnglish || data.citizenData.fatherName,
-              mother_name: data.citizenData.motherNameEnglish || data.citizenData.motherName,
+              father_name: data.citizenData.fatherNameEnglish.toUpperCase() || data.citizenData.fatherName,
+              mother_name: data.citizenData.motherNameEnglish.toUpperCase() || data.citizenData.motherName,
               date_of_birth: data.citizenData.dateOfBirth,
               gender: data.citizenData.gender == "male" ? "Male" : data.citizenData.gender == "female" ? "Female" : data.citizenData.gender,
               photograph: data.citizenData.photograph ? `data:image/jpeg;base64,${data.citizenData.photograph}` : null,
