@@ -16,9 +16,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { showNotification } from "@/lib/utils/notifications";
-import { citizenSchema, type CitizenFormData } from "@/lib/validations/citizen";
+import { citizenSchema, type NadraCitizenDataResponse, type CitizenFormData } from "@/lib/validations/citizen";
 import { applicationAPI } from "@/lib/api/applications";
-import { nadraAPI } from "@/lib/api/nadra";
+import { Nadra1to1ApiResponse, nadraAPI } from "@/lib/api/nadra";
 import { passportAPI, type PassportApiResponse } from "@/lib/api/passport";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { DGIPHeaderWithWatermarks } from "@/components/ui/dgip_header_watermarks";
@@ -63,7 +63,7 @@ export function CitizenForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { user } = useAuthStore();
-  const { fileCount, files, isLoading: isXmlLoading, error: xmlError, currentFileName, loadFile, refreshFileList, moveCurrentFile } = useXmlDraft();
+  const { files, currentFileName, loadFile, moveCurrentFile } = useXmlDraft();
   const [tempApplicationsCount, setTempApplicationsCount] = useState<number>(0);
   const [isLoadingTempCount, setIsLoadingTempCount] = useState(false);
   const [currentTempApplicationId, setCurrentTempApplicationId] = useState<number | null>(null);
@@ -218,6 +218,50 @@ export function CitizenForm() {
     },
   });
 
+  const mapNadraData = (
+    nadraData: Nadra1to1ApiResponse
+  ): Partial<NadraCitizenDataResponse> => {
+    const formatDate = (dateStr: string): string => {
+      try {
+        const months: { [key: string]: string } = {
+          JAN: "01",
+          FEB: "02",
+          MAR: "03",
+          APR: "04",
+          MAY: "05",
+          JUN: "06",
+          JUL: "07",
+          AUG: "08",
+          SEP: "09",
+          OCT: "10",
+          NOV: "11",
+          DEC: "12",
+        };
+
+        const [day, month, year] = dateStr.split("-");
+        const monthNum = months[month] || "01";
+        return `${year}-${monthNum}-${day.padStart(2, "0")}`;
+      } catch {
+        return dateStr;
+      }
+    };
+    return {
+      citizen_id: nadraData.citizenNumber,
+      full_name: nadraData.citizenData.name,
+      image: nadraData.citizenData.photograph,
+      father_name: nadraData.citizenData.fatherNameEnglish,
+      mother_name: nadraData.citizenData.motherNameEnglish,
+      gender: nadraData.citizenData.gender === "male"
+        ? "Male"
+        : nadraData.citizenData.gender === "female"
+          ? "Female"
+          : nadraData.citizenData.gender,
+      date_of_birth: formatDate(nadraData.citizenData.dateOfBirth),
+      present_address: nadraData.citizenData.presentAddress,
+      permanent_address: nadraData.citizenData.permanentAddress,
+    }
+  }
+
   // Function to map passport API response to form data
   const mapPassportDataToForm = (
     passportData: PassportApiResponse
@@ -352,90 +396,101 @@ export function CitizenForm() {
     console.log("Full NADRA Input:", JSON.stringify(NadraInput, null, 2));
     console.log("=== END NADRA INPUT DEBUG ===");
 
-    // Call both APIs independently with separate error handling
-    let passportData = null;
-    let nadraData = null;
+    // Call both APIs concurrently with independent processing
+    console.log("Starting concurrent API calls...");
 
-    // Try Passport API
-    try {
-      console.log("Calling Passport API...");
-      passportData = await passportAPI.getCitizenData(citizenId);
-      console.log("Passport API Response received");
-    } catch (error) {
-      console.error("Passport API Error:", error);
-      showNotification.error("Failed to fetch data from Passport API");
-    }
+    // Define independent promise chains
+    const passportPromise = passportAPI.getCitizenData(citizenId)
+      .then((data) => {
+        console.log("Passport API Response received");
+        if (data) {
+          const mappedData = mapPassportDataToForm(data);
 
-    // Try NADRA API independently
-    try {
-      console.log("Calling NADRA API...");
-      nadraData = await nadraAPI.getCitizenData(NadraInput);
-      console.log("NADRA Response:", JSON.stringify(nadraData, null, 2));
-
-      // Store NADRA API data for submission
-      if (nadraData) {
-        form.setValue("nadra_api_data", nadraData);
-
-        // Set NADRA detail data for display if available
-        if (nadraData.citizenData) {
-          setNadraDetailData({
-            name: nadraData.citizenData.name,
-            father_name: nadraData.citizenData.fatherName || nadraData.citizenData.fatherNameEnglish,
-            mother_name: nadraData.citizenData.motherName || nadraData.citizenData.motherNameEnglish,
-            date_of_birth: nadraData.citizenData.dateOfBirth,
-            gender: nadraData.citizenData.gender,
-            photograph: nadraData.citizenData.photograph,
-            facial_result: nadraData.modalityResult?.facialResult,
-            fingerprint_result: nadraData.modalityResult?.fingerprintResilt,
+          Object.entries(mappedData).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") {
+              form.setValue(key as keyof CitizenFormData, value, { shouldDirty: true, shouldValidate: true });
+            }
           });
+
+          if (data.photograph) {
+            setPassportPhoto(`data:image/jpeg;base64,${data.photograph}`);
+            setImageBase64(data.photograph);
+            form.setValue("image", data.photograph);
+          }
+
+          // Store passport API data for submission
+          form.setValue("passport_api_data", data);
+
+          // Set passport detail data for display
+          setPassportDetailData({
+            first_name: mappedData.first_name,
+            last_name: mappedData.last_name,
+            father_name: mappedData.father_name,
+            gender: mappedData.gender,
+            date_of_birth: mappedData.date_of_birth,
+            birth_country: mappedData.birth_country,
+            birth_city: mappedData.birth_city,
+            profession: mappedData.profession,
+            pakistan_address: mappedData.pakistan_address,
+          });
+
+          // Mark passport data as fetched
+          setIsPassportDataFetched(true);
         }
-
-        showNotification.success("NADRA verification completed successfully");
-      }
-    } catch (error) {
-      console.error("NADRA API Error:", error);
-      showNotification.error("Failed to fetch data from NADRA API");
-    }
-
-    // Process Passport data if available
-    if (passportData) {
-      const mappedData = mapPassportDataToForm(passportData);
-
-      Object.entries(mappedData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== "") {
-          form.setValue(key as keyof CitizenFormData, value, { shouldDirty: true, shouldValidate: true });
-        }
+      })
+      .catch((error) => {
+        console.error("Passport API Error:", error);
+        showNotification.error("Failed to fetch data from Passport API");
       });
 
-      if (passportData.photograph) {
-        setPassportPhoto(`data:image/jpeg;base64,${passportData.photograph}`);
-        setImageBase64(passportData.photograph);
-        form.setValue("image", passportData.photograph);
-      }
+    const nadraPromise = nadraAPI.getCitizenData(NadraInput)
+      .then((data) => {
+        console.log("NADRA Response:", JSON.stringify(data, null, 2));
+        if (data) {
+          // Store NADRA API data for submission
+          form.setValue("nadra_api_data", data);
 
-      // Store passport API data for submission
-      form.setValue("passport_api_data", passportData);
+          // Set NADRA detail data for display if available
+          if (data.citizenData) {
+            setNadraDetailData({
+              first_name: data.citizenData.name, // "First Name will be Name"
+              last_name: " ", // Intentionally empty or handle in component if needed, but keeping structure valid
+              father_name: data.citizenData.fatherNameEnglish || data.citizenData.fatherName,
+              mother_name: data.citizenData.motherNameEnglish || data.citizenData.motherName,
+              date_of_birth: data.citizenData.dateOfBirth,
+              gender: data.citizenData.gender == "male" ? "Male" : data.citizenData.gender == "female" ? "Female" : data.citizenData.gender,
+              photograph: data.citizenData.photograph ? `data:image/jpeg;base64,${data.citizenData.photograph}` : null,
+              present_address: data.citizenData.presentAddress,
+              permanent_address: data.citizenData.permanentAddress,
+              facial_result: data.modalityResult?.facialResult,
+              fingerprint_result: data.modalityResult?.fingerprintResult,
+            });
+          }
 
-      // Set passport detail data for display
-      setPassportDetailData({
-        first_name: mappedData.first_name,
-        last_name: mappedData.last_name,
-        father_name: mappedData.father_name,
-        gender: mappedData.gender,
-        date_of_birth: mappedData.date_of_birth,
-        birth_country: mappedData.birth_country,
-        birth_city: mappedData.birth_city,
-        profession: mappedData.profession,
-        pakistan_address: mappedData.pakistan_address,
+          const nadraMappedData = mapNadraData(data);
+          Object.entries(nadraMappedData).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") {
+              form.setValue(key as keyof CitizenFormData, value, { shouldDirty: true, shouldValidate: true });
+            }
+          });
+
+          showNotification.success("NADRA verification completed successfully");
+        }
+      })
+      .catch((error) => {
+        console.error("NADRA API Error:", error);
+        showNotification.error("Failed to fetch data from NADRA API");
       });
 
-      // Mark passport data as fetched
-      setIsPassportDataFetched(true);
-    }
+    // Wait for both to complete (success or fail) before stopping loading
+    await Promise.all([passportPromise, nadraPromise]);
 
     setIsFetchingData(false);
   };
+
   const handleBackBtn = () => {
+    console.log("handleBackBtn: Starting reset sequence...");
+
     // Clear form values
     form.reset({
       citizen_id: "",
@@ -484,8 +539,12 @@ export function CitizenForm() {
     // Clear temp application ID
     setCurrentTempApplicationId(null);
 
-    // Reset to photo card view
-    setShowFullForm(false);
+    // Reset to photo card view with a slight delay to ensure form reset is processed
+    console.log("handleBackBtn: Setting showFullForm to false");
+    setTimeout(() => {
+      setShowFullForm(false);
+      console.log("handleBackBtn: showFullForm set to false");
+    }, 0);
   };
 
   // Function to handle loading XML draft files
@@ -1151,11 +1210,12 @@ export function CitizenForm() {
                         onBack={() => { }}
                       />
 
-                      {/* NADRA Details - Always shows "Not available" for now */}
+                      {/* NADRA Details */}
                       <DetailForm
-                        data={{}}
+                        data={nadraDetailData || {}}
                         title="NADRA Details"
-                        passportPhoto={null}
+                        passportPhoto={nadraDetailData?.photograph || null}
+                        variant="nadra"
                         onNext={() => { }}
                         onBack={() => { }}
                       />
