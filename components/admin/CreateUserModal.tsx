@@ -18,7 +18,7 @@ const createUserSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   fullName: z.string().min(1, "Full name is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["ADMIN", "MINISTRY", "AGENCY", "MISSION_OPERATOR"]),
+  role: z.enum(["ADMIN", "MINISTRY", "AGENCY", "MISSION_OPERATOR", "PRINT"]),
   agency: z.string().optional(),
   locationId: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]),
@@ -65,7 +65,7 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
 
   const onSubmit = async (data: CreateUserFormData) => {
     setIsLoading(true)
-    
+
     // Prepare payload based on role requirements
     const payload: any = {
       email: data.email,
@@ -74,7 +74,7 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
       role: data.role,
       status: data.status,
     }
-    
+
     // Add role-specific fields
     if (data.role === "AGENCY") {
       payload.agencyType = data.agency // Use agencyType parameter
@@ -84,7 +84,7 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
         // Find the location name from the locations list
         const locations = await locationsAPI.getAllLocations()
         const selectedLocation = locations.find((loc: any) => loc.location_id === data.locationId)
-        
+
         if (selectedLocation) {
           payload.state = selectedLocation.name // Location name (e.g., "Punjab")
           payload.locationId = selectedLocation.location_id // Location ID (e.g., "2010")
@@ -97,9 +97,9 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
     }
     // Ministry users don't need state field
     // ADMIN roles don't need additional fields
-    
+
     console.log('Creating user with payload:', payload)
-    
+
     try {
       await userAPI.create(payload)
       showNotification.success("User created successfully")
@@ -190,6 +190,7 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
                 {user?.role === "ADMIN" && (
                   <option value="ADMIN">Admin</option>
                 )}
+                <option value="PRINT">Print</option>
               </select>
             </div>
 
@@ -228,7 +229,7 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
                     <option value="SPECIAL_BRANCH_FEDERAL">Special Branch Federal</option>
                   </select>
                 </div>
-            
+
               </>
             )}
 
