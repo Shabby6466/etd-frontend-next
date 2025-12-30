@@ -31,13 +31,14 @@ const FINGERS = [
 type FingerKey = typeof FINGERS[number]['key'];
 
 interface LocalTransaction {
+  id?: number
   transactionId: string
-  referenceNumber: string
-  submittedAt: string
-  status: 'pending' | 'completed' | 'failed'
+  submittedAt: string // mapped from createdAt
+  status: string
   result?: ResultResponse | null
   responseMessage?: string
-  photo: string | null // Base64 needed for list display
+  photo?: string | null
+  retryCount?: number
 }
 
 const STORAGE_KEY_LIST = 'nadra_1_to_n_list'
@@ -46,11 +47,13 @@ export default function NadraProcessingPage() {
   const router = useRouter()
 
   // --- Persistence ---
-  const [transactions, setTransactions] = useState<LocalTransaction[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(true)
+  // --- Data State ---
+  const [failedList, setFailedList] = useState<LocalTransaction[]>([])
+  const [submittedList, setSubmittedList] = useState<LocalTransaction[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'failed' | 'submitted'>('failed')
 
   // --- New Request State ---
-  const [referenceNumber, setReferenceNumber] = useState(`APP-${Math.floor(Math.random() * 100000)}`)
   const [photo, setPhoto] = useState<string | null>(null) // base64
   const [fingerprints, setFingerprints] = useState<Record<string, string>>({}) // key -> base64 (WSQ)
 
@@ -58,32 +61,46 @@ export default function NadraProcessingPage() {
   const [isCameraOpen, setIsCameraOpen] = useState(false)
   const [activeFingerKey, setActiveFingerKey] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isRetrying, setIsRetrying] = useState<string | null>(null)
 
   // --- Navigation/View State ---
   const [viewMode, setViewMode] = useState<'list' | 'new' | 'detail'>('list')
   const [selectedTxn, setSelectedTxn] = useState<LocalTransaction | null>(null)
   const [pollingTxnId, setPollingTxnId] = useState<string | null>(null)
 
-  // Load transactions
-  useEffect(() => {
+  const fetchData = async () => {
+    setLoading(true)
     try {
-      const stored = localStorage.getItem(STORAGE_KEY_LIST)
-      if (stored) {
-        setTransactions(JSON.parse(stored))
-      }
-    } catch (e) {
-      console.error("Failed to load transactions", e)
-    } finally {
-      setLoadingHistory(false)
-    }
-  }, [])
+      const [failedData, submittedData] = await Promise.all([
+        nadraAPI.getFailedRequests(),
+        nadraAPI.getSubmittedRequests()
+      ])
 
-  // Save transactions
-  useEffect(() => {
-    if (!loadingHistory) {
-      localStorage.setItem(STORAGE_KEY_LIST, JSON.stringify(transactions))
+      // Map API data to LocalTransaction shape
+      const mapToTxn = (item: any): LocalTransaction => ({
+        id: item.id,
+        transactionId: item.transactionId,
+        submittedAt: item.createdAt || new Date().toISOString(),
+        status: item.status,
+        retryCount: item.retryCount,
+        photo: null // API list might not return photo, handle gracefully
+      })
+
+      setFailedList(Array.isArray(failedData) ? failedData.map(mapToTxn) : [])
+      setSubmittedList(Array.isArray(submittedData) ? submittedData.map(mapToTxn) : [])
+
+    } catch (e) {
+      console.error("Failed to load requests", e)
+      toast.error("Failed to load requests")
+    } finally {
+      setLoading(false)
     }
-  }, [transactions, loadingHistory])
+  }
+
+  // Initial Fetch
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   // --- Actions ---
 
@@ -100,7 +117,6 @@ export default function NadraProcessingPage() {
   }
 
   const handleCreateNew = () => {
-    setReferenceNumber(`APP-${Math.floor(Math.random() * 100000)}`)
     setPhoto(null)
     setFingerprints({})
     setViewMode('new')
@@ -119,27 +135,16 @@ export default function NadraProcessingPage() {
     setIsSubmitting(true)
     try {
       const payload = {
-        referenceNumber,
         photograph: photo,
         fingerprintMap: fingerprints
       }
 
-      const data = await nadraAPI.identify1toN(payload);
-      const { transactionId: newTxnId } = data;
+      await nadraAPI.identify1toN(payload);
 
-      const newTxn: LocalTransaction = {
-        transactionId: newTxnId,
-        referenceNumber,
-        submittedAt: new Date().toISOString(),
-        status: 'pending',
-        photo: photo // Save for list view
-      }
-
-      setTransactions(prev => [newTxn, ...prev])
-      toast.success("Request Submitted", { description: `Txn ID: ${newTxnId}` })
-
+      toast.success("Request Submitted")
+      fetchData() // Refresh lists
       setViewMode('list')
-      setReferenceNumber(`APP-${Math.floor(Math.random() * 100000)}`)
+      setActiveTab('submitted') // Switch to submitted tab
 
     } catch (err: any) {
       console.error(err)
@@ -151,54 +156,47 @@ export default function NadraProcessingPage() {
     }
   }
 
+  const handleRetry = async (txnId: string) => {
+    setIsRetrying(txnId)
+    try {
+      await nadraAPI.retryIdentify(txnId)
+      toast.success("Retry initiated successfully")
+      fetchData()
+    } catch (err: any) {
+      toast.error("Retry failed", { description: err.message })
+    } finally {
+      setIsRetrying(null)
+    }
+  }
+
   const handleCheckStatus = async (txn: LocalTransaction) => {
     setPollingTxnId(txn.transactionId)
     try {
       const data = await nadraAPI.getIdentificationResult(txn.transactionId);
 
       if (data && data.responseStatus) {
-        // Determine success based on Nadra response code or convention
-        // "100" usually means success/done, and check if matches exist
         const isCompleted = data.responseStatus.code === "100" || (data.matches && data.matches.length > 0);
-
-        const updatedTxn: LocalTransaction = {
-          ...txn,
-          status: isCompleted ? 'completed' : 'pending',
-          result: data,
-          responseMessage: data.responseStatus.message
-        }
-
-        setTransactions(prev => prev.map(t =>
-          t.transactionId === txn.transactionId ? updatedTxn : t
-        ))
 
         if (isCompleted) {
           toast.success("Result Received!", { description: "Identification process completed." })
+          fetchData()
         } else {
           toast.info("Status Update", { description: data.responseStatus.message })
         }
       }
     } catch (err: any) {
-      // Handle "Not Ready" vs "Error"
       if (err.response && (err.response.status === 404 || err.response.status === 400)) {
         toast.info("Not Ready Yet", { description: "Still processing on server." })
       } else {
         toast.error("Error Checking Status", { description: err.message })
-        setTransactions(prev => prev.map(t =>
-          t.transactionId === txn.transactionId ? { ...t, status: 'failed' } : t
-        ))
+        fetchData()
       }
     } finally {
       setPollingTxnId(null)
     }
   }
 
-  const handleDelete = (txnId: string) => {
-    if (confirm("Remove this transaction record?")) {
-      setTransactions(prev => prev.filter(t => t.transactionId !== txnId))
-      if (selectedTxn?.transactionId === txnId) setSelectedTxn(null);
-    }
-  }
+
 
   const handleViewDetail = (txn: LocalTransaction) => {
     setSelectedTxn(txn);
@@ -241,7 +239,7 @@ export default function NadraProcessingPage() {
             <div className="flex justify-between items-start">
               <div>
                 <CardTitle className="text-xl text-green-900">Identification Match Found</CardTitle>
-                <CardDescription>Session ID: {match.sessionId} | Ref: {selectedTxn.referenceNumber}</CardDescription>
+                <CardDescription>Session ID: {match.sessionId}</CardDescription>
               </div>
               <Badge className="bg-green-600 hover:bg-green-700">Verified</Badge>
             </div>
@@ -389,70 +387,120 @@ export default function NadraProcessingPage() {
         {viewMode === 'list' && (
           <Card>
             <CardHeader>
-              <CardTitle>Sent Applications</CardTitle>
-              <CardDescription>History of identification requests and status</CardDescription>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <CardTitle>Applications</CardTitle>
+                  <CardDescription>Manage identification requests</CardDescription>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200/60">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab('failed')}
+                      className={`text-xs px-3 rounded-md transition-all ${activeTab === 'failed'
+                          ? 'bg-white text-slate-900 shadow-sm font-medium'
+                          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
+                        }`}
+                    >
+                      Action Required ({failedList.length})
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab('submitted')}
+                      className={`text-xs px-3 rounded-md transition-all ${activeTab === 'submitted'
+                          ? 'bg-white text-slate-900 shadow-sm font-medium'
+                          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
+                        }`}
+                    >
+                      History ({submittedList.length})
+                    </Button>
+                  </div>
+                  <div className="h-6 w-px bg-slate-200 mx-1" />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => fetchData()}
+                    disabled={loading}
+                    className="h-8 w-8 bg-white"
+                    title="Refresh Data"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-amber-600' : 'text-slate-500'}`} />
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              {transactions.length === 0 ? (
-                <div className="text-center py-16 text-slate-400 flex flex-col items-center border border-dashed rounded-lg bg-slate-50">
-                  <Fingerprint className="w-12 h-12 mb-3 opacity-20" />
-                  <p>No transactions found</p>
-                  <Button variant="link" onClick={handleCreateNew} className="mt-2">Create your first request</Button>
-                </div>
+              {loading ? (
+                <div className="py-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
               ) : (
                 <div className="space-y-4">
-                  {transactions.map(txn => (
-                    <div key={txn.transactionId} className="group flex flex-col sm:flex-row items-center p-4 bg-white border rounded-lg hover:shadow-md transition-all gap-6">
-
-                      {/* Thumbnail */}
-                      <div className="shrink-0 w-16 h-20 bg-slate-100 rounded overflow-hidden border">
-                        {txn.photo ? (
-                          <img src={`data:image/jpeg;base64,${txn.photo}`} className="w-full h-full object-contain bg-slate-900" alt="Thumb" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center"><Camera className="w-6 h-6 text-slate-300" /></div>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 text-center sm:text-left">
-                        <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                          <span className="font-semibold text-slate-900">{txn.referenceNumber}</span>
-                          <Badge variant={
-                            txn.status === 'completed' ? 'default' :
-                              txn.status === 'failed' ? 'destructive' : 'secondary'
-                          }>
-                            {txn.status}
-                          </Badge>
-                        </div>
-                        <div className="text-xs font-mono text-slate-500 mb-1">ID: {txn.transactionId}</div>
-                        <div className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1">
-                          <Clock className="w-3 h-3" /> {new Date(txn.submittedAt).toLocaleString()}
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
-                        {txn.status === 'completed' ? (
-                          <Button onClick={() => handleViewDetail(txn)} className="bg-green-600 hover:bg-green-700">
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Result
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="secondary"
-                            onClick={() => handleCheckStatus(txn)}
-                            disabled={pollingTxnId === txn.transactionId}
-                          >
-                            {pollingTxnId === txn.transactionId ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                            Check Status
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500" onClick={() => handleDelete(txn.transactionId)}>
-                          <XCircle className="w-5 h-5" />
-                        </Button>
-                      </div>
+                  {(activeTab === 'failed' ? failedList : submittedList).length === 0 ? (
+                    <div className="text-center py-16 text-slate-400 flex flex-col items-center border border-dashed rounded-lg bg-slate-50">
+                      <Fingerprint className="w-12 h-12 mb-3 opacity-20" />
+                      <p>No {activeTab} requests found</p>
                     </div>
-                  ))}
+                  ) : (
+                    (activeTab === 'failed' ? failedList : submittedList).map(txn => (
+                      <div key={txn.transactionId} className="group flex flex-col sm:flex-row items-center p-4 bg-white border rounded-lg hover:shadow-md transition-all gap-6">
+
+                        <div className="flex-1 text-center sm:text-left">
+                          <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                            <Badge variant={
+                              txn.status === 'SUBMITTED' ? 'default' :
+                                txn.status === 'COMPLETED' ? 'outline' :
+                                  'secondary'
+                            }>
+                              {txn.status}
+                            </Badge>
+                            {/* Retry Count Badge if useful */}
+                            {txn.retryCount !== undefined && txn.retryCount > 0 && (
+                              <Badge variant="outline" className="text-xs">Retries: {txn.retryCount}</Badge>
+                            )}
+                          </div>
+                          <div className="text-xs font-mono text-slate-500 mb-1">ID: {txn.transactionId}</div>
+                          <div className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1">
+                            <Clock className="w-3 h-3" /> {new Date(txn.submittedAt).toLocaleString()}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
+                          {/* Retry Button - Show for anything NOT completed (Pending, Submitted, Failed) */}
+                          {txn.status !== 'COMPLETED' && txn.status !== 'completed' && (
+                            <Button
+                              onClick={() => handleRetry(txn.transactionId)}
+                              disabled={isRetrying === txn.transactionId}
+                              className="bg-amber-600 hover:bg-amber-700 text-white"
+                            >
+                              {isRetrying === txn.transactionId ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                              Retry
+                            </Button>
+                          )}
+
+                          {(txn.status === 'COMPLETED' || txn.status === 'completed') && (
+                            <Button onClick={() => handleViewDetail(txn)} className="bg-green-600 hover:bg-green-700">
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Result
+                            </Button>
+                          )}
+
+                          {/* Check Status - Optional if Retry is the main action, but good to keep for verification */}
+                          {(txn.status === 'SUBMITTED' || txn.status === 'PENDING' || txn.status === 'submitted' || txn.status === 'pending') && (
+                            <Button
+                              variant="secondary"
+                              onClick={() => handleCheckStatus(txn)}
+                              disabled={pollingTxnId === txn.transactionId}
+                            >
+                              {pollingTxnId === txn.transactionId ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                              Check Status
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </CardContent>
@@ -486,21 +534,6 @@ export default function NadraProcessingPage() {
                       </Button>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Reference</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Label>Ref No.</Label>
-                  <Input
-                    value={referenceNumber}
-                    onChange={(e) => setReferenceNumber(e.target.value)}
-                    placeholder="APP-..."
-                    className="mt-1"
-                  />
                 </CardContent>
               </Card>
             </div>

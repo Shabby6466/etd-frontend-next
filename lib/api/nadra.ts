@@ -86,7 +86,6 @@ export const nadraAPI = {
   },
 
   identify1toN: async (payload: {
-    referenceNumber: string;
     photograph: string;
     fingerprintMap: Record<string, string>;
   }): Promise<IdentifyResponse> => {
@@ -105,6 +104,36 @@ export const nadraAPI = {
       return response.data;
     } catch (err) {
       console.error("Error getting nadra 1:N result:", err);
+      throw err;
+    }
+  },
+
+  getFailedRequests: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/nadra/failedRequests');
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching failed requests:", err);
+      throw err;
+    }
+  },
+
+  getSubmittedRequests: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/nadra/submitted-requests');
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching submitted requests:", err);
+      throw err;
+    }
+  },
+
+  retryIdentify: async (transactionId: string): Promise<any> => {
+    try {
+      const response = await apiClient.post('/nadra/retryIdentify', { transactionId });
+      return response.data;
+    } catch (err) {
+      console.error("Error retrying identification:", err);
       throw err;
     }
   }
