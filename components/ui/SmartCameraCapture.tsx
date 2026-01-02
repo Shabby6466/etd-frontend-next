@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Camera, CheckCircle, XCircle, AlertCircle, Upload } from "lucide-react";
 
 interface SmartCameraCaptureProps {
   onCapture: (imageBase64: string) => void;
@@ -19,6 +19,7 @@ interface ValidationStatus {
 export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [validationStatus, setValidationStatus] = useState<ValidationStatus>({
     faceDetected: false,
@@ -42,7 +43,7 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
           },
           audio: false,
         });
-        
+
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
           setStream(mediaStream);
@@ -74,16 +75,16 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
-      
+
       if (!ctx) return;
 
       ctx.drawImage(video, 0, 0);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      
+
       // Simple heuristics for validation
       const centerRegion = getCenterRegion(imageData, canvas.width, canvas.height);
       const upperCenterRegion = getUpperCenterRegion(imageData, canvas.width, canvas.height);
-      
+
       const hasFace = detectMotion(centerRegion);
       const isWellLit = checkLighting(centerRegion);
       const isCentered = checkCentering(imageData, canvas.width, canvas.height);
@@ -102,7 +103,7 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
       if (allConditionsMet && countdown === null) {
         startCountdown();
       }
-      
+
       // Cancel countdown if conditions are no longer met
       if (!allConditionsMet && countdown !== null) {
         setCountdown(null);
@@ -118,7 +119,7 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
     const centerX = width / 2;
     const centerY = height / 2;
     const regionSize = Math.min(width, height) / 3;
-    
+
     const pixels = [];
     for (let y = centerY - regionSize / 2; y < centerY + regionSize / 2; y += 10) {
       for (let x = centerX - regionSize / 2; x < centerX + regionSize / 2; x += 10) {
@@ -139,7 +140,7 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
     const centerY = height / 3; // Upper third for eye area
     const regionWidth = Math.min(width, height) / 4;
     const regionHeight = Math.min(width, height) / 6;
-    
+
     const pixels = [];
     for (let y = centerY - regionHeight / 2; y < centerY + regionHeight / 2; y += 5) {
       for (let x = centerX - regionWidth / 2; x < centerX + regionWidth / 2; x += 5) {
@@ -158,8 +159,8 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
     // Check for skin tone range (simple heuristic)
     const skinTonePixels = pixels.filter(p => {
       return p.r > 95 && p.g > 40 && p.b > 20 &&
-             p.r > p.g && p.r > p.b &&
-             Math.abs(p.r - p.g) > 15;
+        p.r > p.g && p.r > p.b &&
+        Math.abs(p.r - p.g) > 15;
     });
     return skinTonePixels.length > pixels.length * 0.3;
   };
@@ -170,13 +171,13 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
       const brightness = (p.r + p.g + p.b) / 3;
       return brightness < 100; // Dark regions like eyes, eyebrows, hair
     });
-    
+
     // Also check for skin tone in this region (indicates face is present)
     const skinPixels = pixels.filter(p => {
       return p.r > 95 && p.g > 40 && p.b > 20 &&
-             p.r > p.g && p.r > p.b;
+        p.r > p.g && p.r > p.b;
     });
-    
+
     // We need both dark regions (eyes) and skin tone (face)
     return darkPixels.length > pixels.length * 0.15 && skinPixels.length > pixels.length * 0.3;
   };
@@ -213,52 +214,107 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    
-    // Set canvas size to target dimensions (540x420)
-    canvas.width = 540;
-    canvas.height = 420;
-    
+
+    // Use full video resolution to avoid cropping
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Mirror the image horizontally (flip it)
+    // Mirror the image horizontally (flip it) for user-facing camera
     ctx.save();
     ctx.scale(-1, 1);
     ctx.translate(-canvas.width, 0);
 
-    // Calculate scaling to fill canvas while maintaining aspect ratio
-    const videoAspect = video.videoWidth / video.videoHeight;
-    const canvasAspect = canvas.width / canvas.height;
-    
-    let sourceX = 0, sourceY = 0, sourceWidth = video.videoWidth, sourceHeight = video.videoHeight;
-    
-    if (videoAspect > canvasAspect) {
-      // Video is wider
-      sourceWidth = video.videoHeight * canvasAspect;
-      sourceX = (video.videoWidth - sourceWidth) / 2;
-    } else {
-      // Video is taller
-      sourceHeight = video.videoWidth / canvasAspect;
-      sourceY = (video.videoHeight - sourceHeight) / 2;
-    }
-
-    ctx.drawImage(
-      video,
-      sourceX, sourceY, sourceWidth, sourceHeight,
-      0, 0, canvas.width, canvas.height
-    );
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     ctx.restore();
 
     // Convert to base64 JPEG
     const imageBase64 = canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
-    
+
     // Stop camera
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
     }
-    
+
     onCapture(imageBase64);
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image file");
+      event.target.value = "";
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image size must be less than 10MB");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          // Process image to match camera output (540x420)
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+
+          canvas.width = 540;
+          canvas.height = 420;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+
+          // Calculate scaling to fill canvas while maintaining aspect ratio
+          const imgAspect = img.width / img.height;
+          const canvasAspect = canvas.width / canvas.height;
+
+          let sourceX = 0, sourceY = 0, sourceWidth = img.width, sourceHeight = img.height;
+
+          if (imgAspect > canvasAspect) {
+            // Image is wider
+            sourceWidth = img.height * canvasAspect;
+            sourceX = (img.width - sourceWidth) / 2;
+          } else {
+            // Image is taller
+            sourceHeight = img.width / canvasAspect;
+            sourceY = (img.height - sourceHeight) / 2;
+          }
+
+          ctx.drawImage(
+            img,
+            sourceX, sourceY, sourceWidth, sourceHeight,
+            0, 0, canvas.width, canvas.height
+          );
+
+          // Convert to base64 JPEG
+          const imageBase64 = canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
+
+          // Stop camera if running
+          if (stream) {
+            stream.getTracks().forEach((track) => track.stop());
+          }
+
+          onCapture(imageBase64);
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      setError("Failed to process uploaded image");
+    } finally {
+      event.target.value = "";
+    }
   };
 
   const getStatusIcon = (status: boolean) => {
@@ -295,7 +351,7 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
             className="w-full h-full object-cover mirror"
             style={{ transform: "scaleX(-1)" }}
           />
-          
+
           {/* Countdown overlay */}
           {countdown !== null && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
@@ -306,7 +362,7 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
           {/* Face guide overlay */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="border-4 border-dashed border-white opacity-50 rounded-full"
-                 style={{ width: "60%", height: "80%" }} />
+              style={{ width: "60%", height: "80%" }} />
           </div>
         </div>
 
@@ -336,8 +392,8 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
         {/* Instructions */}
         <div className="bg-blue-50 p-4 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Instructions:</strong> Position yourself in the center of the frame. 
-            Look directly at the camera and sit upright. The photo will be captured automatically 
+            <strong>Instructions:</strong> Position yourself in the center of the frame.
+            Look directly at the camera and sit upright. The photo will be captured automatically
             when all conditions are met.
           </p>
         </div>
@@ -351,6 +407,14 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
             {isAnalyzing ? "Pause Analysis" : "Start Analysis"}
           </Button>
           <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            Upload Image
+          </Button>
+          <Button
             onClick={captureImage}
             disabled={!stream}
             className="flex items-center gap-2"
@@ -359,6 +423,15 @@ export function SmartCameraCapture({ onCapture, onCancel }: SmartCameraCapturePr
             Capture Now
           </Button>
         </div>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+        />
       </div>
     </div>
   );

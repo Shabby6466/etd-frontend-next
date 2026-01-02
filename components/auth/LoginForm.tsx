@@ -40,13 +40,13 @@ export function LoginForm() {
     try {
       const result = await login(data.email, data.password)
       console.log('Login result:', { success: result.success, error: result.error })
-      
+
       if (result.success) {
         showNotification.success("Login successful")
-        
+
         const user = useAuthStore.getState().user
         console.log('User after login:', user)
-        
+
         if (user) {
           switch (user.role) {
             case "ADMIN":
@@ -64,6 +64,10 @@ export function LoginForm() {
             case "MISSION_OPERATOR":
               console.log('Redirecting to mission dashboard')
               router.replace("/mission")
+              break
+            case "PRINT":
+              console.log('Redirecting to sheets dashboard')
+              router.replace("/sheets")
               break
             default:
               console.log('Unknown role, redirecting to admin')
@@ -87,12 +91,12 @@ export function LoginForm() {
         status: error.response?.status,
         statusText: error.response?.statusText
       })
-      
+
       // Try to extract error message from response
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          error.message || 
-                          "An error occurred during login"
+      const errorMessage = error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "An error occurred during login"
       showNotification.error(errorMessage)
     } finally {
       setIsLoading(false)
@@ -101,7 +105,7 @@ export function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center backgroundColor p-4 ">
-      <DGIPWatermarks/>
+      <DGIPWatermarks />
       <Card className="w-full max-w-md rounded-2xl">
         <CardHeader className="space-y-1 pb-4 flex flex-col items-center justify-center">
           <div className="pb-2">

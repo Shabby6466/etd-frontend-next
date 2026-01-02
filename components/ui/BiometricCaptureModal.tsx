@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Image from "next/image"
 import { encodeToWSQ, createWSQInfo, type WSQResult } from "@/lib/utils/wsq-encoder"
+import axios from "axios"
 
 type CaptureResponse = {
   ErrorCode: number
@@ -62,56 +63,54 @@ export default function BiometricCaptureModal({ isOpen, onClose, onCaptured, end
       setError(null)
       setConnectionStatus(null)
     } else {
-      testConnection()
+      // testConnection()S
     }
   }, [isOpen])
 
-  const testConnection = async () => {
-    try {
-      const response = await fetch(endpoint + "?Timeout=3000", {
-        method: "GET",
-      })
-      if (response.ok) {
-        const data = await response.json()
-        if (data.ErrorCode === 0) {
-          console.log("✅ Service ready")
-        }
-      }
-    } catch (e) {
-      setConnectionStatus("❌ Connection failed")
-    }
-  }
+  // const testConnection = async () => {
+  //   try {
+  //     const response = await fetch(endpoint + "?Timeout=3000", {
+  //       method: "GET",
+  //     })
+  //     if (response.ok) {
+  //       const data = await response.json()
+  //       if (data.ErrorCode === 0) {
+  //         console.log("✅ Service ready")
+  //       }
+  //     }
+  //   } catch (e) {
+  //     setConnectionStatus("❌ Connection failed")
+  //   }
+  // }
 
   const startCapture = async () => {
     setIsCapturing(true)
     setError(null)
     try {
-      const url = new URL(endpoint)
-      url.searchParams.set("FakeDetection", "0")
-      url.searchParams.set("Timeout", "25000")
-      url.searchParams.set("TemplateFormat", "ISO")
-      url.searchParams.set("ImageWSQRate", "0.75")
-      url.searchParams.set("Quality", "50")
+      // Hardcoded payload as requested
+      const payload = "Timeout=10000&Quality=50&licstr=&templateFormat=ISO&imageWSQRate=0.75";
 
-      const res = await fetch(url.toString(), {
-        method: "GET",
+      const apiClient = axios.create({
+        baseURL: endpoint,
+        timeout: 12000,
+        headers: {
+          "Content-Type": "text/plain;charset=UTF-8",
+        },
       })
-      if (!res.ok) {
-        throw new Error(`Capture service HTTP ${res.status}`)
-      }
-      const data = (await res.json()) as CaptureResponse
-      
+      const res = await apiClient.post(endpoint, payload);
+      const data = (await res.data) as CaptureResponse
+
       console.log("=== COMPLETE CAPTURE RESPONSE ===")
       console.log("Full Response:", data)
       console.log("Error Code:", data.ErrorCode)
       console.log("Device:", data.Model, "Serial:", data.SerialNumber)
       console.log("Image Quality:", data.ImageQuality, "NFIQ:", data.NFIQ)
       console.log("=== END RESPONSE ===")
-      
+
       if (typeof data.ErrorCode !== "number") {
         throw new Error("Invalid response from capture service")
       }
-      
+
       if (data.ErrorCode === 54) {
         setError("⚠️ Timeout during WSQ processing. Image captured successfully.")
       } else if (data.ErrorCode !== 0) {
@@ -120,7 +119,7 @@ export default function BiometricCaptureModal({ isOpen, onClose, onCaptured, end
 
       const imgB64 = data.ImageDataBase64 || data.BMPBase64 || ""
       setPreview(imgB64 ? `data:image/bmp;base64,${imgB64}` : null)
-      
+
       // Handle WSQ image if available from service, otherwise encode client-side
       if (data.WSQImage) {
         setWsqPreview(data.WSQImage)
@@ -134,7 +133,7 @@ export default function BiometricCaptureModal({ isOpen, onClose, onCaptured, end
         console.log("⚠️ WSQ not available from service, encoding client-side...")
         await encodeClientSideWSQ(imgB64)
       }
-      
+
       setDetails(data)
     } catch (e: unknown) {
       let msg = "Failed to start capture"
@@ -157,20 +156,20 @@ export default function BiometricCaptureModal({ isOpen, onClose, onCaptured, end
 
   const encodeClientSideWSQ = async (bmpBase64: string) => {
     if (!bmpBase64) return
-    
+
     setWsqEncoding(true)
     try {
       console.log("Starting client-side WSQ encoding...")
       const wsqResult = await encodeToWSQ(bmpBase64, 15)
-      
+
       setWsqResult(wsqResult)
       setWsqPreview(wsqResult.wsqBase64)
-      
+
       const wsqInfo = createWSQInfo(wsqResult)
       console.log("=== CLIENT-SIDE WSQ ENCODING ===")
       console.log("WSQ Header:", wsqInfo.header)
       console.log("Original Size:", wsqInfo.stats.originalSize, "bytes")
-      console.log("Compressed Size:", wsqInfo.stats.compressedSize, "bytes") 
+      console.log("Compressed Size:", wsqInfo.stats.compressedSize, "bytes")
       console.log("Compression Ratio:", wsqInfo.stats.compressionRatio + ":1")
       console.log("Quality:", wsqInfo.stats.quality + "%")
       console.log("Space Savings:", wsqInfo.stats.savings)
@@ -204,7 +203,7 @@ export default function BiometricCaptureModal({ isOpen, onClose, onCaptured, end
 
   const downloadWSQ = () => {
     if (!wsqPreview) return
-    
+
     try {
       const byteCharacters = atob(wsqPreview)
       const byteNumbers = new Array(byteCharacters.length)
@@ -213,20 +212,20 @@ export default function BiometricCaptureModal({ isOpen, onClose, onCaptured, end
       }
       const byteArray = new Uint8Array(byteNumbers)
       const blob = new Blob([byteArray], { type: 'application/octet-stream' })
-      
+
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      
+
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
       const serial = details?.SerialNumber?.trim() || 'unknown'
       link.download = `fingerprint_${serial}_${timestamp}.wsq`
-      
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
-      
+
       console.log(`WSQ file downloaded: ${link.download}`)
     } catch (error) {
       console.error('Failed to download WSQ file:', error)

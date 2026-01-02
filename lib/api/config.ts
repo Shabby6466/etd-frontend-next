@@ -32,7 +32,7 @@ export const API_ENDPOINTS = {
     GET: (id: string) => `/applications/${id}`,
     UPDATE: (id: string) => `/applications/${id}`,
     DELETE: (id: string) => `/applications/${id}`,
-    REVIEW: (id: string) => `/applications/${id}/review`,
+    REVIEW: (id: string) => `/agency-tracking/${id}/review`,
     APPROVE: (id: string) => `/applications/${id}/approve`,
     REJECT: (id: string) => `/applications/${id}/reject`
   },

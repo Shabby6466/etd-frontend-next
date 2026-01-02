@@ -16,7 +16,7 @@ export default function TestRejectedApplications() {
 
     try {
       // Test 1: Get all rejected applications (first page)
-      console.log("Testing: GET /applications/rejected")
+      console.log("Testing: GET /rejected")
       const rejectedApps = await applicationAPI.getRejectedApplications({
         page: 1,
         limit: 10
@@ -61,7 +61,7 @@ export default function TestRejectedApplications() {
 
     try {
       // Test 3: Get rejected applications statistics
-      console.log("Testing: GET /applications/rejected/stats")
+      console.log("Testing: GET /rejected/stats")
       const stats = await applicationAPI.getRejectedApplicationsStats()
       testResults.stats = {
         success: true,

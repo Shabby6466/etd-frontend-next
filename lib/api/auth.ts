@@ -19,9 +19,9 @@ export const authAPI = {
   },
 
   // Logout user
-  logout: async (): Promise<void> => {
-    await apiClient.post("/auth/logout")
-  },
+  // logout: async (): Promise<void> => {
+  //   await apiClient.post("/auth/logout")
+  // },
 
   // Verify token and get user info
   verify: async (): Promise<{ user: User }> => {

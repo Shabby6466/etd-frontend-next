@@ -1,27 +1,141 @@
-import { apiClient } from "./client"
+import { apiClient } from "./client";
 
-export interface NadraData {
-  citizen_id: string
-  first_name: string
-  last_name: string
-  father_name: string
-  mother_name: string
-  gender: string
-  date_of_birth: string
-  // nationality: string
-  profession: string
-  pakistan_address: string
-  // height: string
-  // color_of_eyes: string
-  // color_of_hair: string
-//   investor: string
-//   securityDeposit: string
+
+// 1:1 API Types
+export interface Nadra1to1Request {
+  citizenNumber: string;
+  fingerTemplate: string;
+  photograph: string;
+}
+
+export interface Nadra1to1ApiResponse {
+  citizenData: NadraCitizenData;
+  modalityResult: ModalityResult;
+  sessionId: string;
+  citizenNumber: string;
+  fingerIndex: string;
+  responseStatus: {
+    code: string;
+    message: string;
+  };
+}
+
+
+
+export interface NadraCitizenData {
+  name: string;
+  fatherName: string;
+  fatherNameEnglish: string;
+  presentAddress: string;
+  permanentAddress: string;
+  dateOfBirth: string;
+  gender: string;
+  motherName: string;
+  motherNameEnglish: string;
+  photograph: string;
+}
+
+export interface ModalityResult {
+  facialResult: string;
+  fingerprintResult: string;
+}
+
+export interface NadraMatch {
+  citizenData: NadraCitizenData;
+  modalityResult: ModalityResult;
+  sessionId: string;
+  citizenNumber: string;
+  fingerIndex: string | null;
+  responseStatus: {
+    code: string;
+    message: string;
+  };
+}
+
+export interface IdentifyResponse {
+  transactionId: string
+  status: string
+  requestMetadata?: any
+}
+
+export interface ResultResponse {
+  responseStatus: {
+    code: string;
+    message: string
+  }
+  matches: NadraMatch[]
 }
 
 export const nadraAPI = {
-  // Get citizen data from NADRA
-  getCitizenData: async (citizenId: string): Promise<NadraData> => {
-    const response = await apiClient.get(`/nadra/${citizenId}`)
-    return response.data
+  getCitizenData: async (
+    input: Nadra1to1Request
+  ): Promise<Nadra1to1ApiResponse> => {
+    try {
+      console.log(`citzen number nadra input --> ${input.citizenNumber}`)
+      const response = await apiClient.post(`/nadra/1to1`, {
+        citizenNumber: input.citizenNumber,
+        fingerTemplate: input.fingerTemplate,
+        photograph: input.photograph,
+      });
+      console.log("NADRA 1TO1 API response:", response.data);
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching nadra data:", err);
+      throw err;
+    }
   },
-}
+
+  identify1toN: async (payload: {
+    photograph: string;
+    fingerprintMap: Record<string, string>;
+  }): Promise<IdentifyResponse> => {
+    try {
+      const response = await apiClient.post(`/nadra/1toNIdentify`, payload);
+      return response.data;
+    } catch (err) {
+      console.error("Error in nadra 1:N identify:", err);
+      throw err;
+    }
+  },
+
+  getIdentificationResult: async (transactionId: string): Promise<ResultResponse> => {
+    try {
+      const response = await apiClient.post(`/nadra/1toNGetResult`, { transactionId });
+      return response.data;
+    } catch (err) {
+      console.error("Error getting nadra 1:N result:", err);
+      throw err;
+    }
+  },
+
+  getFailedRequests: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/nadra/failedRequests');
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching failed requests:", err);
+      throw err;
+    }
+  },
+
+  getSubmittedRequests: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/nadra/submitted-requests');
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching submitted requests:", err);
+      throw err;
+    }
+  },
+
+  retryIdentify: async (transactionId: string): Promise<any> => {
+    try {
+      const response = await apiClient.post('/nadra/retryIdentify', { transactionId });
+      return response.data;
+    } catch (err) {
+      console.error("Error retrying identification:", err);
+      throw err;
+    }
+  }
+};
+

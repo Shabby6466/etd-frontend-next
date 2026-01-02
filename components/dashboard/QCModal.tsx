@@ -25,6 +25,7 @@ export default function QCModal({ application, isOpen, onClose, onSuccess }: QCM
     
     try {
       await applicationAPI.qcPass(application.id)
+      console.log('QC PASS APPLICATION ID: ', application.id)
       showNotification.success("QC Passed - Application completed successfully")
       onSuccess()
       onClose()

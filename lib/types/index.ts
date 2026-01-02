@@ -11,7 +11,7 @@ export interface User {
   updatedAt: string
 }
 
-export type UserRole = 'ADMIN' | 'MINISTRY' | 'AGENCY' | 'MISSION_OPERATOR'
+export type UserRole = 'ADMIN' | 'MINISTRY' | 'AGENCY' | 'MISSION_OPERATOR' | 'PRINT'
 
 export interface Processing {
   tracking_id: string
@@ -122,7 +122,7 @@ export interface Application {
     submitted_at?: string
     completed_at?: string
   }>
-  isPassportResponseFetched?:string
+  isPassportResponseFetched?: string
 }
 
 export interface ApplicationAttachment {
@@ -144,10 +144,10 @@ export interface ApprovalHistory {
   performedAt: string
 }
 
-export type ApplicationStatus = 
-  | 'DRAFT' 
-  | 'SUBMITTED' 
-  | 'UNDER_REVIEW' 
+export type ApplicationStatus =
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'UNDER_REVIEW'
   | 'UNDER_VERIFICATION'
   | 'PENDING_VERIFICATION'
   | 'VERIFICATION_SUBMITTED'
@@ -157,8 +157,8 @@ export type ApplicationStatus =
   | 'READY_FOR_PERSONALIZATION'
   | 'READY_FOR_PRINT'
   | 'READY_FOR_QC'
-  | 'APPROVED' 
-  | 'REJECTED' 
+  | 'APPROVED'
+  | 'REJECTED'
   | 'COMPLETED'
   | 'BLACKLISTED'
 

@@ -44,3 +44,20 @@ export const citizenSchema = z.object({
 })
 
 export type CitizenFormData = z.infer<typeof citizenSchema>
+
+export const nadraCitizenDataResponse = z.object({
+  citizen_id: z
+    .string({ invalid_type_error: "Citizen ID must be a 13-digit number", required_error: "Citizen ID is required" })
+    .length(13, "Citizen ID must be exactly 13 digits")
+    .refine((value) => /^\d{13}$/.test(value), "Citizen ID must be a 13-digit number"),
+  full_name: z.string().min(1, "Full name is required").max(50, "First name too long"),
+  image: z.string().min(1, "Image is required"),
+  father_name: z.string().min(1, "Father's name is required").max(100, "Father's name too long"),
+  mother_name: z.string().min(1, "Mother's name is required").max(100, "Mother's name too long"),
+  gender: z.string().min(1, "Gender is required"),
+  date_of_birth: z.string().min(1, "Date of birth is required"),
+  present_address: z.string().min(1, "Present address is required").max(250, "Address too long"),
+  permanent_address: z.string().min(1, "Permanent address is required").max(250, "Address too long"),
+})
+
+export type NadraCitizenDataResponse = z.infer<typeof nadraCitizenDataResponse>

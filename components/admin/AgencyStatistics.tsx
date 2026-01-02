@@ -160,11 +160,7 @@ export function AgencyStatistics() {
         // Determine overall status for this application with this agency
         const hasPending = trackings.some(t => t.status === 'PENDING')
         const hasCompleted = trackings.some(t => t.status === 'COMPLETED')
-        const hasFailed = trackings.some(t => t.status === 'FAILED')
-        
-        if (hasFailed) {
-          stats.failed_applications++
-        } else if (hasCompleted && !hasPending) {
+         if (hasCompleted && !hasPending) {
           stats.completed_applications++
         } else if (hasPending) {
           stats.pending_applications++
@@ -179,7 +175,6 @@ export function AgencyStatistics() {
     switch (status) {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
       case 'COMPLETED': return 'bg-green-100 text-green-800 border-green-200'
-      case 'FAILED': return 'bg-red-100 text-red-800 border-red-200'
       default: return 'bg-gray-100 text-gray-800 border-gray-200'
     }
   }
@@ -188,13 +183,12 @@ export function AgencyStatistics() {
     switch (status) {
       case 'PENDING': return <Clock className="h-4 w-4" />
       case 'COMPLETED': return <CheckCircle className="h-4 w-4" />
-      case 'FAILED': return <XCircle className="h-4 w-4" />
       default: return <Clock className="h-4 w-4" />
     }
   }
 
   // Filter applications by status
-  const getApplicationsByStatus = (status: 'PENDING' | 'FAILED' | 'COMPLETED') => {
+  const getApplicationsByStatus = (status: 'PENDING' | 'COMPLETED') => {
     const filtered = applications.filter(app => {
       // Check if application has agency tracking data
       if (!app.agency_tracking || app.agency_tracking.length === 0) {
@@ -212,7 +206,6 @@ export function AgencyStatistics() {
   }
 
   const pendingApplications = getApplicationsByStatus('PENDING')
-  const failedApplications = getApplicationsByStatus('FAILED')
   const completedApplications = getApplicationsByStatus('COMPLETED')
 
   const handleDownloadAttachment = async (attachmentUrl: string, agencyName: string) => {
@@ -396,14 +389,6 @@ export function AgencyStatistics() {
               Pending ({pendingApplications.length})
             </Button>
             <Button
-              variant={activeTab === 'failed' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('failed')}
-              className="flex items-center gap-2"
-            >
-              <XCircle className="h-4 w-4" />
-              Failed ({failedApplications.length})
-            </Button>
-            <Button
               variant={activeTab === 'completed' ? 'default' : 'outline'}
               onClick={() => setActiveTab('completed')}
               className="flex items-center gap-2"
@@ -428,19 +413,6 @@ export function AgencyStatistics() {
             </Card>
           )}
 
-          {activeTab === 'failed' && (
-            <Card className="rounded-3xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <XCircle className="h-5 w-5" />
-                  Failed Verifications
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderApplicationsTable(failedApplications, 'FAILED')}
-              </CardContent>
-            </Card>
-          )}
 
           {activeTab === 'completed' && (
             <Card className="rounded-3xl">

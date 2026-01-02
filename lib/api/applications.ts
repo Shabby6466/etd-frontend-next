@@ -262,7 +262,7 @@ export const applicationAPI = {
 
   // Get agency-specific applications
   getAgencyApplications: async (filters?: any): Promise<{ data: Application[] }> => {
-    const response = await apiClient.get(`/applications/agency/applications`, { params: filters })
+    const response = await apiClient.get(`/agency-tracking/agency/applications`, { params: filters })
     const rawData = response.data?.applications || []
     const transformedData = Array.isArray(rawData)
       ? rawData.map(transformApplicationData)
@@ -298,7 +298,7 @@ export const applicationAPI = {
     if (filters.search) params.append('search', filters.search)
     if (filters.status) params.append('status', filters.status)
 
-    const response = await apiClient.get(`/applications/location/${locationId}?${params.toString()}`)
+    const response = await apiClient.get(`/locations/${locationId}/applications?${params.toString()}`)
 
     console.log('Raw location applications API response:', response.data)
 
@@ -430,9 +430,9 @@ export const applicationAPI = {
     }
 
     console.log('Sending payload:', payload)
-    console.log('API endpoint (PATCH):', `/applications/${id}/review`)
+    console.log('API endpoint (PATCH):', `/agency-tracking/${id}/review`)
     console.log('Base URL:', apiClient.defaults.baseURL)
-    console.log('Full URL will be:', `PATCH ${apiClient.defaults.baseURL}/applications/${id}/review`)
+    console.log('Full URL will be:', `PATCH ${apiClient.defaults.baseURL}/agency-tracking/${id}/review`)
 
     try {
       const response = await apiClient.patch(`/applications/${id}/review`, payload)
@@ -440,7 +440,7 @@ export const applicationAPI = {
       return transformApplicationData(response.data)
     } catch (error: any) {
       console.error('Ministry review API Error details:', {
-        url: `${apiClient.defaults.baseURL}/applications/${id}/review`,
+        url: `${apiClient.defaults.baseURL}/agency-tracking/${id}/review`,
         method: 'PATCH',
         payload,
         status: error.response?.status,
@@ -511,7 +511,7 @@ export const applicationAPI = {
     })
 
     // Send multipart/form-data request
-    const response = await apiClient.post(`/applications/${id}/send-for-verification`, formData, {
+    const response = await apiClient.post(`/agency-tracking/${id}/send-for-verification`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -598,7 +598,7 @@ export const applicationAPI = {
       }
     }
 
-    const response = await apiClient.post(`/applications/${id}/submit-verification`, formData, {
+    const response = await apiClient.post(`/agency-tracking/${id}/submit-verification`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -634,7 +634,7 @@ export const applicationAPI = {
   },
 
   printApplication: async (id: string): Promise<Blob> => {
-    const response = await apiClient.get(`/applications/${id}/print`, {
+    const response = await apiClient.get(`/sheets/${id}/print`, {
       responseType: 'blob',
     })
     return response.data
@@ -651,12 +651,12 @@ export const applicationAPI = {
     console.log('Print payload:', payload)
 
     try {
-      const response = await apiClient.post(`/applications/${trackingId}/print`, payload)
+      const response = await apiClient.post(`/sheets/${trackingId}/print`, payload)
       console.log('Print successful:', response.data)
       return transformApplicationData(response.data)
     } catch (error: any) {
       console.error('Print API Error details:', {
-        url: `${apiClient.defaults.baseURL}/applications/${trackingId}/print`,
+        url: `${apiClient.defaults.baseURL}/sheets/${trackingId}/print`,
         method: 'POST',
         payload,
         status: error.response?.status,
@@ -673,12 +673,12 @@ export const applicationAPI = {
     console.log('QC Pass for application:', applicationId)
 
     try {
-      const response = await apiClient.post(`/applications/${applicationId}/qc-pass`, {})
+      const response = await apiClient.post(`/completed/${applicationId}/qc-pass`, {})
       console.log('QC Pass successful:', response.data)
       return response.data
     } catch (error: any) {
       console.error('QC Pass API Error details:', {
-        url: `${apiClient.defaults.baseURL}/applications/${applicationId}/qc-pass`,
+        url: `${apiClient.defaults.baseURL}/completed/${applicationId}/qc-pass`,
         method: 'POST',
         status: error.response?.status,
         statusText: error.response?.statusText,
@@ -696,12 +696,12 @@ export const applicationAPI = {
     const payload = failureReason ? { failure_reason: failureReason } : {}
 
     try {
-      const response = await apiClient.post(`/applications/${applicationId}/qc-fail`, payload)
+      const response = await apiClient.post(`/qc-failure/${applicationId}/qc-fail`, payload)
       console.log('QC Fail successful:', response.data)
       return response.data
     } catch (error: any) {
       console.error('QC Fail API Error details:', {
-        url: `${apiClient.defaults.baseURL}/applications/${applicationId}/qc-fail`,
+        url: `${apiClient.defaults.baseURL}/qc-failure/${applicationId}/qc-fail`,
         method: 'POST',
         payload,
         status: error.response?.status,
@@ -734,7 +734,7 @@ export const applicationAPI = {
 
   // Download verification document (the PDF uploaded during send-for-verification)
   downloadVerificationDocument: async (id: string): Promise<Blob> => {
-    const response = await apiClient.get(`/applications/${id}/verification-document`, {
+    const response = await apiClient.get(`/agency-tracking/${id}/verification-document`, {
       responseType: 'blob',
     })
     return response.data
@@ -780,7 +780,7 @@ export const applicationAPI = {
     if (filters.sort_by) params.append('sort_by', filters.sort_by)
     if (filters.sort_order) params.append('sort_order', filters.sort_order)
 
-    const response = await apiClient.get(`/applications/rejected?${params.toString()}`)
+    const response = await apiClient.get(`/rejected/rejected?${params.toString()}`)
 
     console.log('Raw rejected applications API response:', response.data)
 
@@ -852,7 +852,7 @@ export const applicationAPI = {
     if (filters.sort_by) params.append('sort_by', filters.sort_by)
     if (filters.sort_order) params.append('sort_order', filters.sort_order)
 
-    const response = await apiClient.get(`/applications/completed?${params.toString()}`)
+    const response = await apiClient.get(`/completed/completed-applications?${params.toString()}`)
 
     console.log('Raw API response:', response.data)
 
@@ -887,7 +887,7 @@ export const applicationAPI = {
 
   // Get specific rejected application
   getRejectedApplication: async (id: string): Promise<Application> => {
-    const response = await apiClient.get(`/applications/rejected/${id}`)
+    const response = await apiClient.get(`/rejected/${id}`)
     return transformApplicationData(response.data)
   },
 
@@ -898,7 +898,7 @@ export const applicationAPI = {
     thisMonth: number
     byReason: Record<string, number>
   }> => {
-    const response = await apiClient.get(`/applications/rejected/stats`)
+    const response = await apiClient.get(`/rejected/stats`)
     return response.data
   },
 
@@ -932,7 +932,7 @@ export const applicationAPI = {
     if (filters.sort_by) params.append('sort_by', filters.sort_by)
     if (filters.sort_order) params.append('sort_order', filters.sort_order)
 
-    const response = await apiClient.get(`/applications/remarks/rejected?${params.toString()}`)
+    const response = await apiClient.get(`/remarks/remarks/rejected?${params.toString()}`)
     return response.data
   },
 
@@ -966,13 +966,13 @@ export const applicationAPI = {
     if (filters.sort_by) params.append('sort_by', filters.sort_by)
     if (filters.sort_order) params.append('sort_order', filters.sort_order)
 
-    const response = await apiClient.get(`/applications/remarks/acceptance?${params.toString()}`)
+    const response = await apiClient.get(`/remarks/remarks/acceptance?${params.toString()}`)
     return response.data
   },
 
   // Get count of temp applications
   getTempApplicationsCount: async (): Promise<{ count: number }> => {
-    const response = await apiClient.get('/applications/temp/count')
+    const response = await apiClient.get('/temp-application/count')
     return response.data
   },
 
@@ -1041,21 +1041,21 @@ export const applicationAPI = {
 
   // Get next temp application sequentially
   getNextTempApplication: async (): Promise<any> => {
-    const response = await apiClient.get('/applications/temp/next')
+    const response = await apiClient.get('/temp-application/next')
     return response.data
   },
 
   // Delete temp application by ID
   deleteTempApplication: async (id: number): Promise<void> => {
-    console.log(`Calling DELETE /applications/temp/${id}`)
+    console.log(`Calling DELETE /temp-application/${id}`)
     console.log(`Full URL: ${apiClient.defaults.baseURL}/applications/temp/${id}`)
     try {
-      const response = await apiClient.delete(`/applications/temp/${id}`)
+      const response = await apiClient.delete(`/temp-application/${id}`)
       console.log('Delete response:', response)
       return response.data
     } catch (error: any) {
       console.error('Delete temp application error:', {
-        url: `/applications/temp/${id}`,
+        url: `/temp-application/${id}`,
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
